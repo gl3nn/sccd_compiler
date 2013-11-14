@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test History">
+    <description>
+        Testing history deep.
+    </description>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="TestClass" default="true">
+        <scxml>
+            <parallel id="parallel">
+                <state id="orthogonal" initial="wrapper">
+                    <state id="wrapper" initial="state_1">
+                        
+                        <state id="state_1" initial="inner_1">
+                            <state id="inner_1"/>
+                            <state id="inner_2"/>
+                            <transition event="to_state_2" target="../state_2"/>
+                        </state>
+                        
+                        <state id="state_2" initial="inner_3">
+                            <state id="inner_3">
+                                <transition event="to_inner_4" target="../inner_4"/>
+                            </state>
+                            <state id="inner_4">
+                            
+                            </state>
+                        </state>
+                        
+                        <history id="history" type="deep">
+                            <transition target="../state_1"/>
+                        </history>
+                        
+                        <transition event="to_outer" target="../outer"/>
+                    </state>
+                    <state id="outer">
+                        <transition event="to_history" target="../wrapper/history"/>
+                    </state>
+                </state>
+                <state id="orthogonal_tester" initial="start">
+                    <state id="start">
+                        <transition target="../step1">
+                            <raise event="to_state_2" />
+                            <raise event="to_inner_4" />
+                        </transition>
+                    </state>
+                    <state id="step1">
+                        <transition cond="INSTATE('/parallel/orthogonal/wrapper/state_2/inner_4')" target="../step2">
+                            <raise event="test_output:check1" />
+                            <raise event="to_outer" />
+                        </transition>
+                    </state>
+                    <state id="step2">
+                        <transition cond="INSTATE('/parallel/orthogonal/outer')" target="../step3">
+                            <raise event="test_output:check2" />
+                            <raise event="to_history" />
+                        </transition>
+                    </state>
+                    <state id="step3">
+                        <transition cond="INSTATE('/parallel/orthogonal/wrapper/state_2/inner_4')" target="../end">
+                            <raise event="test_output:check3" />
+                        </transition>
+                    </state>
+                    <state id="end"/>
+                </state>
+            </parallel>
+        </scxml>
+    </class>
+</diagram>

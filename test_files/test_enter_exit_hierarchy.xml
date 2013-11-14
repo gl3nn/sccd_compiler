@@ -1,0 +1,77 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Model">
+    <description>
+        Testing the enter and exit hierarchy.
+    </description>
+    <inports>
+        <port name="test_input" />
+    </inports>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="Test1" default="true">
+        <scxml initial="outside">
+            <state id="outside">
+                <transition event="test_input:to_composite" target="/composite"/>
+                <transition event="test_input:to_inner3" target="/composite/state2/inner3"/>
+                <transition event="test_input:to_inner4" target="/composite/state2/inner4"/>
+            </state>
+            <state id="composite" initial="state1">
+                
+                <state id="state1" initial="inner1">
+                    <onentry>
+                        <raise event="test_output:enter_state1" />
+                    </onentry>
+                    <onexit>
+                        <raise event="test_output:exit_state1" />
+                    </onexit>
+                    <state id="inner1">
+                        <onentry>
+                            <raise event="test_output:enter_inner1" />
+                        </onentry>
+                        <onexit>
+                            <raise event="test_output:exit_inner1" />
+                        </onexit>
+                        <transition event="test_input:to_inner2" target="../inner2"/>
+                    </state>
+                    <state id="inner2">
+                        <onentry>
+                            <raise event="test_output:enter_inner2" />
+                        </onentry>
+                        <onexit>
+                            <raise event="test_output:exit_inner2" />
+                        </onexit>
+                    </state>
+                </state>
+                
+
+                <state id="state2" initial="inner3">
+                    <onentry>
+                        <raise event="test_output:enter_state2" />
+                    </onentry>
+                    <onexit>
+                        <raise event="test_output:exit_state2" />
+                    </onexit>
+                    <state id="inner3">
+                        <onentry>
+                            <raise event="test_output:enter_inner3" />
+                        </onentry>
+                        <onexit>
+                            <raise event="test_output:exit_inner3" />
+                        </onexit>
+                    </state>
+                    <state id="inner4">
+                        <onentry>
+                            <raise event="test_output:enter_inner4" />
+                        </onentry>
+                        <onexit>
+                            <raise event="test_output:exit_inner4" />
+                        </onexit>
+                    </state>
+                </state>
+                
+                <transition event="test_input:to_outside" target="/outside"/>
+            </state>
+        </scxml>
+    </class>
+</diagram>

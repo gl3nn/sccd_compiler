@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Model">
+    <description>
+        Testing the INSTATE macro.
+    </description>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="Test1" default="true">
+        <scxml>
+            <parallel id="parallel_1">
+                <state id="orthogonal1" initial="state1">
+                    <state id="state1">
+                        <transition event="to_inner" target="../inner"/>
+                    </state>
+                    <state id="inner" initial="state2">
+                        <state id="state2">
+                            <transition event="to_state3" target="../state3"/>
+                        </state>
+                        <state id="state3"/>
+                    </state>
+                </state>
+                <state id="orthogonal2" initial="tester">
+                    <state id="tester">
+                        <transition cond="INSTATE('/parallel_1/orthogonal1/state1')" target=".">
+                            <raise event="test_output:check1"/>
+                            <raise event="to_inner"/>
+                        </transition>
+                        <transition cond="INSTATE('/parallel_1/orthogonal1/inner/state2')" target=".">
+                            <raise event="test_output:check2"/>
+                            <raise event="to_state3"/>
+                        </transition>
+                        <transition cond="INSTATE('/parallel_1/orthogonal1/inner/state3')" target="../stop">
+                            <raise event="test_output:check3"/>
+                        </transition>
+                    </state>
+                    <state id="stop"/>
+                </state>
+            </parallel>
+        </scxml>
+    </class>
+</diagram>

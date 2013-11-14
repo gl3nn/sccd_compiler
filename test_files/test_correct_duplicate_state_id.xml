@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Model">
+    <description>
+        Testing duplicate id's.
+    </description>
+    <class name="Test1">
+        <scxml initial="state1">
+            <state id="state0" initial="state1">
+                <state id="state1"/>
+                <state id="state0"/>
+            </state>
+            <state id="state1" initial="state1">
+                <state id="state1"/>
+                <state id="state0"/>
+            </state>
+        </scxml>
+    </class>
+</diagram>

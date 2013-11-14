@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test After">
+    <description>
+        Used for testing the AFTER event.
+    </description>
+    <inports>
+        <port name="test_input" />
+    </inports>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="TestClass" default="true">
+        <scxml name="Test1" initial="composite">
+            <state id="composite" initial="state_1">
+                <state id="state_1">
+                    <transition event="AFTER(0.1)" target="../state_2"/>
+                    <transition event="AFTER(0.2)" target="../state_3"/>
+                </state>
+                <state id="state_2">
+                    <onentry>
+	                   <raise event="test_output:in_state_2" />
+                    </onentry>
+                </state>
+                <state id="state_3">
+                    <onentry>
+                       <raise event="test_output:in_state_3" />
+                    </onentry>
+                </state>
+            </state>
+        </scxml>
+    </class>
+</diagram>

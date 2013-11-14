@@ -1,0 +1,39 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test History">
+    <description>
+        Testing the History state.
+    </description>
+    <inports>
+        <port name="test_input" />
+    </inports>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="TestClass" default="true">
+        <scxml initial="composite_1">
+            <state id="composite_1" initial="state_1">
+                <state id="state_1">
+                    <onentry>
+                       <raise event="test_output:in_state_1" />
+                    </onentry>
+                    <transition event="test_input:to_state_2" target="../state_2"/>
+                </state>
+                <state id="state_2">
+                    <onentry>
+	                   <raise event="test_output:in_state_2" />
+                    </onentry>
+                </state>
+                <history id="composite_history">
+                    <transition target="../state_1"/>
+                </history>
+                <transition event="test_input:to_state_3" target="../state_3"/>
+            </state>
+            <state id="state_3">
+                <onentry>
+                   <raise event="test_output:in_state_3" />
+                </onentry>
+                <transition target="/composite_1/composite_history"/>
+            </state>
+        </scxml>
+    </class>
+</diagram>

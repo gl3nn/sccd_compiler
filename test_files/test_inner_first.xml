@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Model">
+    <description>
+        Testing inner first.
+    </description>
+    <inports>
+        <port name="test_input" />
+    </inports>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="Test">
+        <scxml order="inner-first" initial="state1">
+            <state id="state1" initial="state1">
+                <state id="state1">
+                    <transition event="test_input:event" target="../statea"/>
+                </state>
+                <state id="statea">
+                    <onentry>
+                        <raise event="test_output:in_a"/>
+                    </onentry>
+                </state>
+                <transition event="test_input:event" target="../stateb"/>
+            </state>
+            <state id="stateb">
+                <onentry>
+                    <raise event="test_output:in_b"/>
+                </onentry>
+            </state>
+        </scxml>
+    </class>
+</diagram>

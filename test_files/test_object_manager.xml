@@ -1,0 +1,42 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Model">
+    <description>
+        Testing the object manager
+    </description>
+    <inports>
+        <port name="test_input" />
+    </inports>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="Test1" default="true">
+        <relationships>
+            <association class-relation="Test2"/>
+        </relationships>
+        <scxml initial="start">
+            <state id="start">
+                <transition event="test_input:create" target="../wait">
+                    <raise event="objectManager}createInstance('Test2', SELF)" />
+                    <raise event="test_output:request_send"/>
+                </transition>
+            </state>
+
+            <state id="wait">
+                <transition event="createdInstance(success, class_name, reference)" target="../start">
+                    <add name="created1" reference="reference"/>
+                    <raise event="test_output:associate_added"/>
+                    <raise event="created1}hello" />
+                </transition>
+            </state>
+        </scxml>
+    </class>
+    <class name="Test2" default="false">
+        <scxml>
+            <state id="start">
+                <transition event="hello" target=".">
+                    <raise event="test_output:second_working" />
+                </transition>
+            </state>
+        </scxml>
+    </class>
+</diagram>

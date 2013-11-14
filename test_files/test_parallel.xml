@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test History">
+    <description>
+        Testing parallelism.
+    </description>
+    <inports>
+        <port name="test_input" />
+    </inports>
+    <outports>
+        <port name="test_output" />
+    </outports>
+    <class name="TestClass" default="true">
+        <scxml>
+            <parallel id="parallel_1">
+                <state id="orthogonal_1" initial="state_1">
+                    <state id="state_1">
+                        <onentry>
+                           <raise event="test_output:in_state_1" />
+                        </onentry>
+                        <transition event="test_input:to_state_2" target="../state_2"/>
+                    </state>
+                    <state id="state_2">
+                        <onentry>
+    	                   <raise event="test_output:in_state_2" />
+                        </onentry>
+                        <transition event="test_input:to_state_1" target="../state_1"/>
+                    </state>
+                </state>
+                <state id="orthogonal_2" initial="state_3">
+                    <state id="state_3">
+                        <onentry>
+                           <raise event="test_output:in_state_3" />
+                        </onentry>
+                        <transition event="test_input:to_state_4" target="../state_4"/>
+                    </state>
+                    <state id="state_4">
+                        <onentry>
+                           <raise event="test_output:in_state_4" />
+                        </onentry>
+                        <transition event="test_input:to_state_3" target="../state_3"/>
+                    </state>
+                 </state>
+            </parallel>
+        </scxml>
+    </class>
+</diagram>

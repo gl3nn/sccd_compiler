@@ -39,7 +39,7 @@ class TestSequenceFunctions(TestCase):
     def tearDown(self):
         self.controller = None
         if self.generated_file and self.delete_generated_file :
-            #os.remove(self.generated_file)
+            os.remove(self.generated_file)
             os.remove(self.generated_file + "c")
             self.generated_file = None
         

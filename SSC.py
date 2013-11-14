@@ -520,11 +520,6 @@ class ExitAction(EnterExitAction):
 ##################################  
 
 class StateChartNode:
-    #simulate enum for the order attribute
-    OUTERFIRST = 1
-    INNERFIRST = 2
-    INHERIT    = 3
-    
     def __init__(self,xml_element,state_type, is_orthogonal, parent):
         self.xml = xml_element
         self.is_basic = False
@@ -584,20 +579,18 @@ class StateChartNode:
         self.is_parallel = False
         if self.xml.tag == "parallel" :
             self.is_parallel = True
-            
-        order = self.xml.get("order","")
-        if order == "" or order == "inherit" :
-            if self.is_root : 
-                self.order = StateChartNode.OUTERFIRST
-            else : 
-                self.order = StateChartNode.INHERIT
-        elif order == "outer-first" :
-            self.order = StateChartNode.OUTERFIRST
-        elif order == "inner-first" :
-            self.order = StateChartNode.INNERFIRST
+    
+        conflict = self.xml.get("conflict","")
+        if conflict == "outer" :
+            self.solves_conflict_outer = True
+        elif conflict == "inner" :
+            self.solves_conflict_outer = False
         else :    
-            showWarning("Unknown order attribute for " + self.getFullID() + ", defaulting to 'inherit'.")
-            self.order = StateChartNode.INHERIT
+            if not (conflict == "" or conflict == "inherit") :
+                showWarning("Unknown conflict attribute for " + self.getFullID() + ", defaulting to 'inherit'.")
+            #Do our default inherit action
+            if self.is_root or self.parent_node.solvesConflictsOuter(): 
+                self.solves_conflict_outer = True
             
         #Some checks
         assert (not self.isOrthogonal()) or (self.isBasic() or self.isComposite())
@@ -650,6 +643,9 @@ class StateChartNode:
     
     def getInitial(self):
         return self.initial
+    
+    def solvesConflictsOuter(self):
+        return self.solves_conflict_outer
     
     def getTransitionsOutOf(self):
         """ Returns an optimized list of all hyperedges coming out of 'node'.
@@ -756,10 +752,6 @@ class StateChart(Visitable):
         for node in self.historys:
             self.calculateHistory(node.getParentNode(), node.isHistoryDeep())
 
-        # Calculate which components are outerFirst, if they aren't in this list, they are innerFirst
-        self.outerFirst = []
-        self.buildOuterFirst(self.root)
-
         self.calculateAfters()
         
         #do semantic additions and validation
@@ -858,15 +850,6 @@ class StateChart(Visitable):
             for i in self.hierarchy[parent]:
                 if i.isComposite() :
                     self.calculateHistory(i, is_deep)
-
-    def buildOuterFirst(self, node):
-        """ Figures out which components are inner- and outer-First.
-        """
-        if node.order == StateChartNode.OUTERFIRST :
-            self.outerFirst.append(node)
-        for i in self.hierarchy[node]:
-            if i.isComposite() :
-                self.buildOuterFirst(i)
 
     def calculateAfters(self):
         self.afterNodeEvents = {}

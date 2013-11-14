@@ -286,7 +286,7 @@ class PythonGenerator(CodeGenerator):
         
     
     #helper method
-    def writeTransitionsRecursively(self, current_node, outerFirst):
+    def writeTransitionsRecursively(self, current_node):
         statechart = current_node.getParentStateChart()
         children = statechart.hierarchy[current_node]
         nodesList = []
@@ -294,12 +294,12 @@ class PythonGenerator(CodeGenerator):
             if child.isComposite() or child.isBasic() : #and not orthogonal ?
                 if statechart.transitions[child] != []:
                     nodesList.append(child)
-        if outerFirst:
+        if current_node.solvesConflictsOuter():
             self.writeChildTransitions(current_node, nodesList)
         for child in children:
             if child.isComposite():
-                self.writeTransitionsRecursively(child, child in statechart.outerFirst)
-        if not outerFirst :
+                self.writeTransitionsRecursively(child)
+        if not current_node.solvesConflictsOuter() :
             self.writeChildTransitions(current_node, nodesList)
 
     #helper method
@@ -586,7 +586,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         self.fOut.write("self.stateChanged = False")
         self.fOut.write()
-        self.writeTransitionsRecursively(statechart.root, statechart.root in statechart.outerFirst)
+        self.writeTransitionsRecursively(statechart.root)
         self.fOut.dedent()
 
         # write out microstep function

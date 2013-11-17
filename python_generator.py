@@ -154,7 +154,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.currentState = {}")
             self.fOut.write("self.historyState = {}")
             self.fOut.write()
-            if class_node.statechart.numberTimeTransitions:
+            if class_node.statechart.number_time_transitions:
                 self.fOut.write("# AFTER events of statechart")
                 self.fOut.write("self.timers = []")
                 self.fOut.write()
@@ -175,22 +175,12 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("self.eventQueue = []")
         self.fOut.write("self.loopCount = 0")
         self.fOut.write("self.stateChanged = False")
-        if parent_class.statechart.numberTimeTransitions:
+        if parent_class.statechart.number_time_transitions:
             self.fOut.write()
             self.fOut.write("# Initialize AFTER events")
             self.fOut.write("del self.timers[:]")
-            for i in range(parent_class.statechart.numberTimeTransitions):
+            for i in range(parent_class.statechart.number_time_transitions):
                 self.fOut.write("self.timers.append(-1)")
-        self.fOut.write()
-        # write out default state
-        self.fOut.write("# Default state of statechart")
-        for node, default in parent_class.statechart.defaults.iteritems():
-            stateName = ""
-            if default[0] in parent_class.statechart.inits: #unsure if this check is needed.. legacy code
-                for i in default:
-                    stateName = stateName + ", " + parent_class.name + "." + i.getFullName()
-            stateName = "[" + stateName[2:] + "]"
-            self.fOut.write("self.currentState[" + parent_class.name + "." + node.getFullName() + "] = " + stateName)
         self.fOut.write()
         # write out history state
         if parent_class.statechart.historys:
@@ -199,42 +189,21 @@ class PythonGenerator(CodeGenerator):
                 self.fOut.write("self.historyState[" + parent_class.name + "." + node.getFullName() + "] = []")
             self.fOut.write()
         # write out initial statechart code
+        root = parent_class.statechart.root
         self.fOut.write("# Initial statechart code")
-        for c in parent_class.statechart.inits:
-            if not c.isOrthogonal() :
-                self.fOut.write("self.enterAction_" + c.getFullName() + "()")
+        for c in [root] + parent_class.statechart.composites :
+            self.fOut.write("self.currentState[self." + c.getFullName() + "] = []")
+        for i in root.defaults:
+            if i.isComposite():
+                self.fOut.write("self.enterState_" + i.getFullName() + "()")
+            elif i.isBasic():
+                self.fOut.write("self.enterAction_" + i.getFullName() + "()")
         self.fOut.write()
         self.fOut.dedent()
         
     def exit_Class(self, class_node):    
         # write out str method
-        self.fOut.write("# Pretty print class state")
-        self.fOut.write("def __str__(self):")
-        self.fOut.indent()
-        self.fOut.write()
-        self.fOut.write("myState = \"" + class_node.name + " State:\\n\"")
-        self.fOut.write("myState += \"    Attributes:\\n\"")
-        for attribute in class_node.attributes:
-            self.fOut.write("myState += \"        self." + attribute.name + " : \" + str(self." + attribute.name + ") + \"\\n\"")
-        if class_node.statechart:
-            self.fOut.write("myState += \"    Statechart:\\n\"")
-            for parent, children in class_node.statechart.hierarchy.iteritems():
-                if parent == "Root":
-                    parentName = "Root"
-                else:
-                    parentName = parent.getFullName()
-                for child in children:
-                    if child.isHistory() :
-                        True #TODO Perhaps print out the saved state?
-                    else :
-                        self.fOut.write("if " + class_node.name + "." + child.getFullName() + " in self.currentState[" + class_node.name + "." + parentName + "] :")
-                        self.fOut.indent()
-                        self.fOut.write("myState += \"        " + parentName + " : " + child.getName() + "\\n\"")
-                        self.fOut.dedent()
-        self.fOut.write("return myState")
         self.fOut.dedent()
-        self.fOut.dedent()
-        self.fOut.write()
         
     #helper method
     def writeMethodSignature(self, name, parameters):
@@ -284,58 +253,81 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("# User defined method")
         self.writeMethod(method.name, method.parameters, method.type, method.body)
         
-    
+        
     #helper method
     def writeTransitionsRecursively(self, current_node):
-        statechart = current_node.getParentStateChart()
-        children = statechart.hierarchy[current_node]
-        nodesList = []
-        for child in children:
-            if child.isComposite() or child.isBasic() : #and not orthogonal ?
-                if statechart.transitions[child] != []:
-                    nodesList.append(child)
-        if current_node.solvesConflictsOuter():
-            self.writeChildTransitions(current_node, nodesList)
-        for child in children:
-            if child.isComposite():
-                self.writeTransitionsRecursively(child)
-        if not current_node.solvesConflictsOuter() :
-            self.writeChildTransitions(current_node, nodesList)
-
+        self.fOut.write("def transition_" + current_node.getFullName() + "(self, event) :")
+        self.fOut.indent()
+        
+        valid_children = []
+        for child in current_node.children :
+            if child.isComposite() or child.isBasic() :
+                valid_children.append(child)  
+         
+        self.fOut.write("catched = False")
+        
+        if current_node.solvesConflictsOuter() :
+            self.writeFromTransitions(current_node)
+            self.fOut.write("if not catched :")
+            self.fOut.indent()
+            
+        if current_node.isParallel():
+            for child in valid_children :     
+                self.fOut.write("catched = self.transition_" + child.getFullName() + "(event) or catched")
+        elif current_node.isComposite():
+            for i, child in enumerate(valid_children) :
+                if i > 0 :
+                    self.fOut.write("el")
+                else :
+                    self.fOut.write()
+                self.fOut.extendWrite("if self.currentState[self." + current_node.getFullName() + "][0] == self." + child.getFullName() + ":")
+                self.fOut.indent()
+                self.fOut.write("catched = self.transition_" + child.getFullName() + "(event)")
+                self.fOut.dedent()
+        else :
+            self.fOut.write("pass")
+                
+        if current_node.solvesConflictsOuter() :
+            self.fOut.dedent()
+        else :
+            self.fOut.write("if not catched :")
+            self.fOut.indent()
+            self.writeFromTransitions(current_node)
+            self.fOut.dedent()
+            
+        self.fOut.write("return catched")
+        self.fOut.dedent()
+        
+        for child in valid_children :
+            self.writeTransitionsRecursively(child)
+                
     #helper method
-    def writeChildTransitions(self, current_node, children):
-        if not children : return
-        statechart = current_node.getParentStateChart()
-        class_name = statechart.className
-        for i, child in enumerate(children):
-            if i :
-                self.fOut.write("elif ")
-            else :
-                self.fOut.write("if ")
-            self.fOut.extendWrite(class_name + "." + child.getFullName() + " in self.currentState[" + class_name + "." + current_node.getFullName() + "] :")
-            self.fOut.indent()
-            self.fOut.write('enableds = []')
-            #self.writeTransitionsOutOf(child)
-            # get all transition out of this state
-            out_transitions = statechart.transitions[child]
-            for index, transition in enumerate(out_transitions, start=1):
-                self.writeTransitionCondition(transition, index)
-                
-            self.fOut.write("if len(enableds) > 1 :")
-            self.fOut.indent()
-            self.fOut.write('print "Runtime warning : indeterminism detected in a transition from node ' +  current_node.getFullID()+ '. Only the first in document order enabled transition is executed."')
-            self.fOut.dedent()
-            self.fOut.write()
-            self.fOut.write("if len(enableds) == 1 :")
-            self.fOut.indent()
-            self.fOut.write('enabled = enableds[0]')      
-                  
-            for index, transition in enumerate(out_transitions, start=1):
-                self.writeTransitionAction(transition, index)
-                
-            self.fOut.dedent()         
-            self.fOut.dedent()
-            self.fOut.write()
+    def writeFromTransitions(self, current_node): 
+        # get all transition out of this state
+        out_transitions = current_node.getParentStateChart().optimized_transitions[current_node]
+        if len(out_transitions) == 0 :
+            self.fOut.write("pass")
+            return
+        
+        self.fOut.write('enableds = []')
+        for index, transition in enumerate(out_transitions, start=1):
+            self.writeTransitionCondition(transition, index)
+            
+        self.fOut.write("if len(enableds) > 1 :")
+        self.fOut.indent()
+        self.fOut.write('print "Runtime warning : indeterminism detected in a transition from node ' +  current_node.getFullID()+ '. Only the first in document order enabled transition is executed."')
+        self.fOut.dedent()
+        self.fOut.write()
+        self.fOut.write("if len(enableds) == 1 :")
+        self.fOut.indent()
+        self.fOut.write('enabled = enableds[0]')      
+              
+        for index, transition in enumerate(out_transitions, start=1):
+            self.writeTransitionAction(transition, index)
+        
+        self.fOut.write('catched = True')   
+        self.fOut.dedent()         
+        self.fOut.write()
             
     def visit_BareString(self, bare_string):
         self.fOut.extendWrite(bare_string.string)
@@ -405,7 +397,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.enterHistory_" + enters[-1].getParentNode().getFullName() + "(" + str(enters[-1].isHistoryDeep()) + ")")
         else:
             self.fOut.write("self.enterAction_" + enters[-1].getFullName() + "()")
-        self.fOut.write('self.stateChanged = True')
+        self.fOut.write('catched = True')
         self.fOut.dedent()
                         
     def writeTransitionCondition(self, transition, index):
@@ -446,10 +438,10 @@ class PythonGenerator(CodeGenerator):
         timers = statechart.afterNodeEvents[parent_node]
         if timers:
             for key, value in timers:
-                self.fOut.write("self.timers[" + key + "] = " + value + " + self.currentTime")
+                self.fOut.write("self.timers[" + str(key) + "] = " + value + " + self.currentTime")
         if enter_method.action:
             enter_method.action.accept(self)
-        self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "] = [" + statechart.className + "." + parent_node.getFullName() + "]")
+        self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "].append(" + statechart.className + "." + parent_node.getFullName() + ")")
         self.fOut.dedent()
         self.fOut.write()
          
@@ -462,7 +454,7 @@ class PythonGenerator(CodeGenerator):
         timers = statechart.afterNodeEvents[parent_node]
         if timers:
             for timer in timers:
-                self.fOut.write("self.timers[" + timer[0] + "] = -1")
+                self.fOut.write("self.timers[" + str(timer[0]) + "] = -1")
         if exit_method.action:
             exit_method.action.accept(self)
         self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "] = []")
@@ -475,16 +467,12 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         if entered_node.isComposite():
             self.fOut.write("self.enterAction_" + entered_node.getFullName() + "()")
-        l = entered_node.parent_statechart.defaults[entered_node]
-        stateName = ""
+        l = entered_node.getDefaults()
         for i in l:
             if i.isComposite():
                 self.fOut.write("self.enterState_" + i.getFullName() + "()")
             elif i.isBasic():
                 self.fOut.write("self.enterAction_" + i.getFullName() + "()")
-            stateName = stateName + ", " + entered_node.parent_statechart.className + "." + i.getFullName()
-        stateName = "[" + stateName[2:] + "]"
-        self.fOut.write("self.currentState[" + entered_node.parent_statechart.className + "." + entered_node.getFullName() + "] = " + stateName)
         self.fOut.dedent()
       
     #helper method            
@@ -496,12 +484,12 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.historyState[" + class_name + "." + exited_node.getFullName() + "] = " \
               + "self.currentState[" + class_name + "." + exited_node.getFullName() + "]")
             
-        l = exited_node.parent_statechart.hierarchy[exited_node]
+        l = exited_node.getChildren()
         if exited_node.isParallel():
             for thing in l:
                 if not thing.isHistory() :
                     self.fOut.write("self.exitState_" + thing.getFullName() + "()")
-            self.fOut.write("self.currentState[" + class_name + "." + exited_node.getFullName() + "] = []")
+            #self.fOut.write("self.currentState[" + class_name + "." + exited_node.getFullName() + "] = []")
         else:
             for thing in l:
                 if not thing.isHistory() :
@@ -523,7 +511,7 @@ class PythonGenerator(CodeGenerator):
         class_name = entered_node.parent_statechart.className
         self.fOut.write("if self.historyState[" + class_name + "." + entered_node.getFullName() + "] == []:")
         self.fOut.indent()
-        l = entered_node.parent_statechart.defaults[entered_node]
+        l = entered_node.getDefaults()
         stateName = ""
         for i in l:
             self.fOut.write("self.enterState_" + i.getFullName() + "()")
@@ -534,7 +522,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.write("else:")
         self.fOut.indent()
-        l = entered_node.parent_statechart.hierarchy[entered_node]
+        l = entered_node.getChildren()
         if entered_node.isParallel():
             stateNames = []
             for i in l:
@@ -577,16 +565,17 @@ class PythonGenerator(CodeGenerator):
         if statechart.historys:
             self.fOut.write("# Statechart enter/exit history methods")
             for i in statechart.historyParents:
-                self.writeEnterHistory(i)          
+                self.writeEnterHistory(i)     
+                
+
+        self.writeTransitionsRecursively(statechart.root)            
                 
         # write out transition function
         self.fOut.write("# Execute transitions")
         self.fOut.write("def transition(self, event):")
         self.fOut.indent()
         self.fOut.write()
-        self.fOut.write("self.stateChanged = False")
-        self.fOut.write()
-        self.writeTransitionsRecursively(statechart.root)
+        self.fOut.write("self.stateChanged = self.transition_" + statechart.root.getFullName() + "(event)")
         self.fOut.dedent()
 
         # write out microstep function
@@ -628,7 +617,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("self.currentTime = currentTime")
         self.fOut.write()
-        if statechart.numberTimeTransitions != 0:
+        if statechart.number_time_transitions != 0:
             self.fOut.write("# Check AFTER timers")
             self.fOut.write("for i in range(len(self.timers)):")
             self.fOut.indent()
@@ -697,7 +686,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("temp.append(j.getTime())")
         self.fOut.dedent()
-        if statechart.numberTimeTransitions:
+        if statechart.number_time_transitions:
             self.fOut.write("for j in self.timers:")
             self.fOut.indent()
             self.fOut.write("if j > -1:")

@@ -10,7 +10,7 @@
         <port name="test_output" />
     </outports>
     <class name="Test">
-        <scxml order="outer-first" initial="state1">
+        <scxml conflict="outer" initial="state1">
             <state id="state1" initial="state1">
                 <state id="state1">
                     <transition event="test_input:event" target="../statea"/>

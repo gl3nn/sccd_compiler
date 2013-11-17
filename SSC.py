@@ -58,12 +58,11 @@ class Target(Visitable):
         parent = self.source
         for step in self.path :
             found = False
-            if parent in self.statechart.hierarchy : 
-                for child in self.statechart.hierarchy[parent] :
-                    if child.getName() == step : 
-                        found = True
-                        parent = child
-                        break
+            for child in parent.children :
+                if child.getName() == step : 
+                    found = True
+                    parent = child
+                    break
             if not found :
                 raise CompilerException('Invalid state reference "' + self.input_string + '".')
         self.target_node = parent
@@ -252,7 +251,7 @@ class TriggerEvent:
         return self.after_index
     
     def setAfterIndex(self, after):
-        self.after_index = str(after)
+        self.after_index = after
         
 ##################################
 
@@ -532,7 +531,7 @@ class StateChartNode:
         elif state_type == "Composite" :
             self.is_composite = True
         elif state_type == "History" :
-            history_type = self.xml.get("type","")
+            history_type = xml_element.get("type","")
             if history_type == "deep" :
                 self.is_history_deep = True
             elif history_type == "shallow" :
@@ -545,7 +544,7 @@ class StateChartNode:
                 
         self.is_orthogonal = is_orthogonal
         self.parent_node = parent
-        self.initial = self.xml.get("initial","")
+        self.initial = xml_element.get("initial","")
         if self.is_root :
             self.name = "Root"
             self.full_id = "Root"
@@ -553,17 +552,17 @@ class StateChartNode:
             self.parent_node = None
             self.is_composite = True
         else :
-            self.name = self.xml.get("id","")
+            self.name = xml_element.get("id","")
             self.full_id = parent.getFullID() + "/" + self.name
             self.parent_statechart = parent.getParentStateChart()
-        on_entries = self.xml.findall("onentry")
+        on_entries = xml_element.findall("onentry")
         if on_entries :
             if len(on_entries) > 1:
                 showWarning("A node can only have one onentry tag! Only compiling first tag of node" + self.getFullID() + ".")
             self.entry_action = EnterAction(self, on_entries[0])
         else :
             self.entry_action = EnterAction(self)
-        on_exits = self.xml.findall("onexit")
+        on_exits = xml_element.findall("onexit")
         if on_exits :
             if len(on_exits) > 1:
                 showWarning("A node can only have one onexit tag! Only compiling first tag of node" + self.getFullID() + ".")
@@ -571,16 +570,18 @@ class StateChartNode:
         else :
             self.exit_action = ExitAction(self)
 
+        self.defaults = []
+        self.children = []
         self.transitions = []
-        for transition_xml in self.xml.findall("transition"):
+        for transition_xml in xml_element.findall("transition"):
             transition = StateChartTransition(transition_xml,self)
             self.transitions.append(transition)
         
         self.is_parallel = False
-        if self.xml.tag == "parallel" :
+        if xml_element.tag == "parallel" :
             self.is_parallel = True
     
-        conflict = self.xml.get("conflict","")
+        conflict = xml_element.get("conflict","")
         if conflict == "outer" :
             self.solves_conflict_outer = True
         elif conflict == "inner" :
@@ -591,6 +592,8 @@ class StateChartNode:
             #Do our default inherit action
             if self.is_root or self.parent_node.solvesConflictsOuter(): 
                 self.solves_conflict_outer = True
+            else :
+                self.solves_conflict_outer = False
             
         #Some checks
         assert (not self.isOrthogonal()) or (self.isBasic() or self.isComposite())
@@ -628,6 +631,12 @@ class StateChartNode:
     
     def getParentStateChart(self):
         return self.parent_statechart
+    
+    def getChildren(self):
+        return self.children
+    
+    def getDefaults(self):
+        return self.defaults
         
     def getTransitions(self):
         return self.transitions
@@ -697,55 +706,22 @@ class StateChart(Visitable):
         self.initTimers = []
         self.succeeded = True
 
-        self.hierarchy = {} #Maps parents to childs
-        self.defaults = {}
         self.inits = []
-
         self.basics = []
         self.composites = []
         self.historys = []
-    
-        self.addToHierarchy(self.root)
-        
-        # Verify that a component is not empty and doesn't contain two nodes with the same name!
 
-        for k, v in self.hierarchy.iteritems() :
-            if v == []:
-                raise CompilerException("Empty component <" + k.getFullID() + "> in class <" + self.className + ">.")        
-            state_ids = []
-            for child in v :
-                state_id = child.getName()
-                if state_id == "" :
-                    raise CompilerException("Found state with no id")
-                else :
-                    if state_id in state_ids :
-                        raise CompilerException("Found 2 ids the same : " + state_id)
-                    state_ids.append(state_id)                    
-
-        # Check default nodes and complete the initial path of the stateChart.
-        self.checkDefaults()
-        for i in self.defaults[self.root] :
+        self.number_time_transitions = 0
+        self.addToHierarchy(self.root)  
+        #complete the initial path of the stateChart.
+        for i in self.root.defaults : 
             self.completeInits(i)
 
-        # For each AFTER event, give it a name so that it can be triggered.
-        i_after = 0
-        for k, v in self.hierarchy.iteritems() :
-            for element in v :
-                for transition in element.getTransitions():
-                    if transition.isAfter() :
-                        trigger = transition.getTrigger()
-                        trigger.setAfterIndex(i_after)
-                        value = "_" + trigger.getAfterIndex() + "after"
-                        trigger.setEvent(value)
-                        i_after += 1
-                    
-        self.numberTimeTransitions = i_after
-                        
 
-        # Calculate the possible transitions of the statechart.
-        self.transitions = {}
-        for node in self.basics + self.composites:
-            self.transitions[node] = node.getTransitionsOutOf()
+        # Calculate the (optimized) possible transitions of the statechart.
+        self.optimized_transitions = {}
+        for node in [self.root] + self.basics + self.composites:
+            self.optimized_transitions[node] = node.getTransitionsOutOf()
             
         # Calculate the history that needs to be taken care of.
         self.historyParents = []
@@ -759,70 +735,81 @@ class StateChart(Visitable):
             node.validate()
         
     def addToHierarchy(self,parent) :
+        children_names = []
         children = []
-        for element in list(parent.xml) :
+        for xml_node in list(parent.xml) :
             state_type = "Basic"
             is_orthogonal = False    
                 
-            if element.tag == "parallel" : 
-                state_type = "Composite"
-                 
-            elif element.tag == "state" :
-                if len(element.findall("state")) > 0 or (len(element.findall("parallel")) > 0) :
+            if xml_node.tag == "parallel" : 
+                state_type = "Composite" 
+            elif xml_node.tag == "state" :
+                if len(xml_node.findall("state")) > 0 or (len(xml_node.findall("parallel")) > 0) :
                     state_type = "Composite"
-                    
                 if  parent.xml.tag == "parallel" :
                     is_orthogonal = True
-                    
-            elif element.tag == "history" :
+            elif xml_node.tag == "history" :
                 state_type = "History"
-                
             else :
                 continue
              
-            node = StateChartNode(element, state_type, is_orthogonal, parent)
+            node = StateChartNode(xml_node, state_type, is_orthogonal, parent)     
+            child_name = node.getName()
+            if child_name == "" :
+                raise CompilerException("Found state with no id")
+            if child_name in children_names :
+                raise CompilerException("Found 2 equivalent id's : " + child_name + ".")
+            children_names.append(child_name)                
+                    
+            append_child = True
             if node.isBasic() : 
                 self.basics.append(node)
-                children.append(node)
             elif node.isComposite() : 
                 self.composites.append(node)
-                children.append(node)
             elif node.isHistory() : 
                 self.historys.append(node)
+            else :
+                append_child = False
+            if append_child :
                 children.append(node)
+            parent.children = children
+
+        #calculating and validating defaultness
+        if parent.isParallel() :
+            parent.defaults = [x for x in children if not x.isHistory()]
+            if parent.getInitial() != "" : 
+                showWarning("Component <" + parent.getFullID() + "> in class <" + self.className + ">. contains an initial state while being parallel. Ignoring.")    
+        elif parent.getInitial() == "" :
+            if parent.isBasic() or parent.isHistory():
+                pass
+            elif len(children) == 1 :
+                parent.defaults = children
+            else :
+                raise CompilerException("Component <" + parent.getFullID() + "> contains no default state.") 
+        else :
+            if parent.isBasic() :
+                raise CompilerException("Component <" + parent.getFullID() + "> contains a default state while being a basic state.")
+            initialChilds = []
+            for s in children :
+                if s.getName() == parent.getInitial() :
+                    initialChilds.append(s)
+            if len(initialChilds) < 1 :
+                raise CompilerException("Initial state '"+ parent.getInitial() + "' referred to, is missing in " + parent.getFullID())
+            elif len(initialChilds) > 1 :
+                raise CompilerException("Multiple states with the name '" + parent.getInitial() + " found in " + parent.getFullID() + " which is referred to as initial state.")
+            parent.defaults = initialChilds       
             
-        if children :
-            self.hierarchy[parent] = children
+        # For each AFTER event, give it a name so that it can be triggered.
+        for transition in parent.getTransitions():
+            if transition.isAfter() :
+                trigger = transition.getTrigger()
+                trigger.setAfterIndex(self.number_time_transitions)
+                value = "_" + str(trigger.getAfterIndex()) + "after"
+                trigger.setEvent(value)
+                self.number_time_transitions += 1
             
         for child in children :
             self.addToHierarchy(child)
-                
-
-    def checkDefaults(self):
-        """ Verifies if all semantics and default-ness are met i.e. every component has a default
-            state, orthogonals are solely in a given component, etc...
-        """
-
-        for k, v in self.hierarchy.iteritems():
-            if k.isParallel() :
-                self.defaults[k] = [x for x in v if not x.isHistory()]
-                if k.getInitial() != "" : 
-                    showWarning("Component <" + k.getFullID() + "> in class <" + self.className + ">. contains an initial state while being parallel. Ignoring.")    
-            elif k.getInitial() == "" :
-                if len(v) == 1 :
-                    self.defaults[k] = v
-                else :
-                    raise CompilerException("Component <" + k.getFullID() + "> contains no default state.") 
-            else :
-                initialChilds = []
-                for s in v :
-                    if s.getName() == k.getInitial() :
-                        initialChilds.append(s)
-                if len(initialChilds) < 1 :
-                    raise CompilerException("Initial state '"+ k.getInitial() + "' referred to, is missing in " + k.getFullID())
-                elif len(initialChilds) > 1 :
-                    raise CompilerException("Multiple states with the name '" + k.getInitial() + " found in " + k.getFullID() + " which is referred to as initial state.")
-                self.defaults[k] = initialChilds        
 
     def completeInits(self, node):
         """Calculates the complete default, initial path
@@ -834,7 +821,7 @@ class StateChart(Visitable):
         elif node.isComposite() :
             if node not in self.inits:
                 self.inits.append(node)
-            for i in self.defaults[node]:
+            for i in node.defaults:
                 self.completeInits(i) 
         else :
             raise CompilerException("The type/class of a state/node wasn't set. This probably points out a bug in the compiler.")
@@ -847,7 +834,7 @@ class StateChart(Visitable):
         if parent not in self.historyParents:
             self.historyParents.append(parent)
         if parent.isParallel() or is_deep :
-            for i in self.hierarchy[parent]:
+            for i in parent.children:
                 if i.isComposite() :
                     self.calculateHistory(i, is_deep)
 

@@ -13,18 +13,18 @@
         <scxml conflict="outer" initial="state1">
             <state id="state1" initial="state1">
                 <state id="state1">
-                    <transition event="test_input:event" target="../statea"/>
+                    <transition port="test_input" event="event" target="../statea"/>
                 </state>
                 <state id="statea">
                     <onentry>
-                        <raise event="test_output:in_a"/>
+                        <raise port="test_output" event="in_a"/>
                     </onentry>
                 </state>
-                <transition event="test_input:event" target="../stateb"/>
+                <transition port="test_input" event="event" target="../stateb"/>
             </state>
             <state id="stateb">
                 <onentry>
-                    <raise event="test_output:in_b"/>
+                    <raise port="test_output" event="in_b"/>
                 </onentry>
             </state>
         </scxml>

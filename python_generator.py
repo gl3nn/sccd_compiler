@@ -230,7 +230,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.extendWrite(" = " + formal_parameter.getDefault())
             
     def visit_FormalEventParameter(self, formal_event_parameter):
-        self.fOut.extendWrite(formal_event_parameter.getString())
+        self.fOut.extendWrite(formal_event_parameter.getName())
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")

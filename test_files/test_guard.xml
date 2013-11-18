@@ -21,7 +21,9 @@
             </state>
             <state id="state_3">
                 <onentry>
-                   <raise event="test_output:received(SELF.member1)" />
+                    <raise port="test_output" event="received">
+                        <parameter value="SELF.member1"/>
+                    </raise>
                 </onentry>
             </state>
         </scxml>

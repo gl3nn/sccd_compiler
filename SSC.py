@@ -16,9 +16,6 @@ reserved = ["__init__", "__del__", "init", "transition", "microstep", "step", "i
 
 SELF_REFERENCE_SEQ = 'SELF'
 INSTATE_SEQ = 'INSTATE'
-PORT_CHAR = ':'
-BROADCAST_CHAR = '*'
-NARROWCAST_CHAR = '}'
 
 ##################################
 
@@ -175,51 +172,46 @@ class LValue(Expression):
 ##################################     
      
 class FormalEventParameter(Visitable):
-    def __init__(self, string):
-        self.string = string
+    def __init__(self, name):
+        self.name = name
         #some validation should be done here as well.. now it doesn't do much besides wrapping a string
         
-    def getString(self):
-        return self.string
+    def getName(self):
+        return self.name
     
 ##################################
 class TriggerEvent:
-    def __init__(self, eventString):
-        self.port = ""
-        self.scope = "local"
+    def __init__(self, xml_element):
+        self.event = xml_element.get("event", "").strip()
+        self.port = xml_element.get("port", "").strip()
+
         self.is_uc = False;
         self.is_after = False
         self.after_index = -1
         self.after_exp = ""
         self.params = []
-        self.event = eventString.replace(' ', '') # remove spaces
         
-        if eventString == "" :
+        if self.event == "" :
+            if self.port :
+                raise CompilerException("Unconditional event can not have a port.")
             self.is_uc = True
             return
         
         if len(self.event) > 7 and self.event[0:6] == "AFTER(" and self.event[-1] == ")":
+            if self.port :
+                raise CompilerException("AFTER event can not have a port.")
             self.is_after = True
             self.after_exp = self.event[6:-1]
             return
-  
-        beginIndex = self.event.find(PORT_CHAR) # check for port
-        if beginIndex > 0 :
-            self.scope      = "port"
-            self.port       = self.event[0:beginIndex]
-            self.event      = self.event[beginIndex+1:]
-        elif beginIndex == 0 :
-            raise CompilerException("Event has the port character ':' at the wrong position.")
      
-        
-        params_index = self.event.find('(')
-        if params_index > 0 :
-            for a in self.event[params_index+1:-1].split(","):
-                self.params.append(FormalEventParameter(a))       
-            self.event = self.event[:params_index]
-        elif params_index == 0 :
-            raise CompilerException("Event has the parameter character '(' at the wrong position.")
-    
+        self.params = []
+        parameters = xml_element.findall('parameter')    
+        for p in parameters :
+            name = p.get("name","")
+            if not name :
+                raise CompilerException("Parameter without name detected.")
+            self.params.append(FormalEventParameter(name))
+            
     def getEvent(self):    
         return self.event
     
@@ -231,13 +223,7 @@ class TriggerEvent:
     
     def getPort(self):
         return self.port
-    
-    def isLocal(self):
-        return self.scope == "local"
-    
-    def hasPort(self):
-        return self.scope == "port"
-    
+        
     def isUC(self):
         return self.is_uc;
     
@@ -282,56 +268,62 @@ class SubAction(Visitable):
 
 class RaiseEvent(SubAction):
     tag = "raise"
+    UNKNOWN_SCOPE = 0
+    LOCAL_SCOPE = 1
+    BROAD_SCOPE = 2
+    OUTPUT_SCOPE = 3
+    NARROW_SCOPE = 4
+    
     
     def __init__(self, xml_element, current_node):
-        event_string = xml_element.get("event","").strip()
-        self.target = ""
-        self.port = ""
-        event_string = event_string.replace(' ', '') # remove spaces
-        port_index = event_string.find(PORT_CHAR)
-        has_port = port_index > -1
-        broadcast_index = event_string.find(BROADCAST_CHAR)
-        has_broadcast = broadcast_index > -1
-        narrow_index = event_string.find(NARROWCAST_CHAR) 
-        has_narrow = narrow_index > -1
-        self.params = []
-        if sum([has_port, has_broadcast, has_narrow]) > 1 :
-            raise CompilerException("Event can be just one of the following : local, broadcast(*), narrowcast(.) or output(:).");
-        #Check for broadcast
-        if has_broadcast :
-            if broadcast_index == 0 :
-                self.scope      = "broad"
-                self.event      = event_string[broadcast_index+1:]
-            else :                       
-                raise CompilerException("Event has the broadcast character '*' at the wrong position.");
-        #Check for narrowcast
-        elif has_narrow :
-            if narrow_index > 0 :
-                self.scope      = "narrow"
-                self.event      = event_string[narrow_index+1:]
-                self.target     = event_string[0:narrow_index]
-            else :
-                raise CompilerException("Event has the narrowcast character '.' at the wrong position.");
-        #Check for output
-        elif has_port:
-            if port_index > 0 :
-                self.scope      = "output"
-                self.event      = event_string[port_index+1:]
-                self.port       = event_string[0:port_index]
-            else:
-                raise CompilerException("Event has the output character ':' at the wrong position.");
+        self.event = xml_element.get("event","").strip()
+        scope_string = xml_element.get("scope","").strip().lower()
+        if scope_string == "local" :
+            self.scope = self.LOCAL_SCOPE
+        elif scope_string == "broad" :
+            self.scope = self.BROAD_SCOPE
+        elif scope_string == "output" :
+            self.scope = self.OUTPUT_SCOPE
+        elif scope_string == "narrow" :
+            self.scope = self.NARROW_SCOPE
+        elif scope_string == "" :
+            self.scope = self.UNKNOWN_SCOPE
         else :
-            #should be local
-            self.scope      = "local"
-            self.event      = event_string
-            
-        params_index = self.event.find('(')
-        if params_index > 0 :
-            for a in self.event[params_index+1:-1].split(","):
-                self.params.append(Expression(a, current_node))       
-            self.event = self.event[:params_index]
-        elif params_index == 0 :
-            raise CompilerException("Event has the parameter character '(' at the wrong position.");
+            raise CompilerException("Illegal scope attribute; needs to be one of the following : local, broad, narrow, output or nothing.");
+
+        self.target = xml_element.get("target","").strip()
+        self.port = xml_element.get("port","").strip()
+        if self.scope == self.UNKNOWN_SCOPE :
+            if self.target and self.port :
+                raise CompilerException("Both target and port attribute detected without a scope defined.")
+            elif self.port :
+                self.scope = self.OUTPUT_SCOPE
+            elif self.target :
+                self.scope = self.NARROW_SCOPE
+            else :
+                self.scope = self.LOCAL_SCOPE    
+                
+        if self.scope == self.LOCAL_SCOPE or self.scope == self.BROAD_SCOPE :
+            if self.target :
+                showWarning("Raise event target detected, not matching with scope. Ignored.")
+                self.target = ""
+            if self.port :
+                showWarning("Raise event port detected, not matching with scope. Ignored.")
+                self.port = ""
+        if self.scope == self.NARROW_SCOPE and self.port :
+            showWarning("Raise event port detected, not matching with scope. Ignored.")
+            self.port = ""
+        if self.scope == self.OUTPUT_SCOPE and self.target :
+            showWarning("Raise event target detected, not matching with scope. Ignored.")
+            self.target = ""
+                
+        self.params = []
+        parameters = xml_element.findall('parameter')    
+        for p in parameters :
+            value = p.get("value","")
+            if not value :
+                raise CompilerException("Parameter without value detected.")
+            self.params.append(Expression(value, current_node))
    
     def __str__(self):
         presentation = "Scope  : %s \n" % self.scope
@@ -348,16 +340,16 @@ class RaiseEvent(SubAction):
         return self.port
             
     def isLocal(self):
-        return self.scope == "local"
+        return self.scope == self.LOCAL_SCOPE
     
     def isNarrow(self):
-        return self.scope == "narrow"
+        return self.scope == self.NARROW_SCOPE
     
     def isBroad(self):
-        return self.scope == "broad"
+        return self.scope == self.BROAD_SCOPE
     
     def isOutput(self):
-        return self.scope == "output"
+        return self.scope == self.OUTPUT_SCOPE
     
     def getTarget(self):
         return self.target
@@ -424,8 +416,9 @@ class Assign(SubAction):
 class Action(Visitable):
     def __init__(self, xml_element, current_node):
         self.sub_actions = []
-        for subaction in list(xml_element) :      
-            self.sub_actions.append(SubAction.create(subaction, current_node))
+        for subaction in list(xml_element) :
+            if subaction.tag not in ["parameter"] :      
+                self.sub_actions.append(SubAction.create(subaction, current_node))
             
     def accept(self, visitor):
         for subaction in self.sub_actions :
@@ -442,7 +435,7 @@ class StateChartTransition():
         self.xml = xml_element
         self.parent_node = parent
         self.parent_statechart = self.parent_node.getParentStateChart()
-        self.trigger = TriggerEvent(self.xml.get("event","").strip())
+        self.trigger = TriggerEvent(self.xml)
         guard_string = self.xml.get("cond","").strip()
         if guard_string != "" : 
             self.guard = Expression(guard_string, self.parent_node)

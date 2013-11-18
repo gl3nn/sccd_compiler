@@ -23,15 +23,15 @@
                 <state id="orthogonal2" initial="tester">
                     <state id="tester">
                         <transition cond="INSTATE('/parallel_1/orthogonal1/state1')" target=".">
-                            <raise event="test_output:check1"/>
+                            <raise port="test_output" event="check1"/>
                             <raise event="to_inner"/>
                         </transition>
                         <transition cond="INSTATE('/parallel_1/orthogonal1/inner/state2')" target=".">
-                            <raise event="test_output:check2"/>
+                            <raise port="test_output" event="check2"/>
                             <raise event="to_state3"/>
                         </transition>
                         <transition cond="INSTATE('/parallel_1/orthogonal1/inner/state3')" target="../stop">
-                            <raise event="test_output:check3"/>
+                            <raise port="test_output" event="check3"/>
                         </transition>
                     </state>
                     <state id="stop"/>

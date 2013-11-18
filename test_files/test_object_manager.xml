@@ -15,17 +15,23 @@
         </relationships>
         <scxml initial="start">
             <state id="start">
-                <transition event="test_input:create" target="../wait">
-                    <raise event="objectManager}createInstance('Test2', SELF)" />
-                    <raise event="test_output:request_send"/>
+                <transition port="test_input" event="create" target="../wait">
+                    <raise target="objectManager" event="createInstance">
+                        <parameter value="'Test2'"/>
+                        <parameter value="SELF" />
+                    </raise>
+                    <raise port="test_output" event="request_send"/>
                 </transition>
             </state>
 
             <state id="wait">
-                <transition event="createdInstance(success, class_name, reference)" target="../start">
+                <transition event="createdInstance" target="../start">
+                    <parameter name="success" />
+                    <parameter name="class_name" />
+                    <parameter name="reference" />
                     <add name="created1" reference="reference"/>
-                    <raise event="test_output:associate_added"/>
-                    <raise event="created1}hello" />
+                    <raise port="test_output" event="associate_added"/>
+                    <raise target="created1" event="hello" />
                 </transition>
             </state>
         </scxml>
@@ -34,7 +40,7 @@
         <scxml>
             <state id="start">
                 <transition event="hello" target=".">
-                    <raise event="test_output:second_working" />
+                    <raise port="test_output" event="second_working" />
                 </transition>
             </state>
         </scxml>

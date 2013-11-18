@@ -46,19 +46,19 @@
                     </state>
                     <state id="step1">
                         <transition cond="INSTATE('/parallel/orthogonal/wrapper/state_2/inner_4')" target="../step2">
-                            <raise event="test_output:check1" />
+                            <raise port="test_output" event="check1" />
                             <raise event="to_outer" />
                         </transition>
                     </state>
                     <state id="step2">
                         <transition cond="INSTATE('/parallel/orthogonal/outer')" target="../step3">
-                            <raise event="test_output:check2" />
+                            <raise port="test_output" event="check2" />
                             <raise event="to_history" />
                         </transition>
                     </state>
                     <state id="step3">
                         <transition cond="INSTATE('/parallel/orthogonal/wrapper/state_2/inner_4')" target="../end">
-                            <raise event="test_output:check3" />
+                            <raise port="test_output" event="check3" />
                         </transition>
                     </state>
                     <state id="end"/>

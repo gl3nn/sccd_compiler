@@ -18,12 +18,12 @@
                 </state>
                 <state id="state_2">
                     <onentry>
-	                   <raise event="test_output:in_state_2" />
+	                   <raise event="in_state_2" port="test_output" />
                     </onentry>
                 </state>
                 <state id="state_3">
                     <onentry>
-                       <raise event="test_output:in_state_3" />
+                       <raise event="in_state_3" port="test_output"/>
                     </onentry>
                 </state>
             </state>

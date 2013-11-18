@@ -214,6 +214,10 @@ class TestSequenceFunctions(TestCase):
         self.expect([
             ("test_output", "in_a")
         ])
+        
+    def test_fault_multiple_unconditional(self):
+        with self.assertRaises(SSC.TransitionException):
+            self.generate("test_fault_multiple_unconditional")
     
 if __name__ == '__main__':
     main()

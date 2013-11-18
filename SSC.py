@@ -1140,7 +1140,8 @@ class ClassDiagram(Visitable):
             try :
                 processed_class = Class(xml_class)
             except CompilerException as e :
-                raise CompilerException("Class <" + xml_class.get("name", "") + "> failed compilation. " + e.message)
+                e.message = "Class <" + xml_class.get("name", "") + "> failed compilation. " + e.message
+                raise e
     
             # Change defaultClass to it's processed version
             if default_class_xml == xml_class:

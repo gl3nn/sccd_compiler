@@ -77,8 +77,12 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write('self.addInputPort("' + i + '")')
         for i in class_diagram.outports:
             self.fOut.write('self.addOutputPort("' + i + '")')
-        self.fOut.write('self.object_manager.createDefaultInstance("'+ class_diagram.default_class.name +'")')
         self.fOut.write()
+        self.fOut.dedent()
+        self.fOut.write("def start(self) :")
+        self.fOut.indent()
+        self.fOut.write('self.object_manager.createDefaultInstance("'+ class_diagram.default_class.name +'")')
+        self.fOut.write('ControllerBase.start(self)')      
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write("def main():")

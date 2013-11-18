@@ -77,6 +77,7 @@ class TestSequenceFunctions(TestCase):
             Event("to_state_3", 0.0, "test_input", [])                                          
         ])
         self.expect([
+            ("test_output", "in_state_1"),
             ("test_output", "in_state_2"),
             ("test_output", "in_state_3"),
             ("test_output", "in_state_2")
@@ -93,6 +94,8 @@ class TestSequenceFunctions(TestCase):
                                                       
         ])
         self.expect([
+            ("test_output", "in_state_1"),
+            ("test_output", "in_state_3"),
             ("test_output", "in_state_2"),
             ("test_output", "in_state_4"),
             ("test_output", "in_state_1"),
@@ -161,6 +164,8 @@ class TestSequenceFunctions(TestCase):
             Event("to_history_2", 0.0, "test_input", []),                                        
         ])
         self.expect([
+            ("test_output", "in_state_1"),
+            ("test_output", "in_state_3"),
             ("test_output", "in_state_2"),
             ("test_output", "in_state_4"),
             ("test_output", "in_outer_1"),

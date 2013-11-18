@@ -308,7 +308,7 @@ class PythonGenerator(CodeGenerator):
     #helper method
     def writeFromTransitions(self, current_node): 
         # get all transition out of this state
-        out_transitions = current_node.getParentStateChart().optimized_transitions[current_node]
+        out_transitions = current_node.getTransitions()
         if len(out_transitions) == 0 :
             self.fOut.write("pass")
             return

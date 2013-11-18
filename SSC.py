@@ -513,6 +513,8 @@ class ExitAction(EnterExitAction):
 
 class StateChartNode:
     def __init__(self,xml_element,state_type, is_orthogonal, parent):
+        self.children = []
+        self.defaults = []        
         self.xml = xml_element
         self.is_basic = False
         self.is_composite = False
@@ -548,32 +550,10 @@ class StateChartNode:
             self.name = xml_element.get("id","")
             self.full_id = parent.getFullID() + "/" + self.name
             self.parent_statechart = parent.getParentStateChart()
-        on_entries = xml_element.findall("onentry")
-        if on_entries :
-            if len(on_entries) > 1:
-                showWarning("A node can only have one onentry tag! Only compiling first tag of node" + self.getFullID() + ".")
-            self.entry_action = EnterAction(self, on_entries[0])
-        else :
-            self.entry_action = EnterAction(self)
-        on_exits = xml_element.findall("onexit")
-        if on_exits :
-            if len(on_exits) > 1:
-                showWarning("A node can only have one onexit tag! Only compiling first tag of node" + self.getFullID() + ".")
-            self.exit_action = ExitAction(self, on_exits[0])    
-        else :
-            self.exit_action = ExitAction(self)
-
-        self.defaults = []
-        self.children = []
-        self.transitions = []
-        for transition_xml in xml_element.findall("transition"):
-            transition = StateChartTransition(transition_xml,self)
-            self.transitions.append(transition)
-        
+            
         self.is_parallel = False
         if xml_element.tag == "parallel" :
             self.is_parallel = True
-    
         conflict = xml_element.get("conflict","")
         if conflict == "outer" :
             self.solves_conflict_outer = True
@@ -587,6 +567,49 @@ class StateChartNode:
                 self.solves_conflict_outer = True
             else :
                 self.solves_conflict_outer = False
+            
+        #onenter
+        on_entries = xml_element.findall("onentry")
+        if on_entries :
+            if len(on_entries) > 1:
+                showWarning("A node can only have one onentry tag! Only compiling first tag of node" + self.getFullID() + ".")
+            self.entry_action = EnterAction(self, on_entries[0])
+        else :
+            self.entry_action = EnterAction(self)
+        #onexit
+        on_exits = xml_element.findall("onexit")
+        if on_exits :
+            if len(on_exits) > 1:
+                showWarning("A node can only have one onexit tag! Only compiling first tag of node" + self.getFullID() + ".")
+            self.exit_action = ExitAction(self, on_exits[0])    
+        else :
+            self.exit_action = ExitAction(self)
+        
+        #transitions
+        self.transitions = []
+        for transition_xml in xml_element.findall("transition"):
+            transition = StateChartTransition(transition_xml,self)
+            self.transitions.append(transition)
+            
+        #optimizing transitions
+        #If a transition with no trigger and no guard is found then it is considered as the only transition.
+        #Otherwise the list is ordered by placing transitions having guards only first.
+        onlyguards = []
+        withtriggers = []
+        optimized = []
+        for transition in self.transitions:
+            if transition.isUCTransition():
+                if not transition.hasGuard():
+                    if optimized :
+                        raise TransitionException("More than one transition found at a single node, that has no trigger and no guard.")
+                    optimized.append(transition)
+                else:
+                    onlyguards.append(transition)
+            else:
+                withtriggers.append(transition)
+        if not optimized :        
+            optimized = onlyguards + withtriggers
+        self.transitions = optimized
             
         #Some checks
         assert (not self.isOrthogonal()) or (self.isBasic() or self.isComposite())
@@ -649,40 +672,17 @@ class StateChartNode:
     def solvesConflictsOuter(self):
         return self.solves_conflict_outer
     
-    def getTransitionsOutOf(self):
-        """ Returns an optimized list of all hyperedges coming out of 'node'.
-            If a hyperedge with no trigger or guard is found then it alone is returned.
-            Otherwise the returned list is ordered by hyperedges having guards only,
-            followed by the rest of the hyperedges. This is done to facilitate the
-            sequence of transitions executed in a single step (loop iteration).
-        """
-        onlyguards = []
-        withtriggers = []
-        for transition in self.getTransitions():
-            if transition.isUCTransition():
-                if not transition.hasGuard():
-                    return [transition]
-                else:
-                    onlyguards.append(transition)
-            else:
-                withtriggers.append(transition)
-        return onlyguards + withtriggers
     
     def getAfterTransitions(self):
-        """ Returns a list of edges out of the node which are triggred by AFTER()
+        """ Returns a list of transitions out of the node which are triggred by AFTER()
         """
-        afters = []
-        for transition in self.getTransitionsOutOf():
-            if transition.isAfter():
-                afters.append(transition)
-        return afters
+        return [transition for transition in self.transitions if transition.isAfter()]
     
     def validate(self):
         self.entry_action.validate()
         self.exit_action.validate()
         for transition in self.transitions :
             transition.validate()
-        
         
 ##################################
 
@@ -699,22 +699,12 @@ class StateChart(Visitable):
         self.initTimers = []
         self.succeeded = True
 
-        self.inits = []
         self.basics = []
         self.composites = []
         self.historys = []
 
         self.number_time_transitions = 0
         self.addToHierarchy(self.root)  
-        #complete the initial path of the stateChart.
-        for i in self.root.defaults : 
-            self.completeInits(i)
-
-
-        # Calculate the (optimized) possible transitions of the statechart.
-        self.optimized_transitions = {}
-        for node in [self.root] + self.basics + self.composites:
-            self.optimized_transitions[node] = node.getTransitionsOutOf()
             
         # Calculate the history that needs to be taken care of.
         self.historyParents = []
@@ -803,21 +793,6 @@ class StateChart(Visitable):
             
         for child in children :
             self.addToHierarchy(child)
-
-    def completeInits(self, node):
-        """Calculates the complete default, initial path
-           from top-level default node to basic state(s)
-        """
-        if node.isBasic()  or node.isHistory()  :
-            if node not in self.inits :
-                self.inits.append(node)              
-        elif node.isComposite() :
-            if node not in self.inits:
-                self.inits.append(node)
-            for i in node.defaults:
-                self.completeInits(i) 
-        else :
-            raise CompilerException("The type/class of a state/node wasn't set. This probably points out a bug in the compiler.")
 
     def calculateHistory(self, parent, is_deep):
         """ Figures out which components need to be kept track of for history.
@@ -1189,6 +1164,9 @@ class CompilerException(Exception):
         self.message = message
     def __str__(self):
         return repr(self.message)
+    
+class TransitionException(CompilerException):
+    pass
     
 ###################################
 

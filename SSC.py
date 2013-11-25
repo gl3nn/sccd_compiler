@@ -993,7 +993,7 @@ class Class(Visitable):
         # tells us which class to inherit from first for multiple inheritance. Gives
         # a WARNING with a given inheritance order if two priorities are the same
         for i in inheritances :
-            self.super_classes.append((i.get("class-relation",""),i.get("priority",1)))
+            self.super_classes.append((i.get("class",""),i.get("priority",1)))
             
         self.super_classes.sort(lambda a, b: cmp(a[1], b[1]))
         priorityChecker = {}
@@ -1024,20 +1024,21 @@ class Class(Visitable):
             #add a default constructor
             self.constructors.append(Constructor(None,self))
 
+        associations = []
+        inheritances = []
         relationships = self.xml.findall("relationships")
-        assert len(relationships) <= 1
-        
-        if len(relationships) > 0:
-            associations = relationships[0].findall("association")
-            for a in associations :
-                self.associations.append(
-                    Association(self.name,
-                                a.get("class-relation",""),
-                                a.get("card_min","0"),
-                                a.get("card_max","N"))
-                )
-        
-            self.processInheritances(relationships[0].findall("inheritance"))
+        for relationship_wrapper in relationships :
+            associations.extend(relationship_wrapper.findall("association"))
+            inheritances.extend(relationship_wrapper.findall("inheritance"))
+            
+        for a in associations :
+            self.associations.append(
+                Association(self.name,
+                            a.get("class",""),
+                            a.get("card_min","0"),
+                            a.get("card_max","N"))
+            )
+        self.processInheritances(inheritances)
 
         statecharts = self.xml.findall("scxml")
         if len(statecharts) > 1 :
@@ -1066,14 +1067,14 @@ class ClassDiagram(Visitable):
     
         # check if class diagram is valid
         # unique class names
-        class_names = []
+        self.class_names = []
         for xml_class in xml_classes :
             name = xml_class.get("name", "")
             if name == "" :
                 raise CompilerException("Missing or emtpy class name.")
-            if name in class_names :
+            if name in self.class_names :
                 raise CompilerException("Found 2 classes with the same name : " + name + ".")
-            class_names.append(name)
+            self.class_names.append(name)
     
         # if only one class is given, then treat it as the default regardless
         default_class_xml = None
@@ -1095,10 +1096,7 @@ class ClassDiagram(Visitable):
                 raise CompilerException("No default class provided.")
     
         # process in and output ports
-        inports_wrappers = self.root.findall("inports")
-        inports = []
-        for wrapper in inports_wrappers :
-            inports.extend(wrapper.findall("port"))
+        inports = self.root.findall("inport")
         names = []
         for xml_inport in inports :
             name = xml_inport.get("name", "")
@@ -1107,10 +1105,7 @@ class ClassDiagram(Visitable):
             names.append(name)
         self.inports = names
         
-        outports_wrappers = self.root.findall("outports");
-        outports = []
-        for wrapper in outports_wrappers :
-            outports.extend(wrapper.findall("port"));
+        outports = self.root.findall("outport")
         names = []
         for xml_outport in outports :
             name = xml_outport.get("name", "")
@@ -1119,18 +1114,14 @@ class ClassDiagram(Visitable):
             names.append(name)
         self.outports = names
         
-        # process in and output ports
-        includes_wrappers = self.root.findall("includes")
-        includes = []
-        for wrapper in includes_wrappers :
-            includes.extend(wrapper.findall("include"))
-        names = []
+        # imports/includes
+        """includes = self.root.findall("include")
+        self.includes = []
         for xml_include in includes :
-            name = xml_include.get("path", "")
-            if name in names :
-                continue
-            names.append(name)
-        self.includes = names
+            path = xml_include.get("path", "")
+            if path :
+                self.includes.append()
+        """
         
         # process each class in diagram
         self.classes = []
@@ -1150,8 +1141,6 @@ class ClassDiagram(Visitable):
             # let user know this class was successfully loaded
             showInfo("Class <" + processed_class.name + "> has been successfully loaded.")
             self.classes.append(processed_class)
-            
-        self.class_names_string = ", ".join(class_names)
             
     def accept(self, visitor):
         visitor.enter(self)
@@ -1199,7 +1188,7 @@ def _generate(class_diagram, output_file, target_code = "Python"):
     elif target_code == "csharp" or target_code == "c#" :
         showWarning("C# generation not implemented yet.")
     # let user know ALL classes have been processed and loaded
-    showInfo("The following classes <" + class_diagram.class_names_string + "> have been exported to the following file: " + output_file)
+    showInfo("The following classes <" + ", ".join(class_diagram.class_names) + "> have been exported to the following file: " + output_file)
         
 ###################################
 

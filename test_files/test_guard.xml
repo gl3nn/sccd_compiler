@@ -3,9 +3,7 @@
     <description>
         Testing the guard.
     </description>
-    <outports>
-        <port name="test_output" />
-    </outports>
+    <outport name="test_output" />
     <class name="TestClass" default="true">
         <attribute name="member1" type="int" visibility="private" init-value="0" />
         <scxml initial="state_1">

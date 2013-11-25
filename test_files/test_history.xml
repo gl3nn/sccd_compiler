@@ -3,12 +3,8 @@
     <description>
         Testing the History state.
     </description>
-    <inports>
-        <port name="test_input" />
-    </inports>
-    <outports>
-        <port name="test_output" />
-    </outports>
+    <inport name="test_input" />
+    <outport name="test_output" />
     <class name="TestClass" default="true">
         <scxml initial="composite_1">
             <state id="composite_1" initial="state_1">

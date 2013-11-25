@@ -3,9 +3,7 @@
     <description>
         Testing history deep.
     </description>
-    <outports>
-        <port name="test_output" />
-    </outports>
+    <outport name="test_output" />
     <class name="TestClass" default="true">
         <scxml>
             <parallel id="parallel">

@@ -3,12 +3,8 @@
     <description>
         Testing outer first.
     </description>
-    <inports>
-        <port name="test_input" />
-    </inports>
-    <outports>
-        <port name="test_output" />
-    </outports>
+    <inport name="test_input" />
+    <outport name="test_output" />
     <class name="Test">
         <scxml conflict="outer" initial="state1">
             <state id="state1" initial="state1">

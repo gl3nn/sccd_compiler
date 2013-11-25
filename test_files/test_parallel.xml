@@ -3,12 +3,8 @@
     <description>
         Testing parallelism.
     </description>
-    <inports>
-        <port name="test_input" />
-    </inports>
-    <outports>
-        <port name="test_output" />
-    </outports>
+    <inport name="test_input" />
+    <outport name="test_output" />
     <class name="TestClass" default="true">
         <scxml>
             <parallel id="parallel_1">

@@ -20,7 +20,7 @@
             <state id="state_3">
                 <onentry>
                     <raise port="test_output" event="received">
-                        <parameter value="SELF.member1"/>
+                        <parameter expr="SELF.member1"/>
                     </raise>
                 </onentry>
             </state>

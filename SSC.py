@@ -172,9 +172,10 @@ class LValue(Expression):
 ##################################     
      
 class FormalEventParameter(Visitable):
-    def __init__(self, name):
+    def __init__(self, name, type = "", default = ""):
         self.name = name
-        #some validation should be done here as well.. now it doesn't do much besides wrapping a string
+        self.type = type
+        self.default = default
         
     def getName(self):
         return self.name
@@ -210,7 +211,7 @@ class TriggerEvent:
             name = p.get("name","")
             if not name :
                 raise CompilerException("Parameter without name detected.")
-            self.params.append(FormalEventParameter(name))
+            self.params.append(FormalEventParameter(name, p.get("type",""), p.get("default","")))
             
     def getEvent(self):    
         return self.event
@@ -320,7 +321,7 @@ class RaiseEvent(SubAction):
         self.params = []
         parameters = xml_element.findall('parameter')    
         for p in parameters :
-            value = p.get("value","")
+            value = p.get("expr","")
             if not value :
                 raise CompilerException("Parameter without value detected.")
             self.params.append(Expression(value, current_node))
@@ -902,7 +903,7 @@ class Method(Visitable):
         parameters = xml.findall("parameter")
         self.parameters = []
         for p in parameters:
-            self.parameters.append(FormalParameter(p.get("identifier",""), p.get("type", "")), p.get("default",""))
+            self.parameters.append(FormalParameter(p.get("name",""), p.get("type", "")), p.get("default",""))
         self.body = xml.text
         self.parent_class = parent_class
         self.return_type = xml.get('type',"")
@@ -971,10 +972,10 @@ class Class(Visitable):
         
     def processMethod(self, method_xml) :
         name = method_xml.get("name", "")
-        if name == "__init__" :
+        if name == self.name :
             self.constructors.append(Constructor(method_xml, self))
-        elif name == "__del__" :
-            self.constructors.append(Destructor(method_xml, self))
+        elif name == '~' + self.name:
+            self.destructors.append(Destructor(method_xml, self))
         else :
             if name in reserved:
                 raise CompilerException("Reserved word \"" + name + "\" used as method in class <" + self.name + ">.")
@@ -1035,8 +1036,8 @@ class Class(Visitable):
             self.associations.append(
                 Association(self.name,
                             a.get("class",""),
-                            a.get("card_min","0"),
-                            a.get("card_max","N"))
+                            a.get("card-min","0"),
+                            a.get("card-max","N"))
             )
         self.processInheritances(inheritances)
 

@@ -13,8 +13,8 @@
             <state id="start">
                 <transition port="test_input" event="create" target="../wait">
                     <raise target="objectManager" event="createInstance">
-                        <parameter value="'Test2'"/>
-                        <parameter value="SELF" />
+                        <parameter expr="'Test2'"/>
+                        <parameter expr="SELF" />
                     </raise>
                     <raise port="test_output" event="request_send"/>
                 </transition>

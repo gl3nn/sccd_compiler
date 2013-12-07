@@ -1115,6 +1115,11 @@ class ClassDiagram(Visitable):
             names.append(name)
         self.outports = names
         
+        self.protocol = xml_class.get("protocol", "threads").lower()
+        if self.protocol not in ["threads", "gameloop"] :
+            raise CompilerException("Invalid protocol : " + self.protocol + ".")
+            
+        
         # imports/includes
         """includes = self.root.findall("include")
         self.includes = []

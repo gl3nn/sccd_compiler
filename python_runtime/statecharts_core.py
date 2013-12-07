@@ -4,7 +4,7 @@ import threading
 from infinity import INFINITY
 from Queue import Queue, Empty
 
-class Object:
+class Object(object):
     def __init__(self, class_name, created_from = None):
         self.associations = {} #class_name to Association
         self.class_name = class_name
@@ -26,7 +26,7 @@ class Object:
         else :
             return None
 
-class ObjectManagerBase:
+class ObjectManagerBase(object):
     __metaclass__  = abc.ABCMeta
     
     def __init__(self, controller):
@@ -130,13 +130,13 @@ class ObjectManagerBase:
         new_reference = new_object.get()
         self.all_objects[new_reference] = new_object
         
-class AssociationInfo:
+class AssociationInfo(object):
     def __init__(self, class_name, min_card, max_card):
         self.min = min_card
         self.max = max_card
         self.class_name = class_name
 
-class Association:
+class Association(object):
 
     def __init__(self, association_info):
         self.references = []
@@ -154,7 +154,7 @@ class Association:
     def remove(self, reference):
         self.references = [x for x in self.references if x != reference]
 
-class Event:
+class Event(object):
     def __init__(self, event_name, time = 0.0, port = "", parameters = []):
         self.name = event_name
         self.time = time
@@ -176,7 +176,7 @@ class Event:
     def getParameters(self):
         return self.parameters
     
-class OutputListener():
+class OutputListener(object):
     def __init__(self, port_names):
         self.port_names = port_names
         self.queue = Queue()
@@ -198,8 +198,8 @@ class OutputListener():
                 return self.queue.get(True, timeout)
         except Empty:
             return None
-
-class ControllerBase:
+        
+class ControllerBase(object):
 
     def __init__(self, object_manager, keep_running, loopMax):
         self.object_manager = object_manager
@@ -221,13 +221,6 @@ class ControllerBase:
 
         # Let statechart run one last time before stopping
         self.done = False
-
-        self.inputCondition = threading.Condition()
-        self.outputCondition = threading.Condition()
-        self.stop_thread = False
-        self.run_semaphore = threading.Semaphore()
-        self.thread = threading.Thread(target=self.run)
-        # self.thread.daemon = True
             
     def addInputPort(self, port_name):
         self.input_ports.append(port_name)
@@ -235,9 +228,7 @@ class ControllerBase:
     def addOutputPort(self, port_name):
         self.output_ports.append(port_name)
 
-    # Compute the new state based on internal events
-    def step(self):
-        self.object_manager.stepAll(self.globalTime)
+
 
     # Compute time untill earliest next event
     def getNextTime(self):
@@ -263,14 +254,49 @@ class ControllerBase:
 
     def broadcast(self, newEvent):
         self.object_manager.broadcast(newEvent)
+        
+    def start(self):
+        pass
+    
+    def stop(self):
+        pass
 
     def outputEvent(self, event):
         for listener in self.output_listeners :
             listener.add(event)
-            
+
+        
+    def addOutputListener(self, listener):
+        self.output_listeners.append(listener)
+        
+class GameLoopControllerBase(ControllerBase):
+    def __init__(self, object_manager, keep_running, loopMax):
+        ControllerBase.__init__(object_manager, keep_running, loopMax)
+        
+    def update(self, delta):
+        self.globalTime += delta
+        if self.inputQueue :
+            next_input_queue = []
+            for event in self.inputQueue :
+                if event.getTime() <= self.globalTime :
+                    self.broadcast(event)
+                else :
+                    next_input_queue.append(event)
+            self.inputQueue = next_input_queue
+        self.object_manager.stepAll()
+        
+class ThreadsControllerBase(ControllerBase):
+    def __init__(self, object_manager, keep_running, loopMax):
+        super(ThreadsControllerBase, self).__init__(object_manager, keep_running, loopMax)
+        self.inputCondition = threading.Condition()
+        self.outputCondition = threading.Condition()
+        self.stop_thread = False
+        self.run_semaphore = threading.Semaphore()
+        self.thread = threading.Thread(target=self.run)
+        
     def handleInput(self):
         self.inputCondition.acquire()
-        if len(self.inputQueue) > 0 :
+        if self.inputQueue :
             next_input_queue = []
             for event in self.inputQueue :
                 if event.getTime() <= self.globalTime :
@@ -293,9 +319,9 @@ class ControllerBase:
             else :
                 self.inputCondition.release()
                 self.stop()
-                return 0.0
+                return 0
         else :
-            self.inputCondition.wait(timeout)
+            self.inputCondition.wait(timeout)    
         timeout = min(timeout, time.time() - begin_time)
         self.inputCondition.release()
         return timeout
@@ -303,22 +329,23 @@ class ControllerBase:
     def run(self):
         while True:
             self.handleInput()
-            self.step()
-            self.globalTime = self.globalTime + self.handleWaiting()
-            self.run_semaphore.acquire()
+            # Compute the new state based on internal events
+            self.object_manager.stepAll(self.globalTime)
+            self.globalTime += self.handleWaiting()
+            
+            self.inputCondition.acquire()
             if self.stop_thread : 
                 break
-            self.run_semaphore.release()
-
-    #Methods to be called outside of file
+            self.inputCondition.release()
 
     def start(self):
         self.thread.start()
 
     def stop(self):
-        self.run_semaphore.acquire()
+        self.inputCondition.acquire()
         self.stop_thread = True
-        self.run_semaphore.release()
+        self.inputCondition.notifyAll()
+        self.inputCondition.release()
         
     def join(self, timeout = None):
         self.thread.join(timeout)
@@ -334,8 +361,4 @@ class ControllerBase:
         for event in event_list :
             self.inputQueue.append(event)
         self.inputCondition.release()
-        
-    def addOutputListener(self, listener):
-        self.output_listeners.append(listener)
-        
         

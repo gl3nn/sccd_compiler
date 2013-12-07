@@ -27,7 +27,7 @@ class PythonGenerator(CodeGenerator):
         
         #Mandatory imports
         self.fOut.write('import sys')
-        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, Association, AssociationInfo, ControllerBase')
+        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, Association, AssociationInfo')
         self.fOut.write()
         
     def exit_ClassDiagram(self, class_diagram):            
@@ -36,7 +36,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write('def __init__(self, controller):')
         self.fOut.indent()
-        self.fOut.write("ObjectManagerBase.__init__(self, controller)")
+        self.fOut.write("super(ObjectManager, self).__init__(controller)")
         for c in class_diagram.classes :
             self.fOut.write('self.associations_info["' + c.getClassName() + '"] = []')
             for association in c.getAssociations() :
@@ -63,16 +63,22 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write()
+        
+        if class_diagram.protocol == "threads" :
+            controller_sub_class = "ThreadsControllerBase"
+        elif class_diagram.protocol == "gameloop" :
+            controller_sub_class = "GameLoopControllerBase"
+        self.fOut.write("from python_runtime.statecharts_core import " + controller_sub_class)
 
         # write out controller
         self.fOut.write("# CONTROLLER BEGINS HERE")
-        self.fOut.write("class Controller(ControllerBase):")
+        self.fOut.write("class Controller(" + controller_sub_class + "):")
         self.fOut.indent()
     
         # write out __init__ method
         self.fOut.write("def __init__(self, keep_running = True, loopMax = 1000):")
         self.fOut.indent()
-        self.fOut.write("ControllerBase.__init__(self, ObjectManager(self), keep_running, loopMax)")
+        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running, loopMax)")
         for i in class_diagram.inports:
             self.fOut.write('self.addInputPort("' + i + '")')
         for i in class_diagram.outports:
@@ -82,7 +88,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("def start(self) :")
         self.fOut.indent()
         self.fOut.write('self.object_manager.createDefaultInstance("'+ class_diagram.default_class.name +'")')
-        self.fOut.write('ControllerBase.start(self)')      
+        self.fOut.write('super(Controller, self).start()')      
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write("def main():")

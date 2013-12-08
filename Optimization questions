@@ -1,4 +1,0 @@
-enteraction should contain everything related to currentstate setting, not enter state
-fix history init
-question onenter onexit actions on startup (output listener)
-multiple target

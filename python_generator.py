@@ -1,6 +1,6 @@
 import utils.StringUtils as StringUtils
 import time
-import SSC
+import SCCDC
 from visitor import CodeGenerator
 
 class PythonGenerator(CodeGenerator):
@@ -39,7 +39,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("super(ObjectManager, self).__init__(controller)")
         for c in class_diagram.classes :
             self.fOut.write('self.associations_info["' + c.getClassName() + '"] = []')
-            for association in c.getAssociations() :
+            for association in c.associations :
                 association.accept(self)
         self.fOut.dedent()
         self.fOut.write()
@@ -63,7 +63,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write()
-        
         if class_diagram.protocol == "threads" :
             controller_sub_class = "ThreadsControllerBase"
         elif class_diagram.protocol == "gameloop" :
@@ -76,9 +75,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
     
         # write out __init__ method
-        self.fOut.write("def __init__(self, keep_running = True, loopMax = 1000):")
+        self.fOut.write("def __init__(self, friend = None, keep_running = True, loopMax = 1000):")
         self.fOut.indent()
-        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running, loopMax)")
+        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), friend, keep_running, loopMax)")
         for i in class_diagram.inports:
             self.fOut.write('self.addInputPort("' + i + '")')
         for i in class_diagram.outports:
@@ -129,7 +128,7 @@ class PythonGenerator(CodeGenerator):
     
             self.fOut.write()
             self.writeStateChartInitMethod(class_node)
-            self.writeMethodSignature("commonConstructor", [SSC.FormalParameter("currentTime", "", "0.0"), SSC.FormalParameter("controller", "", "None"), SSC.FormalParameter("loopMax", "", "1000")])
+            self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None"), SCCDC.FormalParameter("loopMax", "", "1000")])
             #self.fOut.write(" def commonConstructor(self, currentTime = 0.0, controller = None, loopMax = 1000): ")
         else :
             self.writeMethodSignature("commonConstructor",[])
@@ -183,7 +182,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         self.fOut.write("# Statechart variables")
         self.fOut.write("self.eventQueue = []")
-        self.fOut.write("self.loopCount = 0")
         self.fOut.write("self.stateChanged = False")
         if parent_class.statechart.number_time_transitions:
             self.fOut.write()
@@ -244,7 +242,7 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")
-        parameters = constructor.getParams() + [SSC.FormalParameter("currentTime", "", "0.0"), SSC.FormalParameter("controller", "", "None"), SSC.FormalParameter("loopMax", "", "1000")]
+        parameters = constructor.getParams() + [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None"), SCCDC.FormalParameter("loopMax", "", "1000")]
         self.writeMethodSignature("__init__", parameters)
         self.fOut.indent()
         StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
@@ -516,7 +514,7 @@ class PythonGenerator(CodeGenerator):
             
     #helper method
     def writeEnterHistory(self, entered_node):
-        self.writeMethodSignature("enterHistory_" + entered_node.getFullName(), [SSC.FormalParameter("deep","")])
+        self.writeMethodSignature("enterHistory_" + entered_node.getFullName(), [SCCDC.FormalParameter("deep","")])
         self.fOut.indent()
         class_name = entered_node.parent_statechart.className
         self.fOut.write("if self.historyState[" + class_name + "." + entered_node.getFullName() + "] == []:")
@@ -638,11 +636,11 @@ class PythonGenerator(CodeGenerator):
             self.fOut.dedent()
             self.fOut.write()
         self.fOut.write("self.microstep()")
-        self.fOut.write("self.loopCount = 0")
+        self.fOut.write("loopCount = 0")
         self.fOut.write("while self.stateChanged:")
         self.fOut.indent()
-        self.fOut.write("self.loopCount += 1")
-        self.fOut.write("if self.loopCount >= self.loopMax:")
+        self.fOut.write("loopCount += 1")
+        self.fOut.write("if loopCount >= self.loopMax:")
         self.fOut.indent()
         self.fOut.write("print \"Runtime Error: \", \"Infinite loop detected in class <" + statechart.className + ">. Aborting...\"")
         self.fOut.write("sys.exit(1)")
@@ -755,12 +753,7 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Association(self, association):      
         self.fOut.write('self.associations_info["' + association.from_class + '"].append(')
-        self.fOut.extendWrite('AssociationInfo("' + association.to_class + '", ' + str(association.min) + ', ')
-        if association.max == 'N' :
-            self.fOut.extendWrite('"N"')
-        else :
-            self.fOut.extendWrite(str(association.max))
-        self.fOut.extendWrite('))')
+        self.fOut.extendWrite('AssociationInfo("' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + '))')
         
     def visit_RaiseEvent(self, raise_event):
         if raise_event.isLocal():

@@ -12,9 +12,10 @@ from visitor import Visitable
 reserved = ["__init__", "__del__", "init", "transition", "microstep", "step", "instate", "event", 
             "broadcast", "getEarliestEvent", "__str__", "controller", "currentTime", 
             "currentState", "loopMax", "timers", "eventQueue", "loopCount", "stateChanged", "historyState",
-            "root", "narrowcast"]
+            "root", "narrowcast", "friend", "object_manager"]
 
 SELF_REFERENCE_SEQ = 'SELF'
+FRIEND_REFERENCE_SEQ = 'FRIEND'
 INSTATE_SEQ = 'INSTATE'
 
 ##################################
@@ -131,6 +132,9 @@ class BareString(ExpressionPart):
         self.string = string
     
 class SelfReference(ExpressionPart):        
+    pass
+
+class FriendReference(ExpressionPart):        
     pass
     
 class InStateCall(ExpressionPart):
@@ -869,11 +873,12 @@ class StateChart(Visitable):
 ###################################
 
 class Association(Visitable):
-    def __init__(self, from_class, to_class, min_card, max_card):
+    def __init__(self, from_class, to_class, min_card, max_card, name):
         self.min = min_card
-        self.max = max_card
+        self.max = max_card #N is represented as -1
         self.from_class = from_class
         self.to_class = to_class
+        self.name = name
         
 ###################################
 class FormalParameter(Visitable):
@@ -955,9 +960,6 @@ class Class(Visitable):
     def getClassName(self):
         return self.name
     
-    def getAssociations(self):
-        return self.associations
-    
     def accept(self, visitor):
         visitor.enter(self)
         for i in self.constructors :
@@ -1011,6 +1013,37 @@ class Class(Visitable):
                 showWarning("Class <" + self.name + "> inherits from classes <" + ", ".join(checkIt) + "> with same priority <" + str(priority) + ">. Given inheritance order is chosen.")
                 
         self.super_classes = [entry[0] for entry in self.super_classes]        
+        
+    def processAssociations(self, associations):
+        for a in associations :
+            class_name = a.get("class","")
+            if not class_name :
+                raise CompilerException("Faulty association.")
+            card_min_string = a.get("card-min","0")
+            try :
+                card_min = int(card_min_string)
+                if card_min < 0 :
+                    raise ValueError()
+            except ValueError :
+                raise CompilerException("Faulty card-min value in association.")
+            card_max_string = a.get("card-max","N")
+            if card_max_string == "N" :
+                card_max = -1
+            else :
+                try :
+                    card_max = int(card_max_string)
+                    if card_max < card_min :
+                        raise ValueError()
+                except ValueError :
+                    raise CompilerException("Faulty card-max value in association.") 
+            
+            association_name = a.get("name","")
+            if not association_name :
+                raise CompilerException("Faulty association. No name.")
+            self.associations.append(
+                Association(self.name, class_name, card_min, card_max, association_name)
+            )
+            
 
     def process(self):
         attributes = self.xml.findall("attribute")
@@ -1032,13 +1065,7 @@ class Class(Visitable):
             associations.extend(relationship_wrapper.findall("association"))
             inheritances.extend(relationship_wrapper.findall("inheritance"))
             
-        for a in associations :
-            self.associations.append(
-                Association(self.name,
-                            a.get("class",""),
-                            a.get("card-min","0"),
-                            a.get("card-max","N"))
-            )
+        self.processAssociations(associations)
         self.processInheritances(inheritances)
 
         statecharts = self.xml.findall("scxml")

@@ -1,5 +1,5 @@
 from unittest import TestCase, main
-import SSC
+import SCCDC
 import importlib
 import os
 from python_generator import PythonGenerator
@@ -44,7 +44,7 @@ class TestSequenceFunctions(TestCase):
             self.generated_file = None
         
     def generate(self, source_file):
-        abstract_class_diagram  = SSC.process(TEST_FILES_FOLDER + "/" + source_file + ".xml")
+        abstract_class_diagram  = SCCDC.process(TEST_FILES_FOLDER + "/" + source_file + ".xml")
         self.generated_file = source_file + ".py"
         self.delete_generated_file = not os.path.isfile(self.generated_file)
         PythonGenerator(abstract_class_diagram, self.generated_file).generate()

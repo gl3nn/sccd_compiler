@@ -201,9 +201,10 @@ class OutputListener(object):
         
 class ControllerBase(object):
 
-    def __init__(self, object_manager, keep_running, loopMax):
+    def __init__(self, object_manager, friend, keep_running, loopMax):
         self.object_manager = object_manager
         self.keep_running = keep_running
+        self.friend = friend #reference accessible inside class diagram through FRIEND
 
         # Keep local track of global time
         self.globalTime = 0.0
@@ -270,8 +271,8 @@ class ControllerBase(object):
         self.output_listeners.append(listener)
         
 class GameLoopControllerBase(ControllerBase):
-    def __init__(self, object_manager, keep_running, loopMax):
-        ControllerBase.__init__(object_manager, keep_running, loopMax)
+    def __init__(self, object_manager, friend, keep_running, loopMax):
+        ControllerBase.__init__(object_manager, friend, keep_running, loopMax)
         
     def update(self, delta):
         self.globalTime += delta
@@ -286,8 +287,8 @@ class GameLoopControllerBase(ControllerBase):
         self.object_manager.stepAll()
         
 class ThreadsControllerBase(ControllerBase):
-    def __init__(self, object_manager, keep_running, loopMax):
-        super(ThreadsControllerBase, self).__init__(object_manager, keep_running, loopMax)
+    def __init__(self, object_manager, friend, keep_running, loopMax):
+        super(ThreadsControllerBase, self).__init__(object_manager, friend, keep_running, loopMax)
         self.inputCondition = threading.Condition()
         self.outputCondition = threading.Condition()
         self.stop_thread = False

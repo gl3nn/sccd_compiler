@@ -49,7 +49,7 @@ class TestSequenceFunctions(TestCase):
         self.delete_generated_file = not os.path.isfile(self.generated_file)
         PythonGenerator(abstract_class_diagram, self.generated_file).generate()
         import_file = importlib.import_module(source_file)
-        self.controller = import_file.Controller(False)
+        self.controller = import_file.Controller(None, False)
         
     def expect(self, expected):                
         ports = set([entry[0] for entry in expected])
@@ -191,7 +191,7 @@ class TestSequenceFunctions(TestCase):
         ])
         
     def test_fault_duplicate_state_id(self):
-        with self.assertRaises(SSC.CompilerException):
+        with self.assertRaises(SCCDC.CompilerException):
             self.generate("test_fault_duplicate_state_id")
     
     def test_correct_duplicate_state_id(self):
@@ -216,7 +216,7 @@ class TestSequenceFunctions(TestCase):
         ])
         
     def test_fault_multiple_unconditional(self):
-        with self.assertRaises(SSC.TransitionException):
+        with self.assertRaises(SCCDC.TransitionException):
             self.generate("test_fault_multiple_unconditional")
     
 if __name__ == '__main__':

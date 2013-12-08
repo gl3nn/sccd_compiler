@@ -64,9 +64,12 @@ class ObjectManagerBase(object):
         return wait_times
     
     def stepAll(self, global_time):
+        print "stepall"
         for o in self.all_objects:
+            print "call"
             o.step(global_time)
         self.step(global_time)
+        print "end stepall"
 
     def step(self, currentTime):
         self.currentTime = currentTime
@@ -229,30 +232,6 @@ class ControllerBase(object):
     def addOutputPort(self, port_name):
         self.output_ports.append(port_name)
 
-
-
-    # Compute time untill earliest next event
-    def getNextTime(self):
-        #fetch the statecharts waiting times
-        waitTimes = self.object_manager.getWaitTimes()
-                
-        #fetch input waiting time
-        self.inputCondition.acquire()
-        if len(self.inputQueue) > 0 :
-            for event in self.inputQueue :
-                waitTimes.append(event.getTime())
-        self.inputCondition.release()
-
-        if waitTimes:
-            waitTimes.sort()
-            return waitTimes[0] - self.globalTime
-        elif not self.done:
-            self.done = True
-            return 0
-        elif self.done:
-            self.done = False
-            return INFINITY
-
     def broadcast(self, newEvent):
         self.object_manager.broadcast(newEvent)
         
@@ -307,6 +286,28 @@ class ThreadsControllerBase(ControllerBase):
                     
             self.inputQueue = next_input_queue
         self.inputCondition.release()   
+        
+            # Compute time untill earliest next event
+    def getNextTime(self):
+        #fetch the statecharts waiting times
+        waitTimes = self.object_manager.getWaitTimes()
+                
+        #fetch input waiting time
+        self.inputCondition.acquire()
+        if len(self.inputQueue) > 0 :
+            for event in self.inputQueue :
+                waitTimes.append(event.getTime())
+        self.inputCondition.release()
+
+        if waitTimes:
+            waitTimes.sort()
+            return waitTimes[0] - self.globalTime
+        elif not self.done:
+            self.done = True
+            return 0
+        elif self.done:
+            self.done = False
+            return INFINITY
 
     def handleWaiting(self):
         timeout = self.getNextTime()
@@ -315,7 +316,9 @@ class ThreadsControllerBase(ControllerBase):
         self.inputCondition.acquire()
         begin_time = time.time()
         if timeout == INFINITY :
+            print "infinity"
             if self.keep_running :
+                print "keep running"
                 self.inputCondition.wait()
             else :
                 self.inputCondition.release()
@@ -329,6 +332,7 @@ class ThreadsControllerBase(ControllerBase):
 
     def run(self):
         while True:
+            print "run"
             self.handleInput()
             # Compute the new state based on internal events
             self.object_manager.stepAll(self.globalTime)

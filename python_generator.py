@@ -444,9 +444,8 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         # take care of any AFTER events
         timers = statechart.afterNodeEvents[parent_node]
-        if timers:
-            for key, value in timers:
-                self.fOut.write("self.timers[" + str(key) + "] = " + value + " + self.currentTime")
+        for i, time in timers:
+            self.fOut.write("self.timers[" + str(i) + "] = " + str(time) + " + self.currentTime")
         if enter_method.action:
             enter_method.action.accept(self)
         self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "].append(" + statechart.className + "." + parent_node.getFullName() + ")")
@@ -460,9 +459,8 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         # take care of any AFTER events
         timers = statechart.afterNodeEvents[parent_node]
-        if timers:
-            for timer in timers:
-                self.fOut.write("self.timers[" + str(timer[0]) + "] = -1")
+        for i, time in timers:
+            self.fOut.write("self.timers[" + str(i) + "] = -1")
         if exit_method.action:
             exit_method.action.accept(self)
         self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "] = []")
@@ -580,7 +578,7 @@ class PythonGenerator(CodeGenerator):
                 
         # write out transition function
         self.fOut.write("# Execute transitions")
-        self.fOut.write("def transition(self, event = Event(\"\") ):")
+        self.fOut.write("def transition(self, event = Event(\"\")):")
         self.fOut.indent()
         self.fOut.write("self.stateChanged = self.transition_" + statechart.root.getFullName() + "(event)")
         self.fOut.dedent()

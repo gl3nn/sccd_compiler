@@ -173,8 +173,8 @@ class Event(object):
     def getTime(self):
         return self.time
     
-    def setTime(self, time):
-        self.time = time
+    """def decTime(self, delta):
+        self.time -= delta"""
 
     def getParameters(self):
         return self.parameters
@@ -191,7 +191,7 @@ class OutputListener(object):
     """ Tries for timeout seconds to fetch an event, returns None if failed.
         0 as timeout means no blocking.
         -1 as timeout means blocking until an event can be fetched. """
-    def fetch(self, timeout = -1):     
+    def fetch(self, timeout = 0):     
         try :
             if timeout == 0 :
                 return self.queue.get(False)
@@ -240,6 +240,9 @@ class ControllerBase(object):
     
     def stop(self):
         pass
+    
+    def addInput(self, event_name, port, time = 0.0, parameters = []):
+        self.inputQueue.append(Event(event_name, time + self.globalTime, port, parameters))
 
     def outputEvent(self, event):
         for listener in self.output_listeners :
@@ -269,7 +272,6 @@ class ThreadsControllerBase(ControllerBase):
     def __init__(self, object_manager, friend, keep_running, loopMax):
         super(ThreadsControllerBase, self).__init__(object_manager, friend, keep_running, loopMax)
         self.inputCondition = threading.Condition()
-        self.outputCondition = threading.Condition()
         self.stop_thread = False
         self.run_semaphore = threading.Semaphore()
         self.thread = threading.Thread(target=self.run)

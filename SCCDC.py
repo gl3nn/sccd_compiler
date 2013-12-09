@@ -193,7 +193,7 @@ class TriggerEvent:
         self.is_uc = False;
         self.is_after = False
         self.after_index = -1
-        self.after_exp = ""
+        self.after_time = 0
         self.params = []
         
         if self.event == "" :
@@ -206,7 +206,11 @@ class TriggerEvent:
             if self.port :
                 raise CompilerException("AFTER event can not have a port.")
             self.is_after = True
-            self.after_exp = self.event[6:-1]
+            after_time = self.event[6:-1]
+            try :
+                self.after_time = float(after_time)
+            except ValueError :
+                raise CompilerException("Invalid argument for AFTER macro." + after_time)
             return
      
         self.params = []
@@ -235,8 +239,8 @@ class TriggerEvent:
     def isAfter(self):
         return self.is_after
 
-    def getAfterExp(self):
-        return self.after_exp
+    def getAfterTime(self):
+        return self.after_time
     
     def getAfterIndex(self):
         return self.after_index
@@ -819,7 +823,7 @@ class StateChart(Visitable):
             else:
                 timers= []
             for ae in node.getAfterTransitions():
-                timers.append((ae.getTrigger().getAfterIndex(), ae.getTrigger().getAfterExp()))
+                timers.append((ae.getTrigger().getAfterIndex(), ae.getTrigger().getAfterTime()))
             self.afterNodeEvents[node] = timers
         
     def getOuterNodes(self, node):

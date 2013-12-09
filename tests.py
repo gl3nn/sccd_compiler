@@ -22,7 +22,7 @@ class TestSequenceFunctions(TestCase):
             for count, entry in enumerate(self.expected_output, start=1) :
                 port = entry[0]
                 event = entry[1]       
-                output_event = self.output_listener.fetch(0)
+                output_event = self.output_listener.fetch()
                 self.assertNotEqual(output_event, None, "Output event " + str(count) + " is None.")
                 self.assertEqual(output_event.getPort(), port, "Ports of output event " + str(count) + " did not match. Expected " + port + ", got " + output_event.getPort() + ".")
                 self.assertEqual(output_event.getName(), event, "Names of output event " + str(count) + " did not match. Expected " + event + ", got " + output_event.getName() + ".")

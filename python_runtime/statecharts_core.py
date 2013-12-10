@@ -4,46 +4,24 @@ import threading
 from infinity import INFINITY
 from Queue import Queue, Empty
 
-class Object(object):
-    def __init__(self, class_name, created_from = None):
-        self.associations = {} #class_name to Association
-        self.class_name = class_name
-        self.created_from = created_from
-        self.reference= None
-
-    def get(self):
-        return self.reference
-
-    def getCreator(self):
-        return self.created_from
-
-    def getClass(self):
-        return self.class_name
-
-    def getAssociation(self, class_name):
-        if(class_name in self.associations):
-            return self.associations[class_name]
-        else :
-            return None
-
 class ObjectManagerBase(object):
     __metaclass__  = abc.ABCMeta
     
     def __init__(self, controller):
         self.eventQueue = []
-        self.all_objects = {}
         self.currentTime = 0.0
-        self.associations_info = {}
         self.controller = controller
+        self.class_names = []
+        self.all_instances = []
 
     def event(self, newEvent):
         self.eventQueue.append(newEvent)
         
     # Broadcast an event to all instances
-    def broadcast(self, newEvent):
-        assert newEvent.getTime() >= self.currentTime
-        for i in self.all_objects:
-            i.event(newEvent)
+    def broadcast(self, new_event):
+        assert new_event.getTime() >= self.currentTime
+        for i in self.all_instances:
+            i.event(new_event)
 
     def getEarliestEvent(self):
         if self.eventQueue:
@@ -57,105 +35,52 @@ class ObjectManagerBase(object):
         t = self.getEarliestEvent()
         if t : wait_times.append(t)
         #check all the instances
-        for o in self.all_objects :
+        for o in self.all_instances :
             t = o.getEarliestEvent()
             if t is not None and t not in wait_times:
                 wait_times.append(t)
         return wait_times
     
     def stepAll(self, global_time):
-        print "stepall"
-        for o in self.all_objects:
-            print "call"
+        for o in self.all_instances:
             o.step(global_time)
         self.step(global_time)
-        print "end stepall"
 
     def step(self, currentTime):
         self.currentTime = currentTime
 
         while self.eventQueue:
             current = self.eventQueue.pop(0)
-            if current.getName() == "createInstance" :
+            if current.getName() == "create_instance" :
                 self.createInstance(current.getParameters())
 
     def createInstance(self, parameters):
         if len(parameters) != 2 :
-            error_message = "Wrong number of parameters for the createInstance event."
+            error_message = "Wrong number of parameters for the create_instance event."
         else :
             class_name = parameters[0]
             from_reference = parameters[1]
+            new_reference = self.instantiate(class_name)
 
-            if from_reference in self.all_objects :
-                association = self.all_objects[from_reference].getAssociation(class_name)
-                if association != None:
-                    if association.allowedToAdd() :
-                        new_object = Object(class_name, from_reference)
-                        self.setupObject(new_object)
-                        new_reference = new_object.get()
-                        self.all_objects[new_reference] = new_object
-                        association.add(new_reference)
-                        from_reference.event(Event("createdInstance", time = self.currentTime, parameters = [True, class_name, new_reference]))
-                        return
-                    else :
-                        error_message = "Not allowed to add a new instance of this class"
+            if not new_reference :
+                if class_name not in self.class_names :
+                    error_message = "Provided class name is not part of the class diagram."
                 else :
-                    error_message = "Class is not an association according to class diagram"
+                    error_message = "Unexpected error occured during creation."
+                print error_message
+                from_reference.event(Event("creation_error",  time = self.currentTime, parameters = [error_message, class_name]))
             else :
-                error_message = "Passed object reference is unknown"
-        print error_message
-        from_reference.event(Event("createdInstance",  time = self.currentTime, parameters = [False, class_name, error_message]))
+                self.all_instances.append(new_reference)
+                from_reference.event(Event("created_instance", time = self.currentTime, parameters = [new_reference, class_name]))
+
+        
     
     @abc.abstractmethod
-    def setupObject(self, new_object):
+    def instantiate(self, class_name):
         pass
-
-    def deleteInstance(self, parameters):
-        if len(parameters) != 1 :
-            error_message = "Wrong number of parameters for the deleteInstance event."
-        else :
-            to_delete = parameters[0]
-            if to_delete in self.all_objects :
-                instance = self.all_objects[to_delete]
-                creator = instance.getCreator()
-                if creator != None:
-                    association = creator.getAssociation(instance.getClassName())
-                    association.remove(to_delete)
-                self.all_objects.pop(instance, None) #FIXME 
-            else :
-                error_message = "Passed object reference is unknown"
-
-        print error_message;
         
-    def createDefaultInstance(self, class_name):
-        new_object = Object(class_name)        
-        self.setupObject(new_object)
-        new_reference = new_object.get()
-        self.all_objects[new_reference] = new_object
-        
-class AssociationInfo(object):
-    def __init__(self, class_name, min_card, max_card):
-        self.min = min_card
-        self.max = max_card
-        self.class_name = class_name
-
-class Association(object):
-
-    def __init__(self, association_info):
-        self.references = []
-        self.info = association_info
-
-    def getClassName(self):
-        return self.info.class_name
-
-    def allowedToAdd(self):
-        return len(self.references) < self.info.max
-
-    def add(self, reference):
-        self.references.append(reference)
-
-    def remove(self, reference):
-        self.references = [x for x in self.references if x != reference]
+    def createDefaultInstance(self, class_name):  
+        self.all_instances.append(self.instantiate(class_name))
 
 class Event(object):
     def __init__(self, event_name, time = 0.0, port = "", parameters = []):
@@ -204,16 +129,13 @@ class OutputListener(object):
         
 class ControllerBase(object):
 
-    def __init__(self, object_manager, friend, keep_running, loopMax):
+    def __init__(self, object_manager, friend, keep_running):
         self.object_manager = object_manager
         self.keep_running = keep_running
         self.friend = friend #reference accessible inside class diagram through FRIEND
 
         # Keep local track of global time
         self.globalTime = 0.0
-
-        # Maximum loops allowed before run time error/aborting
-        self.loopMax = loopMax
 
         # Keep track of input ports
         self.input_ports = []
@@ -253,8 +175,8 @@ class ControllerBase(object):
         self.output_listeners.append(listener)
         
 class GameLoopControllerBase(ControllerBase):
-    def __init__(self, object_manager, friend, keep_running, loopMax):
-        ControllerBase.__init__(object_manager, friend, keep_running, loopMax)
+    def __init__(self, object_manager, friend, keep_running):
+        ControllerBase.__init__(object_manager, friend, keep_running)
         
     def update(self, delta):
         self.globalTime += delta
@@ -269,8 +191,8 @@ class GameLoopControllerBase(ControllerBase):
         self.object_manager.stepAll()
         
 class ThreadsControllerBase(ControllerBase):
-    def __init__(self, object_manager, friend, keep_running, loopMax):
-        super(ThreadsControllerBase, self).__init__(object_manager, friend, keep_running, loopMax)
+    def __init__(self, object_manager, friend, keep_running):
+        super(ThreadsControllerBase, self).__init__(object_manager, friend, keep_running)
         self.inputCondition = threading.Condition()
         self.stop_thread = False
         self.run_semaphore = threading.Semaphore()
@@ -318,9 +240,7 @@ class ThreadsControllerBase(ControllerBase):
         self.inputCondition.acquire()
         begin_time = time.time()
         if timeout == INFINITY :
-            print "infinity"
             if self.keep_running :
-                print "keep running"
                 self.inputCondition.wait()
             else :
                 self.inputCondition.release()
@@ -334,7 +254,6 @@ class ThreadsControllerBase(ControllerBase):
 
     def run(self):
         while True:
-            print "run"
             self.handleInput()
             # Compute the new state based on internal events
             self.object_manager.stepAll(self.globalTime)

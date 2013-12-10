@@ -7,12 +7,12 @@
     <outport name="test_output" />
     <class name="Test1" default="true">
         <relationships>
-            <association class="Test2"/>
+            <association class="Test2" name="test2_association" />
         </relationships>
         <scxml initial="start">
             <state id="start">
                 <transition port="test_input" event="create" target="../wait">
-                    <raise target="objectManager" event="createInstance">
+                    <raise target="object_manager" event="create_instance">
                         <parameter expr="'Test2'"/>
                         <parameter expr="SELF" />
                     </raise>
@@ -21,13 +21,12 @@
             </state>
 
             <state id="wait">
-                <transition event="createdInstance" target="../start">
-                    <parameter name="success" />
-                    <parameter name="class_name" />
+                <transition event="created_instance" target="../start">
                     <parameter name="reference" />
-                    <add name="created1" reference="reference"/>
+                    <parameter name="class_name" />
+                    <assign ident="SELF.test2_association" expr="reference"/>
                     <raise port="test_output" event="associate_added"/>
-                    <raise target="created1" event="hello" />
+                    <raise target="test2_association" event="hello" />
                 </transition>
             </state>
         </scxml>

@@ -100,6 +100,9 @@ def processString(string, current_node = None):
             if matched_string == SELF_REFERENCE_SEQ :
                 created_object = SelfReference()
                 last_end = match.end()-1
+            elif matched_string == FRIEND_REFERENCE_SEQ :
+                created_object = FriendReference()
+                last_end = match.end() - 1
             elif matched_string == INSTATE_SEQ :
                 if current_node is None :
                     raise CompilerException(INSTATE_SEQ + " call is not allowed here.")
@@ -158,6 +161,8 @@ class InStateCall(ExpressionPart):
     
 class Expression(Visitable):
     def __init__(self, string, current_node):
+        if not string :
+            raise CompilerException("Empty Expression.")
         self.pieces = processString(string, current_node)
           
     def accept(self, visitor):
@@ -170,6 +175,8 @@ class Expression(Visitable):
 
 class LValue(Expression):
     def __init__(self, string):
+        if not string :
+            raise CompilerException("Empty LValue.")
         self.pieces = processString(string)
         #do some validation, provide parameters to processString to make the function more efficient
      
@@ -262,9 +269,7 @@ class SubAction(Visitable):
         for subcls in cls.__subclasses__():
             tag = xml_element.tag.lower()
             if subcls.check(tag):
-                if tag == Assign.tag or tag == RaiseEvent.tag:
-                    return subcls(xml_element, current_node)
-                return subcls(xml_element)
+                return subcls(xml_element, current_node)
         raise CompilerException("Invalid subaction.")
     
     def validate(self):
@@ -301,6 +306,7 @@ class RaiseEvent(SubAction):
             raise CompilerException("Illegal scope attribute; needs to be one of the following : local, broad, narrow, output or nothing.");
 
         self.target = xml_element.get("target","").strip()
+        
         self.port = xml_element.get("port","").strip()
         if self.scope == self.UNKNOWN_SCOPE :
             if self.target and self.port :
@@ -374,7 +380,7 @@ class RaiseEvent(SubAction):
             
 class Script(SubAction):
     tag = "script"
-    def __init__(self, xml_element):
+    def __init__(self, xml_element, current_node):
         self.code = xml_element.text
         
     @staticmethod
@@ -383,31 +389,37 @@ class Script(SubAction):
             
 class Log(SubAction):
     tag = "log"
-    def __init__(self, xml_element):
+    def __init__(self, xml_element, current_node):
         self.message = xml_element.text.strip()
         
     @staticmethod
     def check(tag):
         return tag == Log.tag
     
-class AddAssociatedObject(SubAction):
-    tag = "add"
-    def __init__(self, xml_element):
-        self.name = xml_element.get("name","")
-        if self.name == "" :
-            raise CompilerException("Associated object should have a unique name.");
-        self.reference = xml_element.get("reference","")
-        if self.reference == "" :
-            raise CompilerException("A reference should be provided.");
+class Append(SubAction):
+    tag = "append"
+    def __init__(self, xml_element, current_node):
+        self.lvalue = LValue(xml_element.get("ident",""))
+        self.expression = Expression(xml_element.get("item",""), current_node)
+
+    @staticmethod
+    def check(tag):
+        return tag == Append.tag
+    
+class Remove(SubAction):
+    tag = "remove"
+    def __init__(self, xml_element, current_node):
+        self.lvalue = LValue(xml_element.get("ident",""))
+        self.expression = Expression(xml_element.get("index",""), current_node)
         
     @staticmethod
     def check(tag):
-        return tag == AddAssociatedObject.tag
+        return tag == Remove.tag
     
 class Assign(SubAction):
     tag = "assign"
     def __init__(self, xml_element, current_node):
-        self.lvalue = LValue(xml_element.get("location",""))
+        self.lvalue = LValue(xml_element.get("ident",""))
         self.expression = Expression(xml_element.get("expr",""), current_node)
     
     @staticmethod   
@@ -1044,6 +1056,8 @@ class Class(Visitable):
             association_name = a.get("name","")
             if not association_name :
                 raise CompilerException("Faulty association. No name.")
+            if association_name in reserved : 
+                raise CompilerException("Reserved word \"" + association_name + "\" used as association name in class <" + self.name + ">.")
             self.associations.append(
                 Association(self.name, class_name, card_min, card_max, association_name)
             )

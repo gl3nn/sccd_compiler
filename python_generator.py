@@ -27,7 +27,7 @@ class PythonGenerator(CodeGenerator):
         
         #Mandatory imports
         self.fOut.write('import sys')
-        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, Association, AssociationInfo')
+        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event')
         self.fOut.write()
         
     def exit_ClassDiagram(self, class_diagram):            
@@ -37,31 +37,28 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write('def __init__(self, controller):')
         self.fOut.indent()
         self.fOut.write("super(ObjectManager, self).__init__(controller)")
-        for c in class_diagram.classes :
-            self.fOut.write('self.associations_info["' + c.getClassName() + '"] = []')
-            for association in c.associations :
-                association.accept(self)
+        self.fOut.write('self.class_names.extend([' + ", ".join(class_diagram.class_names) + '])')
         self.fOut.dedent()
         self.fOut.write()
         
-        self.fOut.write('def setupObject(self, new_object):')
+        self.fOut.write('def instantiate(self, class_name):')
         self.fOut.indent()
         for c in class_diagram.classes :
-            class_name = c.getClassName()
-            self.fOut.write('if new_object.class_name == "' + class_name + '" :')
+            self.fOut.write('if class_name == "' + c.name + '" :')
             self.fOut.indent()
             if c.statechart :
-                self.fOut.write('new_object.reference = ' + class_name + '(self.currentTime, self.controller)')
+                self.fOut.write('return ' + c.name + '(self.currentTime, self.controller)')
             else :
-                self.fOut.write('new_object.reference = ' + class_name + '()')
-            self.fOut.write('for association_info in self.associations_info["' + class_name + '"] :')
-            self.fOut.indent()
-            self.fOut.write('new_object.associations[association_info.class_name] = Association(association_info)')
+                self.fOut.write('return ' + c.name + '()')
             self.fOut.dedent()
-            self.fOut.dedent()
+        self.fOut.write('else :')
+        self.fOut.indent()
+        self.fOut.write('return None')
+        self.fOut.dedent()
+        self.fOut.dedent()
         
         self.fOut.dedent()
-        self.fOut.dedent()
+        
         self.fOut.write()
         if class_diagram.protocol == "threads" :
             controller_sub_class = "ThreadsControllerBase"
@@ -75,9 +72,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
     
         # write out __init__ method
-        self.fOut.write("def __init__(self, friend = None, keep_running = True, loopMax = 1000):")
+        self.fOut.write("def __init__(self, friend = None, keep_running = True):")
         self.fOut.indent()
-        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), friend, keep_running, loopMax)")
+        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), friend, keep_running)")
         for i in class_diagram.inports:
             self.fOut.write('self.addInputPort("' + i + '")')
         for i in class_diagram.outports:
@@ -128,13 +125,12 @@ class PythonGenerator(CodeGenerator):
     
             self.fOut.write()
             self.writeStateChartInitMethod(class_node)
-            self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None"), SCCDC.FormalParameter("loopMax", "", "1000")])
-            #self.fOut.write(" def commonConstructor(self, currentTime = 0.0, controller = None, loopMax = 1000): ")
+            self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None")])
         else :
             self.writeMethodSignature("commonConstructor",[])
         self.fOut.indent()
 
-        # write our attributes
+        # write attributes
         if class_node.attributes:
             self.fOut.write("# User defined attributes")
             for attribute in class_node.attributes:
@@ -143,21 +139,22 @@ class PythonGenerator(CodeGenerator):
                 else:
                     self.fOut.write("self." +  attribute.name + " = " + attribute.init_value)
             self.fOut.write()
-
-        # write out association variables
-        self.fOut.write("# Association variables")
-        self.fOut.write("self.associates = {}")
-        self.fOut.write()
+            
+        # write associations
+        if class_node.associations:
+            self.fOut.write("# User defined associations")
+            for i in class_node.associations :
+                i.accept(self)
+            self.fOut.write()
 
         # if there is a statechart
         if class_node.statechart is not None:
             self.fOut.write("self.controller = controller")
-            self.fOut.write("self.associates['objectManager'] = controller.object_manager")
+            self.fOut.write("self.object_manager = controller.object_manager")
             
             self.fOut.write()
             self.fOut.write("# Statechart variables")
             self.fOut.write("self.currentTime = currentTime")
-            self.fOut.write("self.loopMax = loopMax")
             self.fOut.write()
             self.fOut.write("# State of statechart")
             self.fOut.write("self.currentState = {}")
@@ -242,7 +239,7 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")
-        parameters = constructor.getParams() + [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None"), SCCDC.FormalParameter("loopMax", "", "1000")]
+        parameters = constructor.getParams() + [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None")]
         self.writeMethodSignature("__init__", parameters)
         self.fOut.indent()
         StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
@@ -260,6 +257,12 @@ class PythonGenerator(CodeGenerator):
     def visit_Method(self, method):
         self.fOut.write("# User defined method")
         self.writeMethod(method.name, method.parameters, method.type, method.body)
+        
+    def visit_Association(self, association):
+        if association.max > 1 :
+            self.fOut.write("self." +  association.name + " = []")
+        else :
+            self.fOut.write("self." +  association.name + " = None")
         
         
     #helper method
@@ -342,6 +345,9 @@ class PythonGenerator(CodeGenerator):
         
     def visit_SelfReference(self, self_reference):
         self.fOut.extendWrite("self")
+        
+    def visit_FriendReference(self, friend_reference):
+        self.fOut.extendWrite("self.friend")
         
     def visit_Target(self, target):
         node = target.getNode()
@@ -633,15 +639,8 @@ class PythonGenerator(CodeGenerator):
             self.fOut.dedent()
             self.fOut.write()
         self.fOut.write("self.microstep()")
-        self.fOut.write("loopCount = 0")
         self.fOut.write("while self.stateChanged:")
         self.fOut.indent()
-        self.fOut.write("loopCount += 1")
-        self.fOut.write("if loopCount >= self.loopMax:")
-        self.fOut.indent()
-        self.fOut.write("print \"Runtime Error: \", \"Infinite loop detected in class <" + statechart.className + ">. Aborting...\"")
-        self.fOut.write("sys.exit(1)")
-        self.fOut.dedent()
         self.fOut.write("self.microstep()")        
         self.fOut.dedent()
         self.fOut.dedent()
@@ -704,54 +703,11 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.write()
         
-        # write out addAssociatedObject method
-        self.fOut.write("def addAssociatedObject(self, name, instance):")
-        self.fOut.indent()
-        self.fOut.write("if(name in self.associates):")
-        self.fOut.indent()
-        self.fOut.write('print "Runtime Warning: Instance name already present! Delete first or change name."')
-        self.fOut.dedent()
-        self.fOut.write("else :")
-        self.fOut.indent()
-        self.fOut.write("self.associates[name] = instance")
-        self.fOut.dedent()
-        self.fOut.dedent()
-        self.fOut.write()
-          
-        # write out deleteAssociatedObject method  
-        self.fOut.write("def deleteAssociatedObject(self, name):")
-        self.fOut.indent()
-        self.fOut.write("if(name in self.associates):")
-        self.fOut.indent()
-        self.fOut.write("del self.associates[name]")
-        self.fOut.dedent()
-        self.fOut.write("else :")
-        self.fOut.indent()
-        self.fOut.write('print "Runtime Warning: Tried to delete an instance that doesn\'t exist."')
-        self.fOut.dedent()
-        self.fOut.dedent()
-        self.fOut.write()
-        
-        # write out dump method
-        self.fOut.write("# Dump method")
-        self.fOut.write("def dump(self, toDump):")
-        self.fOut.indent()
-        self.fOut.write()
-        self.fOut.write("print toDump")
-        self.fOut.dedent()
-        self.fOut.write()
-        
-    def visit_Association(self, association):      
-        self.fOut.write('self.associations_info["' + association.from_class + '"].append(')
-        self.fOut.extendWrite('AssociationInfo("' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + '))')
-        
     def visit_RaiseEvent(self, raise_event):
         if raise_event.isLocal():
             self.fOut.write('self.event(Event("' + raise_event.getEventName() +'", time = self.currentTime, parameters = [')
         elif raise_event.isNarrow():
-            self.fOut.write('if("' + raise_event.getTarget() + '" in self.associates):')
-            self.fOut.indent()
-            self.fOut.write('self.associates["' + raise_event.getTarget() + '"].event(Event("'+ raise_event.getEventName() +'", time = self.currentTime, parameters = [')
+            self.fOut.write('self.' + raise_event.getTarget() + '.event(Event("'+ raise_event.getEventName() +'", time = self.currentTime, parameters = [')
         elif raise_event.isBroad():
             self.fOut.write('self.controller.broadcast(Event("' + raise_event.getEventName() +'", time = self.currentTime, parameters = [')
         elif raise_event.isOutput():
@@ -764,12 +720,6 @@ class PythonGenerator(CodeGenerator):
                 self.fOut.extendWrite(',')
             param.accept(self)
         self.fOut.extendWrite(']))')
-        if raise_event.isNarrow():
-            self.fOut.dedent()
-            self.fOut.write("else :")
-            self.fOut.indent()
-            self.fOut.write('print "Runtime Warning: Tried to do a narrow cast to an unknown instance name."')
-            self.fOut.dedent()
             
     def visit_Script(self, script):
         StringUtils.writeCodeCorrectIndent(script.code, self.fOut)
@@ -777,8 +727,19 @@ class PythonGenerator(CodeGenerator):
     def visit_Log(self, log):
         self.fOut.write('print "' + log.message + '"')
         
-    def visit_AddAssociatedObject(self, add):
-        self.fOut.write('self.addAssociatedObject("' + add.name +'", ' + add.reference + ')')
+    def visit_Append(self, append):
+        self.fOut.write()
+        append.lvalue.accept(self)
+        self.fOut.extendWrite(".append(") 
+        append.expression.accept(self)
+        self.fOut.extendWrite(")")
+        
+    def visit_Remove(self, remove):
+        self.fOut.write()
+        remove.lvalue.accept(self)
+        self.fOut.extendWrite(".pop(") 
+        remove.expression.accept(self)
+        self.fOut.extendWrite(")")
         
     def visit_Assign(self, assign):
         self.fOut.write()

@@ -9,7 +9,7 @@
         <scxml initial="state_1">
             <state id="state_1">
                 <onentry>
-                    <assign location="SELF.member1" expr="SELF.member1 + 1"/>
+                    <assign ident="SELF.member1" expr="SELF.member1 + 1"/>
                 </onentry>
                 <transition target="/state_2"/>          
             </state>

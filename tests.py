@@ -49,7 +49,7 @@ class TestSequenceFunctions(TestCase):
         self.delete_generated_file = not os.path.isfile(self.generated_file)
         PythonGenerator(abstract_class_diagram, self.generated_file).generate()
         import_file = importlib.import_module(source_file)
-        self.controller = import_file.Controller(None, False)
+        self.controller = import_file.Controller(False)
         
     def expect(self, expected):                
         ports = set([entry[0] for entry in expected])

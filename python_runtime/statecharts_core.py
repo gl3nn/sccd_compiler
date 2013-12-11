@@ -42,9 +42,9 @@ class ObjectManagerBase(object):
         return wait_times
     
     def stepAll(self, global_time):
+        self.step(global_time)
         for o in self.all_instances:
             o.step(global_time)
-        self.step(global_time)
 
     def step(self, currentTime):
         self.currentTime = currentTime
@@ -52,16 +52,15 @@ class ObjectManagerBase(object):
         while self.eventQueue:
             current = self.eventQueue.pop(0)
             if current.getName() == "create_instance" :
-                self.createInstance(current.getParameters())
+                self.handleCreateInstanceEvent(current.getParameters())
 
-    def createInstance(self, parameters):
+    def handleCreateInstanceEvent(self, parameters):
         if len(parameters) != 2 :
             error_message = "Wrong number of parameters for the create_instance event."
         else :
             class_name = parameters[0]
             from_reference = parameters[1]
-            new_reference = self.instantiate(class_name)
-
+            new_reference = self.createInstance(class_name)
             if not new_reference :
                 if class_name not in self.class_names :
                     error_message = "Provided class name is not part of the class diagram."
@@ -70,17 +69,17 @@ class ObjectManagerBase(object):
                 print error_message
                 from_reference.event(Event("creation_error",  time = self.currentTime, parameters = [error_message, class_name]))
             else :
-                self.all_instances.append(new_reference)
-                from_reference.event(Event("created_instance", time = self.currentTime, parameters = [new_reference, class_name]))
-
-        
+                from_reference.event(Event("created_instance", time = self.currentTime, parameters = [new_reference, class_name]))        
     
     @abc.abstractmethod
     def instantiate(self, class_name):
         pass
         
-    def createDefaultInstance(self, class_name):  
-        self.all_instances.append(self.instantiate(class_name))
+    def createInstance(self, class_name):
+        instance = self.instantiate(class_name)
+        if instance :
+            self.all_instances.append(instance)
+        return instance
 
 class Event(object):
     def __init__(self, event_name, time = 0.0, port = "", parameters = []):
@@ -129,10 +128,9 @@ class OutputListener(object):
         
 class ControllerBase(object):
 
-    def __init__(self, object_manager, friend, keep_running):
+    def __init__(self, object_manager, keep_running):
         self.object_manager = object_manager
         self.keep_running = keep_running
-        self.friend = friend #reference accessible inside class diagram through FRIEND
 
         # Keep local track of global time
         self.globalTime = 0.0
@@ -175,8 +173,8 @@ class ControllerBase(object):
         self.output_listeners.append(listener)
         
 class GameLoopControllerBase(ControllerBase):
-    def __init__(self, object_manager, friend, keep_running):
-        ControllerBase.__init__(object_manager, friend, keep_running)
+    def __init__(self, object_manager, keep_running):
+        super(GameLoopControllerBase, self).__init__(object_manager, keep_running)
         
     def update(self, delta):
         self.globalTime += delta
@@ -188,11 +186,11 @@ class GameLoopControllerBase(ControllerBase):
                 else :
                     next_input_queue.append(event)
             self.inputQueue = next_input_queue
-        self.object_manager.stepAll()
+        self.object_manager.stepAll(self.globalTime)
         
 class ThreadsControllerBase(ControllerBase):
-    def __init__(self, object_manager, friend, keep_running):
-        super(ThreadsControllerBase, self).__init__(object_manager, friend, keep_running)
+    def __init__(self, object_manager, keep_running):
+        super(ThreadsControllerBase, self).__init__(object_manager, keep_running)
         self.inputCondition = threading.Condition()
         self.stop_thread = False
         self.run_semaphore = threading.Semaphore()

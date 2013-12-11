@@ -4,7 +4,11 @@ import SCCDC
 from visitor import CodeGenerator
 
 class PythonGenerator(CodeGenerator):
-            
+    
+    def __init__(self, class_diagram, output_file, protocol = "threads"):
+        super(PythonGenerator,self).__init__(class_diagram, output_file, protocol)
+        self.supported_protocols = ["threads", "gameloop"]
+                
     def enter_ClassDiagram(self, classdiagram):
         self.fOut.write("# Statechart compiler by Glenn De Jonghe")
         self.fOut.write("#")
@@ -60,9 +64,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         
         self.fOut.write()
-        if class_diagram.protocol == "threads" :
+        if self.protocol == "threads" :
             controller_sub_class = "ThreadsControllerBase"
-        elif class_diagram.protocol == "gameloop" :
+        elif self.protocol == "gameloop" :
             controller_sub_class = "GameLoopControllerBase"
         self.fOut.write("from python_runtime.statecharts_core import " + controller_sub_class)
 
@@ -72,18 +76,21 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
     
         # write out __init__ method
-        self.fOut.write("def __init__(self, friend = None, keep_running = True):")
+        self.writeMethodSignature('__init__', class_diagram.parameters + [SCCDC.FormalParameter("keep_running", "", "True")])
         self.fOut.indent()
-        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), friend, keep_running)")
+        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running)")
         for i in class_diagram.inports:
             self.fOut.write('self.addInputPort("' + i + '")')
         for i in class_diagram.outports:
             self.fOut.write('self.addOutputPort("' + i + '")')
+        for parameter in class_diagram.parameters :
+            self.fOut.write("self." + parameter.getIdent() + " = " + parameter.getIdent())
         self.fOut.write()
         self.fOut.dedent()
         self.fOut.write("def start(self) :")
         self.fOut.indent()
-        self.fOut.write('self.object_manager.createDefaultInstance("'+ class_diagram.default_class.name +'")')
+        for d in class_diagram.default_classes :
+            self.fOut.write('self.object_manager.createInstance("'+ d.name +'")')
         self.fOut.write('super(Controller, self).start()')      
         self.fOut.dedent()
         self.fOut.dedent()
@@ -129,6 +136,9 @@ class PythonGenerator(CodeGenerator):
         else :
             self.writeMethodSignature("commonConstructor",[])
         self.fOut.indent()
+        
+        self.fOut.write("self.controller = controller")
+        self.fOut.write("self.object_manager = controller.object_manager")
 
         # write attributes
         if class_node.attributes:
@@ -148,10 +158,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write()
 
         # if there is a statechart
-        if class_node.statechart is not None:
-            self.fOut.write("self.controller = controller")
-            self.fOut.write("self.object_manager = controller.object_manager")
-            
+        if class_node.statechart is not None:            
             self.fOut.write()
             self.fOut.write("# Statechart variables")
             self.fOut.write("self.currentTime = currentTime")
@@ -183,7 +190,6 @@ class PythonGenerator(CodeGenerator):
         if parent_class.statechart.number_time_transitions:
             self.fOut.write()
             self.fOut.write("# Initialize AFTER events")
-            self.fOut.write("del self.timers[:]")
             for i in range(parent_class.statechart.number_time_transitions):
                 self.fOut.write("self.timers.append(-1)")
         self.fOut.write()
@@ -346,9 +352,6 @@ class PythonGenerator(CodeGenerator):
     def visit_SelfReference(self, self_reference):
         self.fOut.extendWrite("self")
         
-    def visit_FriendReference(self, friend_reference):
-        self.fOut.extendWrite("self.friend")
-        
     def visit_Target(self, target):
         node = target.getNode()
         self.fOut.extendWrite(node.getParentStateChart().className + "." + node.getFullName())
@@ -445,31 +448,33 @@ class PythonGenerator(CodeGenerator):
     
     def visit_EnterAction(self, enter_method):
         parent_node = enter_method.parent_node
-        statechart = parent_node.getParentStateChart()
         self.writeMethodSignature("enterAction_" + parent_node.getFullName(), [])
         self.fOut.indent()
         # take care of any AFTER events
-        timers = statechart.afterNodeEvents[parent_node]
-        for i, time in timers:
-            self.fOut.write("self.timers[" + str(i) + "] = " + str(time) + " + self.currentTime")
+        for transition in parent_node.transitions :
+            trigger = transition.getTrigger()
+            if trigger.isAfter() :
+                self.fOut.write("self.timers[" + str(trigger.getAfterIndex()) + "] = ")
+                trigger.after.accept(self)
+                self.fOut.extendWrite(" + self.currentTime")
         if enter_method.action:
             enter_method.action.accept(self)
-        self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "].append(" + statechart.className + "." + parent_node.getFullName() + ")")
+        self.fOut.write("self.currentState[self." + parent_node.getParentNode().getFullName() + "].append(self." + parent_node.getFullName() + ")")
         self.fOut.dedent()
         self.fOut.write()
          
     def visit_ExitAction(self, exit_method):
         parent_node = exit_method.parent_node
-        statechart = parent_node.getParentStateChart()
         self.writeMethodSignature("exitAction_" + parent_node.getFullName(), [])
         self.fOut.indent()
         # take care of any AFTER events
-        timers = statechart.afterNodeEvents[parent_node]
-        for i, time in timers:
-            self.fOut.write("self.timers[" + str(i) + "] = -1")
+        for transition in parent_node.transitions :
+            trigger = transition.getTrigger()
+            if trigger.isAfter() :
+                self.fOut.write("self.timers[" + str(trigger.getAfterIndex()) + "] = -1")
         if exit_method.action:
             exit_method.action.accept(self)
-        self.fOut.write("self.currentState[" + statechart.className + "." + parent_node.getParentNode().getFullName() + "] = []")
+        self.fOut.write("self.currentState[self." + parent_node.getParentNode().getFullName() + "] = []")
         self.fOut.dedent()
         self.fOut.write()
         
@@ -665,11 +670,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("# Event method")
         self.fOut.write("def event(self, newEvent):")
         self.fOut.indent()
-        self.fOut.write("if newEvent.getTime() < self.currentTime:")
-        self.fOut.indent()
-        self.fOut.write("print \"Runtime Warning: Cannot add event with negative time!\"")
-        self.fOut.write("return")
-        self.fOut.dedent()
         self.fOut.write("self.eventQueue.append(newEvent)")
         self.fOut.dedent()
         self.fOut.write()

@@ -9,8 +9,8 @@
         <scxml name="Test1" initial="composite">
             <state id="composite" initial="state_1">
                 <state id="state_1">
-                    <transition event="AFTER(0.1)" target="../state_2"/>
-                    <transition event="AFTER(0.2)" target="../state_3"/>
+                    <transition after="0.1" target="../state_2"/>
+                    <transition after="0.2" target="../state_3"/>
                 </state>
                 <state id="state_2">
                     <onentry>

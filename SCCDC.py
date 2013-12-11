@@ -11,11 +11,10 @@ from visitor import Visitable
 # list of reserved words
 reserved = ["__init__", "__del__", "init", "transition", "microstep", "step", "instate", "event", 
             "broadcast", "getEarliestEvent", "__str__", "controller", "currentTime", 
-            "currentState", "loopMax", "timers", "eventQueue", "loopCount", "stateChanged", "historyState",
-            "root", "narrowcast", "friend", "object_manager"]
+            "currentState", "timers", "eventQueue", "controller", "stateChanged", "historyState",
+            "root", "narrowcast", "object_manager", "update"]
 
 SELF_REFERENCE_SEQ = 'SELF'
-FRIEND_REFERENCE_SEQ = 'FRIEND'
 INSTATE_SEQ = 'INSTATE'
 
 ##################################
@@ -100,9 +99,6 @@ def processString(string, current_node = None):
             if matched_string == SELF_REFERENCE_SEQ :
                 created_object = SelfReference()
                 last_end = match.end()-1
-            elif matched_string == FRIEND_REFERENCE_SEQ :
-                created_object = FriendReference()
-                last_end = match.end() - 1
             elif matched_string == INSTATE_SEQ :
                 if current_node is None :
                     raise CompilerException(INSTATE_SEQ + " call is not allowed here.")
@@ -135,9 +131,6 @@ class BareString(ExpressionPart):
         self.string = string
     
 class SelfReference(ExpressionPart):        
-    pass
-
-class FriendReference(ExpressionPart):        
     pass
     
 class InStateCall(ExpressionPart):
@@ -193,32 +186,32 @@ class FormalEventParameter(Visitable):
     
 ##################################
 class TriggerEvent:
-    def __init__(self, xml_element):
-        self.event = xml_element.get("event", "").strip()
-        self.port = xml_element.get("port", "").strip()
-
+    def __init__(self, xml_element, parent_transition):
+        self.parent_transition = parent_transition
         self.is_uc = False;
         self.is_after = False
         self.after_index = -1
-        self.after_time = 0
         self.params = []
         
-        if self.event == "" :
+        self.event = xml_element.get("event", "").strip()
+        self.after = xml_element.get("after", "").strip()
+        self.port = xml_element.get("port", "").strip()
+        if self.event and self.after :
+            raise CompilerException("Cannot have both the event and after attribute set for a transition.")
+        
+        if not self.event and self.port:
+            raise CompilerException("A transition without event can not have a port.")
+
+        if self.after :
             if self.port :
-                raise CompilerException("Unconditional event can not have a port.")
+                raise CompilerException("After event can not have a port.")
+            self.is_after = True
+            self.after = Expression(self.after, parent_transition.parent_node)
+            return
+        elif not self.event :
             self.is_uc = True
             return
-        
-        if len(self.event) > 7 and self.event[0:6] == "AFTER(" and self.event[-1] == ")":
-            if self.port :
-                raise CompilerException("AFTER event can not have a port.")
-            self.is_after = True
-            after_time = self.event[6:-1]
-            try :
-                self.after_time = float(after_time)
-            except ValueError :
-                raise CompilerException("Invalid argument for AFTER macro." + after_time)
-            return
+            
      
         self.params = []
         parameters = xml_element.findall('parameter')    
@@ -245,9 +238,6 @@ class TriggerEvent:
     
     def isAfter(self):
         return self.is_after
-
-    def getAfterTime(self):
-        return self.after_time
     
     def getAfterIndex(self):
         return self.after_index
@@ -456,7 +446,7 @@ class StateChartTransition():
         self.xml = xml_element
         self.parent_node = parent
         self.parent_statechart = self.parent_node.getParentStateChart()
-        self.trigger = TriggerEvent(self.xml)
+        self.trigger = TriggerEvent(self.xml, self)
         guard_string = self.xml.get("cond","").strip()
         if guard_string != "" : 
             self.guard = Expression(guard_string, self.parent_node)
@@ -498,9 +488,6 @@ class StateChartTransition():
         
     def getTarget(self):
         return self.target
-    
-    def isAfter(self):
-        return self.trigger.is_after
 
     def hasGuard(self):
         return self.guard != None
@@ -693,12 +680,6 @@ class StateChartNode:
     def solvesConflictsOuter(self):
         return self.solves_conflict_outer
     
-    
-    def getAfterTransitions(self):
-        """ Returns a list of transitions out of the node which are triggred by AFTER()
-        """
-        return [transition for transition in self.transitions if transition.isAfter()]
-    
     def validate(self):
         self.entry_action.validate()
         self.exit_action.validate()
@@ -731,8 +712,6 @@ class StateChart(Visitable):
         self.historyParents = []
         for node in self.historys:
             self.calculateHistory(node.getParentNode(), node.isHistoryDeep())
-
-        self.calculateAfters()
         
         #do semantic additions and validation
         for node in self.basics + self.composites:
@@ -804,9 +783,9 @@ class StateChart(Visitable):
             parent.defaults = initialChilds       
             
         # For each AFTER event, give it a name so that it can be triggered.
-        for transition in parent.getTransitions():
-            if transition.isAfter() :
-                trigger = transition.getTrigger()
+        for transition in parent.transitions:
+            trigger = transition.trigger
+            if trigger.isAfter() :
                 trigger.setAfterIndex(self.number_time_transitions)
                 value = "_" + str(trigger.getAfterIndex()) + "after"
                 trigger.setEvent(value)
@@ -826,17 +805,6 @@ class StateChart(Visitable):
             for i in parent.children:
                 if i.isComposite() :
                     self.calculateHistory(i, is_deep)
-
-    def calculateAfters(self):
-        self.afterNodeEvents = {}
-        for node in self.composites + self.basics:
-            if node in self.afterNodeEvents:
-                timers = self.afterNodeEvents[node]
-            else:
-                timers= []
-            for ae in node.getAfterTransitions():
-                timers.append((ae.getTrigger().getAfterIndex(), ae.getTrigger().getAfterTime()))
-            self.afterNodeEvents[node] = timers
         
     def getOuterNodes(self, node):
         """ Returns a list representing the containment hierarchy of node.
@@ -901,9 +869,7 @@ class FormalParameter(Visitable):
     def __init__(self, param_ident, param_type, default = None):
         self.param_type = param_type
         self.identifier = param_ident
-        self.default = default
-        if self.default == "" :
-            self.default = None    
+        self.default = default  
             
     def getType(self):
         return self.type
@@ -917,6 +883,13 @@ class FormalParameter(Visitable):
     def getDefault(self):
         return self.default
     
+#slight hack because of lacking multiple constructors
+class XMLFormalParameter(FormalParameter):
+    def __init__(self, xml):
+        self.param_type = xml.get("type", "")
+        self.identifier = xml.get("name","")
+        self.default = xml.get("default",None)
+    
 ###################################
 class Method(Visitable):
     def __init__(self, xml, parent_class):
@@ -924,7 +897,7 @@ class Method(Visitable):
         parameters = xml.findall("parameter")
         self.parameters = []
         for p in parameters:
-            self.parameters.append(FormalParameter(p.get("name",""), p.get("type", "")), p.get("default",""))
+            self.parameters.append(XMLFormalParameter(p))
         self.body = xml.text
         self.parent_class = parent_class
         self.return_type = xml.get('type',"")
@@ -962,6 +935,11 @@ class Class(Visitable):
 
         self.xml = xml
         self.name = xml.get("name", "")
+        if xml.get("default", "").lower() == "true" :
+            self.is_default = True
+        else :
+            self.is_default = False
+        
         self.constructors = []
         self.destructors = []
         self.methods = []
@@ -973,7 +951,7 @@ class Class(Visitable):
         
         self.process()
         
-    def getClassName(self):
+    def getName(self):
         return self.name
     
     def accept(self, visitor):
@@ -1122,24 +1100,19 @@ class ClassDiagram(Visitable):
                 raise CompilerException("Found 2 classes with the same name : " + name + ".")
             self.class_names.append(name)
     
-        # if only one class is given, then treat it as the default regardless
-        default_class_xml = None
-        self.default_class = None
-        if len(xml_classes) == 1:
-            default_class_xml = xml_classes[0]
-            showInfo("Only one class given. Using <" + default_class_xml.get("name", "") + "> as the default class.")
-        # otherwise make sure only one default class given
-        else:
-            has_default = False
-            for xml_class in xml_classes:
-                if xml_class.get("default", "") == "true" :
-                    if has_default:
-                        raise CompilerException("Found two default classes: <" + default_class_xml.get("name", "") + "> and <" + xml_class.get("name", "") + ">.")
-                    else:
-                        has_default = True
-                        default_class_xml = xml_class
-            if not has_default:
-                raise CompilerException("No default class provided.")
+
+
+            
+        parameters = self.root.findall("parameter")
+        self.parameters = []
+        names = []
+        for xml_parameter in parameters :
+            parameter = XMLFormalParameter(xml_parameter)
+            name = parameter.getIdent()
+            if name in names :
+                raise CompilerException("Found 2 diagram parameters with the same name : " + name + ".")
+            names.append(name)
+            self.parameters.append(parameter)
     
         # process in and output ports
         inports = self.root.findall("inport")
@@ -1159,10 +1132,6 @@ class ClassDiagram(Visitable):
                 raise CompilerException("Found 2 OUTPorts with the same name : " + name + ".")
             names.append(name)
         self.outports = names
-        
-        self.protocol = xml_class.get("protocol", "threads").lower()
-        if self.protocol not in ["threads", "gameloop"] :
-            raise CompilerException("Invalid protocol : " + self.protocol + ".")
             
         
         # imports/includes
@@ -1176,6 +1145,7 @@ class ClassDiagram(Visitable):
         
         # process each class in diagram
         self.classes = []
+        self.default_classes = []
     
         for xml_class in xml_classes:
             processed_class = None
@@ -1185,13 +1155,18 @@ class ClassDiagram(Visitable):
                 e.message = "Class <" + xml_class.get("name", "") + "> failed compilation. " + e.message
                 raise e
     
-            # Change defaultClass to it's processed version
-            if default_class_xml == xml_class:
-                self.default_class = processed_class
-    
             # let user know this class was successfully loaded
             showInfo("Class <" + processed_class.name + "> has been successfully loaded.")
             self.classes.append(processed_class)
+            if processed_class.is_default :
+                self.default_classes.append(processed_class)
+            
+        if not self.default_classes :
+            if len(self.classes) == 1 :
+                showInfo("Only one class given. Using <" + self.classes[0].getName() + "> as the default class.")
+                self.default_classes.append(self.classes[0])
+            else :
+                raise CompilerException("Provide at least one default class to instantiate on start up.")
             
     def accept(self, visitor):
         visitor.enter(self)
@@ -1225,17 +1200,17 @@ def showInfo(info):
         
 ###################################
    
-def generate(input_file, output_file, target_code = "Python"):
+def generate(input_file, output_file, protocol = "Threads", target_code = "Python"):
     class_diagram = process(input_file)
-    _generate(class_diagram, output_file, target_code)
+    _generate(class_diagram, output_file, protocol, target_code)
       
 def process(input_file):
     return ClassDiagram(input_file)
     
-def _generate(class_diagram, output_file, target_code = "Python"):
+def _generate(class_diagram, output_file, protocol = "Threads", target_code = "Python"):
     target_code = target_code.lower()
     if target_code == "python" :
-        Python.PythonGenerator(class_diagram, output_file).generate()
+        Python.PythonGenerator(class_diagram, output_file, protocol.lower()).generate()
     elif target_code == "csharp" or target_code == "c#" :
         showWarning("C# generation not implemented yet.")
     # let user know ALL classes have been processed and loaded
@@ -1250,7 +1225,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('source', help='The path to the XML file to be compiled.')
     parser.add_argument('-t', '--target', type=str, help='The path to the target python file. Defaults to the same name as the source file.')
-    parser.add_argument('-v', '--verbose', type=int, help='0 = no output, 1 = only show warnings, 2 = show all output. Defaults to 1.', default = 1)
+    parser.add_argument('-v', '--verbose', type=int, help='0 = no output, 1 = only show warnings, 2 = show all output. Defaults to 2.', default = 2)
+    parser.add_argument('-p', '--protocol', type=str, help="Let the compiled code run on top of threads or gameloop. The default is threads.")
     
     args = vars(parser.parse_args())
 
@@ -1274,8 +1250,13 @@ def main():
     else :
         verbose = 2
         
+    if args['protocol'] :
+        protocol = args['protocol']
+    else :
+        protocol = "threads"
+        
     try :
-        generate(source, target)
+        generate(source, target, protocol)
     except CompilerException as exception :
         print exception
 

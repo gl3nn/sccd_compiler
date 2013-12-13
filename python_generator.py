@@ -30,7 +30,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         
         #Mandatory imports
-        self.fOut.write('import sys')
         self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event')
         self.fOut.write()
         
@@ -51,7 +50,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write('if class_name == "' + c.name + '" :')
             self.fOut.indent()
             if c.statechart :
-                self.fOut.write('return ' + c.name + '(self.currentTime, self.controller)')
+                self.fOut.write('return ' + c.name + '(self.controller)')
             else :
                 self.fOut.write('return ' + c.name + '()')
             self.fOut.dedent()
@@ -132,7 +131,7 @@ class PythonGenerator(CodeGenerator):
     
             self.fOut.write()
             self.writeStateChartInitMethod(class_node)
-            self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None")])
+            self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("controller", "", "None")])
         else :
             self.writeMethodSignature("commonConstructor",[])
         self.fOut.indent()
@@ -161,15 +160,13 @@ class PythonGenerator(CodeGenerator):
         if class_node.statechart is not None:            
             self.fOut.write()
             self.fOut.write("# Statechart variables")
-            self.fOut.write("self.currentTime = currentTime")
-            self.fOut.write()
             self.fOut.write("# State of statechart")
             self.fOut.write("self.currentState = {}")
             self.fOut.write("self.historyState = {}")
             self.fOut.write()
             if class_node.statechart.number_time_transitions:
                 self.fOut.write("# AFTER events of statechart")
-                self.fOut.write("self.timers = []")
+                self.fOut.write("self.timers = {}")
                 self.fOut.write()
             self.fOut.write("# Initialize statechart")
             self.fOut.write("self.init()")
@@ -187,11 +184,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("# Statechart variables")
         self.fOut.write("self.eventQueue = []")
         self.fOut.write("self.stateChanged = False")
-        if parent_class.statechart.number_time_transitions:
-            self.fOut.write()
-            self.fOut.write("# Initialize AFTER events")
-            for i in range(parent_class.statechart.number_time_transitions):
-                self.fOut.write("self.timers.append(-1)")
         self.fOut.write()
         # write out history state
         if parent_class.statechart.historys:
@@ -245,7 +237,7 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")
-        parameters = constructor.getParams() + [SCCDC.FormalParameter("currentTime", "", "0.0"), SCCDC.FormalParameter("controller", "", "None")]
+        parameters = constructor.getParams() + [SCCDC.FormalParameter("controller", "", "None")]
         self.writeMethodSignature("__init__", parameters)
         self.fOut.indent()
         StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
@@ -456,7 +448,6 @@ class PythonGenerator(CodeGenerator):
             if trigger.isAfter() :
                 self.fOut.write("self.timers[" + str(trigger.getAfterIndex()) + "] = ")
                 trigger.after.accept(self)
-                self.fOut.extendWrite(" + self.currentTime")
         if enter_method.action:
             enter_method.action.accept(self)
         self.fOut.write("self.currentState[self." + parent_node.getParentNode().getFullName() + "].append(self." + parent_node.getFullName() + ")")
@@ -471,7 +462,7 @@ class PythonGenerator(CodeGenerator):
         for transition in parent_node.transitions :
             trigger = transition.getTrigger()
             if trigger.isAfter() :
-                self.fOut.write("self.timers[" + str(trigger.getAfterIndex()) + "] = -1")
+                self.fOut.write("self.timers.pop(" + str(trigger.getAfterIndex()) + ", None)")
         if exit_method.action:
             exit_method.action.accept(self)
         self.fOut.write("self.currentState[self." + parent_node.getParentNode().getFullName() + "] = []")
@@ -600,25 +591,19 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("if self.eventQueue:")
         self.fOut.indent()
-        self.fOut.write("currentEvents = []")
-        self.fOut.write("laterEvents = []")
-        self.fOut.write("for i in self.eventQueue:")
+        self.fOut.write("later_events = []")
+        self.fOut.write("for e in self.eventQueue:")
         self.fOut.indent()
-        self.fOut.write("if i.getTime() <= self.currentTime:")
+        self.fOut.write("if e.getTime() <= 0 :")
         self.fOut.indent()
-        self.fOut.write("currentEvents.append(i)")
+        self.fOut.write("self.transition(e)")
         self.fOut.dedent()
         self.fOut.write("else:")
         self.fOut.indent()
-        self.fOut.write("laterEvents.append(i)")
+        self.fOut.write("later_events.append(i)")
         self.fOut.dedent()
         self.fOut.dedent()
-        self.fOut.write("self.eventQueue = laterEvents")
-        self.fOut.write("while currentEvents:")
-        self.fOut.indent()
-        self.fOut.write("current = currentEvents.pop(0)")
-        self.fOut.write("self.transition(current)")
-        self.fOut.dedent()
+        self.fOut.write("self.eventQueue = later_events")
         self.fOut.dedent()
         self.fOut.write("else:")
         self.fOut.indent()
@@ -629,18 +614,32 @@ class PythonGenerator(CodeGenerator):
 
         # write out step function
         self.fOut.write("# Execute statechart")
-        self.fOut.write("def step(self, currentTime):")
+        self.fOut.write("def step(self, delta):")
         self.fOut.indent()
-        self.fOut.write("self.currentTime = currentTime")
+        self.fOut.write("# Adjust all local times")
+        self.fOut.write("for event in self.eventQueue :")
+        self.fOut.indent()
+        self.fOut.write("event.decTime(delta)")
+        self.fOut.dedent()
         self.fOut.write()
         if statechart.number_time_transitions != 0:
             self.fOut.write("# Check AFTER timers")
-            self.fOut.write("for i in range(len(self.timers)):")
+            self.fOut.write("if self.timers :")
             self.fOut.indent()
-            self.fOut.write("if self.timers[i] > 0 and self.timers[i] <= self.currentTime:")
+            self.fOut.write("next_timers = {}")
+            self.fOut.write("for (index, time) in self.timers.iteritems():")
             self.fOut.indent()
-            self.fOut.write("self.event(Event(\"_\" + str(i) + \"after\", self.timers[i]))")
+            self.fOut.write("time -= delta")
+            self.fOut.write("if time <= 0.0 :")
+            self.fOut.indent()
+            self.fOut.write('self.event(Event("_" + str(index) + "after"))')
             self.fOut.dedent()
+            self.fOut.write('else :')
+            self.fOut.indent()
+            self.fOut.write('next_timers[index] = time')
+            self.fOut.dedent()
+            self.fOut.dedent()
+            self.fOut.write('self.timers = next_timers')
             self.fOut.dedent()
             self.fOut.write()
         self.fOut.write("self.microstep()")
@@ -668,9 +667,9 @@ class PythonGenerator(CodeGenerator):
 
         # write out event method
         self.fOut.write("# Event method")
-        self.fOut.write("def event(self, newEvent):")
+        self.fOut.write("def event(self, new_event):")
         self.fOut.indent()
-        self.fOut.write("self.eventQueue.append(newEvent)")
+        self.fOut.write("self.eventQueue.append(new_event)")
         self.fOut.dedent()
         self.fOut.write()
 
@@ -684,12 +683,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("temp.append(j.getTime())")
         self.fOut.dedent()
         if statechart.number_time_transitions:
-            self.fOut.write("for j in self.timers:")
-            self.fOut.indent()
-            self.fOut.write("if j > -1:")
+            self.fOut.write("for j in self.timers.itervalues():")
             self.fOut.indent()
             self.fOut.write("temp.append(j)")
-            self.fOut.dedent()
             self.fOut.dedent()
         self.fOut.write("if temp:")
         self.fOut.indent()
@@ -705,13 +701,13 @@ class PythonGenerator(CodeGenerator):
         
     def visit_RaiseEvent(self, raise_event):
         if raise_event.isLocal():
-            self.fOut.write('self.event(Event("' + raise_event.getEventName() +'", time = self.currentTime, parameters = [')
+            self.fOut.write('self.event(Event("' + raise_event.getEventName() +'", time = 0.0, parameters = [')
         elif raise_event.isNarrow():
-            self.fOut.write('self.' + raise_event.getTarget() + '.event(Event("'+ raise_event.getEventName() +'", time = self.currentTime, parameters = [')
+            self.fOut.write('self.' + raise_event.getTarget() + '.event(Event("'+ raise_event.getEventName() +'", time = 0.0, parameters = [')
         elif raise_event.isBroad():
-            self.fOut.write('self.controller.broadcast(Event("' + raise_event.getEventName() +'", time = self.currentTime, parameters = [')
+            self.fOut.write('self.controller.broadcast(Event("' + raise_event.getEventName() +'", time = 0.0, parameters = [')
         elif raise_event.isOutput():
-            self.fOut.write('self.controller.outputEvent(Event("' + raise_event.getEventName() + '", time = self.currentTime, port="' + raise_event.getPort() + '", parameters = [')
+            self.fOut.write('self.controller.outputEvent(Event("' + raise_event.getEventName() + '", time = 0.0, port="' + raise_event.getPort() + '", parameters = [')
         first_param = True
         for param in raise_event.getParameters() :
             if first_param :

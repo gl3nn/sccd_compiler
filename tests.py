@@ -72,7 +72,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_history(self) :
         self.generate("test_history")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("to_state_2", 0.0, "test_input", []),
             Event("to_state_3", 0.0, "test_input", [])                                          
         ])
@@ -85,7 +85,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_parallel(self):
         self.generate("test_parallel")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("to_state_2", 0.0, "test_input", []),
             Event("to_state_4", 0.0, "test_input", []),
             Event("to_state_1", 0.0, "test_input", []),
@@ -105,7 +105,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_object_manager(self):
         self.generate("test_object_manager")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("create", 0.0, "test_input", [])                                               
         ])
         self.expect([
@@ -130,7 +130,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_enter_exit_hierarchy(self):
         self.generate("test_enter_exit_hierarchy")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("to_composite", 0.0, "test_input", []),
             Event("to_inner2", 0.0, "test_input", []),
             Event("to_outside", 0.0, "test_input", []),
@@ -155,7 +155,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_parallel_history(self):
         self.generate("test_parallel_history")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("to_state_2", 0.0, "test_input", []),
             Event("to_state_4", 0.0, "test_input", []),
             Event("to_outer_1", 0.0, "test_input", []),
@@ -199,7 +199,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_outer_first(self):
         self.generate("test_outer_first")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("event", 0.0, "test_input", [])                                      
         ])
         self.expect([
@@ -208,7 +208,7 @@ class TestSequenceFunctions(TestCase):
         
     def test_inner_first(self):
         self.generate("test_inner_first")
-        self.controller.addAbsoluteEventList([
+        self.controller.addEventList([
             Event("event", 0.0, "test_input", [])                                      
         ])
         self.expect([

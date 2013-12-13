@@ -8,24 +8,22 @@ class ObjectManagerBase(object):
     __metaclass__  = abc.ABCMeta
     
     def __init__(self, controller):
-        self.eventQueue = []
-        self.currentTime = 0.0
+        self.event_queue = []
         self.controller = controller
         self.class_names = []
         self.all_instances = []
 
-    def event(self, newEvent):
-        self.eventQueue.append(newEvent)
+    def event(self, new_event):
+        self.event_queue.append(new_event)
         
     # Broadcast an event to all instances
     def broadcast(self, new_event):
-        assert new_event.getTime() >= self.currentTime
         for i in self.all_instances:
             i.event(new_event)
 
     def getEarliestEvent(self):
-        if self.eventQueue:
-            return self.eventQueue[0].getTime()
+        if self.event_queue:
+            return self.event_queue[0].time
         else:
             return None
         
@@ -35,24 +33,31 @@ class ObjectManagerBase(object):
         t = self.getEarliestEvent()
         if t : wait_times.append(t)
         #check all the instances
-        for o in self.all_instances :
-            t = o.getEarliestEvent()
+        for i in self.all_instances :
+            t = i.getEarliestEvent()
             if t is not None and t not in wait_times:
                 wait_times.append(t)
         return wait_times
     
-    def stepAll(self, global_time):
-        self.step(global_time)
-        for o in self.all_instances:
-            o.step(global_time)
+    def stepAll(self, delta):
+        self.step(delta)
+        for i in self.all_instances:
+            i.step(delta)
 
-    def step(self, currentTime):
-        self.currentTime = currentTime
-
-        while self.eventQueue:
-            current = self.eventQueue.pop(0)
-            if current.getName() == "create_instance" :
-                self.handleCreateInstanceEvent(current.getParameters())
+    def step(self, delta):
+        if self.event_queue :
+            next_queue = []
+            for e in self.event_queue :
+                e.decTime(delta)   
+                if e.getTime() <= 0.0 :
+                    self.handleEvent(e)
+                else :
+                    next_queue.append(e)
+            self.event_queue = next_queue
+               
+    def handleEvent(self, e):
+        if e.getName() == "create_instance" :
+            self.handleCreateInstanceEvent(e.getParameters())
 
     def handleCreateInstanceEvent(self, parameters):
         if len(parameters) != 2 :
@@ -67,9 +72,9 @@ class ObjectManagerBase(object):
                 else :
                     error_message = "Unexpected error occured during creation."
                 print error_message
-                from_reference.event(Event("creation_error",  time = self.currentTime, parameters = [error_message, class_name]))
+                from_reference.event(Event("creation_error", time = 0.0, parameters = [error_message, class_name]))
             else :
-                from_reference.event(Event("created_instance", time = self.currentTime, parameters = [new_reference, class_name]))        
+                from_reference.event(Event("created_instance", time = 0.0, parameters = [new_reference, class_name]))        
     
     @abc.abstractmethod
     def instantiate(self, class_name):
@@ -97,8 +102,8 @@ class Event(object):
     def getTime(self):
         return self.time
     
-    """def decTime(self, delta):
-        self.time -= delta"""
+    def decTime(self, delta):
+        self.time -= delta
 
     def getParameters(self):
         return self.parameters
@@ -132,12 +137,9 @@ class ControllerBase(object):
         self.object_manager = object_manager
         self.keep_running = keep_running
 
-        # Keep local track of global time
-        self.globalTime = 0.0
-
         # Keep track of input ports
         self.input_ports = []
-        self.inputQueue = []
+        self.input_queue = []
 
         # Keep track of output ports
         self.output_ports = []
@@ -152,8 +154,8 @@ class ControllerBase(object):
     def addOutputPort(self, port_name):
         self.output_ports.append(port_name)
 
-    def broadcast(self, newEvent):
-        self.object_manager.broadcast(newEvent)
+    def broadcast(self, new_event):
+        self.object_manager.broadcast(new_event)
         
     def start(self):
         pass
@@ -162,12 +164,11 @@ class ControllerBase(object):
         pass
     
     def addInput(self, event_name, port, time = 0.0, parameters = []):
-        self.inputQueue.append(Event(event_name, time + self.globalTime, port, parameters))
+        self.input_queue.append(Event(event_name, time, port, parameters))
 
     def outputEvent(self, event):
         for listener in self.output_listeners :
             listener.add(event)
-
         
     def addOutputListener(self, listener):
         self.output_listeners.append(listener)
@@ -177,53 +178,53 @@ class GameLoopControllerBase(ControllerBase):
         super(GameLoopControllerBase, self).__init__(object_manager, keep_running)
         
     def update(self, delta):
-        self.globalTime += delta
-        if self.inputQueue :
+        if self.input_queue :
             next_input_queue = []
-            for event in self.inputQueue :
-                if event.getTime() <= self.globalTime :
+            for event in self.input_queue :
+                event.decTime(delta)
+                if event.getTime() <= 0 :
                     self.broadcast(event)
                 else :
                     next_input_queue.append(event)
-            self.inputQueue = next_input_queue
-        self.object_manager.stepAll(self.globalTime)
+            self.input_queue = next_input_queue
+        self.object_manager.stepAll(delta)
         
 class ThreadsControllerBase(ControllerBase):
     def __init__(self, object_manager, keep_running):
         super(ThreadsControllerBase, self).__init__(object_manager, keep_running)
-        self.inputCondition = threading.Condition()
+        self.input_condition = threading.Condition()
         self.stop_thread = False
         self.run_semaphore = threading.Semaphore()
         self.thread = threading.Thread(target=self.run)
         
-    def handleInput(self):
-        self.inputCondition.acquire()
-        if self.inputQueue :
+    def handleInput(self, delta):
+        self.input_condition.acquire()
+        if self.input_queue :
             next_input_queue = []
-            for event in self.inputQueue :
-                if event.getTime() <= self.globalTime :
+            for event in self.input_queue :
+                event.decTime(delta)
+                if event.getTime() <= 0 :
                     self.broadcast(event)
                 else :
                     next_input_queue.append(event)
                     
-            self.inputQueue = next_input_queue
-        self.inputCondition.release()   
+            self.input_queue = next_input_queue
+        self.input_condition.release()   
         
-            # Compute time untill earliest next event
+    # Compute time untill earliest next event
     def getNextTime(self):
         #fetch the statecharts waiting times
-        waitTimes = self.object_manager.getWaitTimes()
-                
+        wait_times = self.object_manager.getWaitTimes()             
         #fetch input waiting time
-        self.inputCondition.acquire()
-        if len(self.inputQueue) > 0 :
-            for event in self.inputQueue :
-                waitTimes.append(event.getTime())
-        self.inputCondition.release()
+        self.input_condition.acquire()
+        if len(self.input_queue) > 0 :
+            for event in self.input_queue :
+                wait_times.append(event.getTime())
+        self.input_condition.release()
 
-        if waitTimes:
-            waitTimes.sort()
-            return waitTimes[0] - self.globalTime
+        if wait_times:
+            wait_times.sort()
+            return wait_times[0]
         elif not self.done:
             self.done = True
             return 0
@@ -233,56 +234,57 @@ class ThreadsControllerBase(ControllerBase):
 
     def handleWaiting(self):
         timeout = self.getNextTime()
-        if(timeout <= 0):
+        if(timeout <= 0.0):
             return 0
-        self.inputCondition.acquire()
+        self.input_condition.acquire()
         begin_time = time.time()
         if timeout == INFINITY :
             if self.keep_running :
-                self.inputCondition.wait()
+                self.input_condition.wait()
             else :
-                self.inputCondition.release()
+                self.input_condition.release()
                 self.stop()
                 return 0
         else :
-            self.inputCondition.wait(timeout)    
+            self.input_condition.wait(timeout)    
         timeout = min(timeout, time.time() - begin_time)
-        self.inputCondition.release()
+        self.input_condition.release()
         return timeout
 
     def run(self):
+        last_iteration_time = 0.0
         while True:
-            self.handleInput()
+            self.handleInput(last_iteration_time)
             # Compute the new state based on internal events
-            self.object_manager.stepAll(self.globalTime)
-            self.globalTime += self.handleWaiting()
+            self.object_manager.stepAll(last_iteration_time)
+            last_iteration_time = self.handleWaiting()
             
-            self.inputCondition.acquire()
+            self.input_condition.acquire()
             if self.stop_thread : 
                 break
-            self.inputCondition.release()
+            self.input_condition.release()
 
     def start(self):
         self.thread.start()
 
     def stop(self):
-        self.inputCondition.acquire()
+        self.input_condition.acquire()
         self.stop_thread = True
-        self.inputCondition.notifyAll()
-        self.inputCondition.release()
+        self.input_condition.notifyAll()
+        self.input_condition.release()
         
     def join(self, timeout = None):
         self.thread.join(timeout)
 
     def addInput(self, event_name, port, time = 0.0, parameters = []):
-        self.inputCondition.acquire()
-        self.inputQueue.append(Event(event_name, time + self.globalTime, port, parameters))
-        self.inputCondition.notifyAll()
-        self.inputCondition.release()
+        self.input_condition.acquire()
+        self.input_queue.append(Event(event_name, time, port, parameters))
+        self.input_condition.notifyAll()
+        self.input_condition.release()
 
-    def addAbsoluteEventList(self, event_list):
-        self.inputCondition.acquire()
+    def addEventList(self, event_list):
+        self.input_condition.acquire()
         for event in event_list :
-            self.inputQueue.append(event)
-        self.inputCondition.release()
+            self.input_queue.append(event)
+        self.input_condition.release()
         

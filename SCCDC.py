@@ -277,6 +277,7 @@ class RaiseEvent(SubAction):
     BROAD_SCOPE = 2
     OUTPUT_SCOPE = 3
     NARROW_SCOPE = 4
+    CD_SCOPE = 5
     
     
     def __init__(self, xml_element, current_node):
@@ -290,6 +291,8 @@ class RaiseEvent(SubAction):
             self.scope = self.OUTPUT_SCOPE
         elif scope_string == "narrow" :
             self.scope = self.NARROW_SCOPE
+        elif scope_string == "cd" :
+            self.scope = self.CD_SCOPE
         elif scope_string == "" :
             self.scope = self.UNKNOWN_SCOPE
         else :
@@ -308,7 +311,7 @@ class RaiseEvent(SubAction):
             else :
                 self.scope = self.LOCAL_SCOPE    
                 
-        if self.scope == self.LOCAL_SCOPE or self.scope == self.BROAD_SCOPE :
+        if self.scope == self.LOCAL_SCOPE or self.scope == self.BROAD_SCOPE or self.scope == self.CD_SCOPE:
             if self.target :
                 showWarning("Raise event target detected, not matching with scope. Ignored.")
                 self.target = ""
@@ -355,6 +358,9 @@ class RaiseEvent(SubAction):
     
     def isOutput(self):
         return self.scope == self.OUTPUT_SCOPE
+    
+    def isCD(self):
+        return self.scope == self.CD_SCOPE
     
     def getTarget(self):
         return self.target
@@ -1145,7 +1151,7 @@ class ClassDiagram(Visitable):
         
         # process each class in diagram
         self.classes = []
-        self.default_classes = []
+        default_classes = []
     
         for xml_class in xml_classes:
             processed_class = None
@@ -1159,14 +1165,15 @@ class ClassDiagram(Visitable):
             showInfo("Class <" + processed_class.name + "> has been successfully loaded.")
             self.classes.append(processed_class)
             if processed_class.is_default :
-                self.default_classes.append(processed_class)
+                default_classes.append(processed_class)
             
-        if not self.default_classes :
+        if not default_classes or len(default_classes) > 1:
             if len(self.classes) == 1 :
                 showInfo("Only one class given. Using <" + self.classes[0].getName() + "> as the default class.")
-                self.default_classes.append(self.classes[0])
+                default_classes.append(self.classes[0])
             else :
-                raise CompilerException("Provide at least one default class to instantiate on start up.")
+                raise CompilerException("Provide one and only one default class to instantiate on start up.")
+        self.default_class = default_classes[0]
             
     def accept(self, visitor):
         visitor.enter(self)

@@ -12,19 +12,16 @@
         <scxml initial="start">
             <state id="start">
                 <transition port="test_input" event="create" target="../wait">
-                    <raise target="object_manager" event="create_instance">
-                        <parameter expr="'Test2'"/>
-                        <parameter expr="SELF" />
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr="'test2_association'"/>
                     </raise>
                     <raise port="test_output" event="request_send"/>
                 </transition>
             </state>
 
             <state id="wait">
-                <transition event="created_instance" target="../start">
-                    <parameter name="reference" />
-                    <parameter name="class_name" />
-                    <assign ident="SELF.test2_association" expr="reference"/>
+                <transition event="instance_created" target="../start">
+                    <parameter name="association_name" />
                     <raise port="test_output" event="associate_added"/>
                     <raise target="test2_association" event="hello" />
                 </transition>
@@ -35,6 +32,7 @@
         <scxml>
             <state id="start">
                 <transition event="hello" target=".">
+                    <log>test</log>
                     <raise port="test_output" event="second_working" />
                 </transition>
             </state>

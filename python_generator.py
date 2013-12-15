@@ -30,7 +30,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         
         #Mandatory imports
-        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event')
+        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper')
         self.fOut.write()
         
     def exit_ClassDiagram(self, class_diagram):            
@@ -40,20 +40,26 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write('def __init__(self, controller):')
         self.fOut.indent()
         self.fOut.write("super(ObjectManager, self).__init__(controller)")
-        self.fOut.write('self.class_names.extend([' + ", ".join(class_diagram.class_names) + '])')
         self.fOut.dedent()
         self.fOut.write()
         
         self.fOut.write('def instantiate(self, class_name):')
         self.fOut.indent()
+        self.fOut.write("wrapper = InstanceWrapper()")
         for c in class_diagram.classes :
             self.fOut.write('if class_name == "' + c.name + '" :')
             self.fOut.indent()
             if c.statechart :
-                self.fOut.write('return ' + c.name + '(self.controller)')
+                self.fOut.write('wrapper.instance =  ' + c.name + '(self.controller)')
             else :
-                self.fOut.write('return ' + c.name + '()')
+                self.fOut.write('wrapper.instance =  ' + c.name + '()')
+            for a in c.associations :
+                a.accept(self)
             self.fOut.dedent()
+        self.fOut.write('if wrapper.instance:')
+        self.fOut.indent()
+        self.fOut.write('return wrapper')
+        self.fOut.dedent()
         self.fOut.write('else :')
         self.fOut.indent()
         self.fOut.write('return None')
@@ -88,8 +94,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.write("def start(self) :")
         self.fOut.indent()
-        for d in class_diagram.default_classes :
-            self.fOut.write('self.object_manager.createInstance("'+ d.name +'")')
+        self.fOut.write('self.object_manager.createInstance("'+ class_diagram.default_class.name +'")')
         self.fOut.write('super(Controller, self).start()')      
         self.fOut.dedent()
         self.fOut.dedent()
@@ -147,13 +152,6 @@ class PythonGenerator(CodeGenerator):
                     self.fOut.write("self." + attribute.name + ' = "' + attribute.init_value + '"')
                 else:
                     self.fOut.write("self." +  attribute.name + " = " + attribute.init_value)
-            self.fOut.write()
-            
-        # write associations
-        if class_node.associations:
-            self.fOut.write("# User defined associations")
-            for i in class_node.associations :
-                i.accept(self)
             self.fOut.write()
 
         # if there is a statechart
@@ -257,10 +255,7 @@ class PythonGenerator(CodeGenerator):
         self.writeMethod(method.name, method.parameters, method.type, method.body)
         
     def visit_Association(self, association):
-        if association.max > 1 :
-            self.fOut.write("self." +  association.name + " = []")
-        else :
-            self.fOut.write("self." +  association.name + " = None")
+        self.fOut.write('wrapper.addAssociation("' + association.name + '", "' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + ')')
         
         
     #helper method
@@ -600,7 +595,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.write("else:")
         self.fOut.indent()
-        self.fOut.write("later_events.append(i)")
+        self.fOut.write("later_events.append(e)")
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write("self.eventQueue = later_events")
@@ -700,14 +695,14 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_RaiseEvent(self, raise_event):
-        if raise_event.isLocal():
+        if raise_event.isNarrow() or raise_event.isBroad():
+            self.fOut.write('the_event = Event("' + raise_event.getEventName() + '", time = 0.0, parameters = [')
+        elif raise_event.isLocal():
             self.fOut.write('self.event(Event("' + raise_event.getEventName() +'", time = 0.0, parameters = [')
-        elif raise_event.isNarrow():
-            self.fOut.write('self.' + raise_event.getTarget() + '.event(Event("'+ raise_event.getEventName() +'", time = 0.0, parameters = [')
-        elif raise_event.isBroad():
-            self.fOut.write('self.controller.broadcast(Event("' + raise_event.getEventName() +'", time = 0.0, parameters = [')
         elif raise_event.isOutput():
             self.fOut.write('self.controller.outputEvent(Event("' + raise_event.getEventName() + '", time = 0.0, port="' + raise_event.getPort() + '", parameters = [')
+        elif raise_event.isCD():
+            self.fOut.write('self.object_manager.event(Event("' + raise_event.getEventName() + '", time = 0.0, parameters = [self, ')
         first_param = True
         for param in raise_event.getParameters() :
             if first_param :
@@ -715,7 +710,14 @@ class PythonGenerator(CodeGenerator):
             else :
                 self.fOut.extendWrite(',')
             param.accept(self)
-        self.fOut.extendWrite(']))')
+        if raise_event.isNarrow():
+            self.fOut.extendWrite('])')
+            self.fOut.write('self.object_manager.event(Event("narrow_cast", time = 0.0, parameters = [self, [("' + raise_event.getTarget() + '",-1)] ,the_event]))')
+        elif raise_event.isBroad():
+            self.fOut.extendWrite('])')
+            self.fOut.write('self.object_manager.event(Event("broad_cast", time = 0.0, parameters = [the_event]))')
+        else :
+            self.fOut.extendWrite(']))')
             
     def visit_Script(self, script):
         StringUtils.writeCodeCorrectIndent(script.code, self.fOut)

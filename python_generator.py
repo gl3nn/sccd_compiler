@@ -43,16 +43,16 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.write()
         
-        self.fOut.write('def instantiate(self, class_name):')
+        self.fOut.write('def instantiate(self, class_name, construct_params):')
         self.fOut.indent()
         self.fOut.write("wrapper = InstanceWrapper()")
         for c in class_diagram.classes :
             self.fOut.write('if class_name == "' + c.name + '" :')
             self.fOut.indent()
             if c.statechart :
-                self.fOut.write('wrapper.instance =  ' + c.name + '(self.controller)')
+                self.fOut.write('wrapper.instance =  ' + c.name + '(self.controller, *construct_params)')
             else :
-                self.fOut.write('wrapper.instance =  ' + c.name + '()')
+                self.fOut.write('wrapper.instance =  ' + c.name + '(*construct_params)')
             for a in c.associations :
                 a.accept(self)
             self.fOut.dedent()
@@ -81,22 +81,12 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
     
         # write out __init__ method
-        self.writeMethodSignature('__init__', class_diagram.parameters + [SCCDC.FormalParameter("keep_running", "", "True")])
-        self.fOut.indent()
-        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running)")
-        for i in class_diagram.inports:
-            self.fOut.write('self.addInputPort("' + i + '")')
-        for i in class_diagram.outports:
-            self.fOut.write('self.addOutputPort("' + i + '")')
-        for parameter in class_diagram.parameters :
-            self.fOut.write("self." + parameter.getIdent() + " = " + parameter.getIdent())
-        self.fOut.write()
-        self.fOut.dedent()
-        self.fOut.write("def start(self) :")
-        self.fOut.indent()
-        self.fOut.write('self.object_manager.createInstance("'+ class_diagram.default_class.name +'")')
-        self.fOut.write('super(Controller, self).start()')      
-        self.fOut.dedent()
+        if class_diagram.default_class.constructors :
+            for constructor in class_diagram.default_class.constructors :
+                self.writeInitMethod(class_diagram, constructor.parameters)
+        else :
+            self.writeInitMethod(class_diagram)
+
         self.fOut.dedent()
         self.fOut.write("def main():")
         self.fOut.indent()
@@ -110,6 +100,20 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("main()")
         self.fOut.dedent()
         self.fOut.write()
+        
+    #helper method
+    def writeInitMethod(self, class_diagram, parameters = []):
+        self.writeMethodSignature('__init__', parameters + [SCCDC.FormalParameter("keep_running", "", "True")])
+        self.fOut.indent()
+        self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running)")
+        for i in class_diagram.inports:
+            self.fOut.write('self.addInputPort("' + i + '")')
+        for i in class_diagram.outports:
+            self.fOut.write('self.addOutputPort("' + i + '")')
+        actual_parameters = [p.getIdent() for p in parameters]
+        self.fOut.write('self.object_manager.createInstance("'+ class_diagram.default_class.name +'", [' +  ', '.join(actual_parameters)+ '])')
+        self.fOut.write()
+        self.fOut.dedent()
 
     def enter_Class(self, class_node):
         self.fOut.write()
@@ -138,26 +142,26 @@ class PythonGenerator(CodeGenerator):
             self.writeStateChartInitMethod(class_node)
             self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("controller", "", "None")])
         else :
-            self.writeMethodSignature("commonConstructor",[])
+            self.writeMethodSignature("commonConstructor")
         self.fOut.indent()
         
-        self.fOut.write("self.controller = controller")
-        self.fOut.write("self.object_manager = controller.object_manager")
+
 
         # write attributes
         if class_node.attributes:
             self.fOut.write("# User defined attributes")
             for attribute in class_node.attributes:
-                if attribute.type.lower() == "string":
-                    self.fOut.write("self." + attribute.name + ' = "' + attribute.init_value + '"')
-                else:
-                    self.fOut.write("self." +  attribute.name + " = " + attribute.init_value)
+                if attribute.init_value is None :
+                    self.fOut.write("self." +  attribute.name + " = None")
+                else :
+                    self.fOut.write("self." +  attribute.name + " = " + attribute.init_value)     
             self.fOut.write()
 
         # if there is a statechart
         if class_node.statechart is not None:            
-            self.fOut.write()
             self.fOut.write("# Statechart variables")
+            self.fOut.write("self.controller = controller")
+            self.fOut.write("self.object_manager = controller.object_manager")
             self.fOut.write("# State of statechart")
             self.fOut.write("self.currentState = {}")
             self.fOut.write("self.historyState = {}")
@@ -170,9 +174,19 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.init()")
             self.fOut.write()
         self.fOut.dedent()
+        
+        self.writeMethodSignature("start")
+        self.fOut.indent()
+        if class_node.statechart :
+            for i in class_node.statechart.root.defaults:
+                if i.isComposite():
+                    self.fOut.write("self.enterState_" + i.getFullName() + "()")
+                elif i.isBasic():
+                    self.fOut.write("self.enterAction_" + i.getFullName() + "()")
+        else :
+            self.fOut.write("pass")
+        self.fOut.dedent()
 
-
-                
     #helper method
     def writeStateChartInitMethod(self, parent_class):
         # the following method isn't part of the actual constructor, but deals with statechart initialization, so let's leave it here :)
@@ -194,11 +208,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("# Initial statechart code")
         for c in [root] + parent_class.statechart.composites :
             self.fOut.write("self.currentState[self." + c.getFullName() + "] = []")
-        for i in root.defaults:
-            if i.isComposite():
-                self.fOut.write("self.enterState_" + i.getFullName() + "()")
-            elif i.isBasic():
-                self.fOut.write("self.enterAction_" + i.getFullName() + "()")
         self.fOut.write()
         self.fOut.dedent()
         
@@ -207,7 +216,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         
     #helper method
-    def writeMethodSignature(self, name, parameters):
+    def writeMethodSignature(self, name, parameters = []):
         self.fOut.write("def " + name + "(self")           
         for param in parameters :
             self.fOut.extendWrite(', ')
@@ -235,14 +244,17 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")
-        parameters = constructor.getParams() + [SCCDC.FormalParameter("controller", "", "None")]
+        parameters =  [SCCDC.FormalParameter("controller", "", None)] + constructor.getParams()
         self.writeMethodSignature("__init__", parameters)
         self.fOut.indent()
-        StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
         if constructor.parent_class.statechart is not None :
-            self.fOut.write("self.commonConstructor(" + ", ".join([p.getIdent() for p in parameters[-3:]]) +  ")")
+            self.fOut.write("self.commonConstructor(controller)")
         else :
             self.fOut.write("self.commonConstructor()")
+        self.fOut.write()
+        if constructor.body :
+            self.fOut.write("#constructor body (user-defined)")
+            StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
         self.fOut.dedent()
         self.fOut.write()
         
@@ -252,7 +264,7 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Method(self, method):
         self.fOut.write("# User defined method")
-        self.writeMethod(method.name, method.parameters, method.type, method.body)
+        self.writeMethod(method.name, method.parameters, method.return_type, method.body)
         
     def visit_Association(self, association):
         self.fOut.write('wrapper.addAssociation("' + association.name + '", "' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + ')')

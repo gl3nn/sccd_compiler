@@ -16,6 +16,7 @@ class TanksGame(tk.Tk):
         #Other entities
         self.field = TanksField(self.canvas,nrtanks=1)
         self.player = self.field.player
+        self.player_gui_listener = self.player.addListener(["gui"])
         
         #lift overlay
         self.canvas.tag_raise(self.overlay)
@@ -28,6 +29,8 @@ class TanksGame(tk.Tk):
         self.is_paused = True
         
         self.elapsed = 0.0
+        
+        self.game_running = True 
         
         #these two don't need to be set if we start in the paused state
         #self.schedule_time = dt.datetime.now()
@@ -79,8 +82,11 @@ class TanksGame(tk.Tk):
     def hideOverlay(self):
         self.canvas.itemconfig(self.overlay,text="")
         
-    def showOverlay(self):
+    def showPauseOverlay(self):
         self.canvas.itemconfig(self.overlay,text="Press P to Resume") 
+        
+    def showEndOverlay(self):
+        self.canvas.itemconfig(self.overlay,text="Game Over") 
         
     def keyBoardChanged(self):
         if self.keyBoardVar.get() == 1 : self.keyBoard = ['w','s','a','d'] #qwerty
@@ -141,7 +147,25 @@ class TanksGame(tk.Tk):
     def update(self):
         self.schedule_time = time.time()
         self.scheduled_update_id = self.after(self.fixed_update_time, self.update)
+        
+        #update child elements
         self.field.update(self.fixed_update_time/1000.0)
+        
+        #GUI update
+        while(True) :
+            fetched = self.player_gui_listener.fetch()
+            if fetched is None :
+                break
+            else :
+                if fetched.getName() == "reloading" :
+                    self.setReloading()
+                elif fetched.getName() == "loaded" :
+                    self.setLoaded()
+                    
+        if self.game_running == True :
+            if not self.field.level_running :
+                self.showEndOverlay()
+                self.game_running = False
         
     def pausePressed(self, event):
         if self.is_paused :

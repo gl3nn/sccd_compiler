@@ -12,7 +12,7 @@ class PlayerTank(Tank):
 		Tank.destroy(self)
 				
 	def addListener(self, ports):
-		self.controller.addOutputListener(ports)
+		return self.controller.addOutputListener(ports)
 								
 	def event(self, event_name, port, time = 0.0, parameters = []):
 		self.controller.addInput(event_name, port, time, parameters)

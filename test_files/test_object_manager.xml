@@ -32,7 +32,6 @@
         <scxml>
             <state id="start">
                 <transition event="hello" target=".">
-                    <log>test</log>
                     <raise port="test_output" event="second_working" />
                 </transition>
             </state>

@@ -904,7 +904,10 @@ class Method(Visitable):
         self.parameters = []
         for p in parameters:
             self.parameters.append(XMLFormalParameter(p))
-        self.body = xml.text
+        bodies = xml.findall("body")
+        if len(bodies) != 1 : 
+            raise CompilerException("Method needs one and only one body element.")
+        self.body = bodies[0].text
         self.parent_class = parent_class
         self.return_type = xml.get('type',"")
         
@@ -932,7 +935,16 @@ class Attribute(Visitable):
     def __init__(self, xml):
         self.name = xml.get('name',"")
         self.type = xml.get('type',"")
-        self.init_value = xml.get("init-value","")
+        self.init_value = xml.get("init-value",None)
+        
+    def getIdent(self):
+        return self.name
+    
+    def getType(self):
+        return self.type
+    
+    def getInit(self):
+        return self.init_value
         
 ###################################
 
@@ -1105,20 +1117,6 @@ class ClassDiagram(Visitable):
             if name in self.class_names :
                 raise CompilerException("Found 2 classes with the same name : " + name + ".")
             self.class_names.append(name)
-    
-
-
-            
-        parameters = self.root.findall("parameter")
-        self.parameters = []
-        names = []
-        for xml_parameter in parameters :
-            parameter = XMLFormalParameter(xml_parameter)
-            name = parameter.getIdent()
-            if name in names :
-                raise CompilerException("Found 2 diagram parameters with the same name : " + name + ".")
-            names.append(name)
-            self.parameters.append(parameter)
     
         # process in and output ports
         inports = self.root.findall("inport")

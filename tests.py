@@ -56,9 +56,8 @@ class TestSequenceFunctions(TestCase):
         if not ports :
             print "Invalid expected eventslist."
             return
-        self.output_listener = OutputListener(list(ports))
         self.expected_output = expected
-        self.controller.addOutputListener(self.output_listener)
+        self.output_listener = self.controller.addOutputListener(list(ports))
         self.controller.start()
         self.controller.join()
         self.checkOutput()

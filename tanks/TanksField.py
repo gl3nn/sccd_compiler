@@ -28,6 +28,8 @@ class TanksField:
         self.createLevel()
         self.createTanks(nrtanks)
         
+        self.level_running = True
+        
     def createLevel(self):
         self.level = Level(self)
         self.level.addObstacles([(2,3),(3,2),(3,3),(3,4),(3,5),(4,1),(4,2),(4,3),(4,4),(5,2),
@@ -36,6 +38,7 @@ class TanksField:
         (17,7),(17,8),(16,6),(16,7),(16,8),(15,8),(15,9)])
         
     def createTanks(self,nrtanks):
+        self.team_counts = [0,0]
         data = {}
         #Controlled player    
         data["tankLength"] = 20
@@ -52,11 +55,12 @@ class TanksField:
         data["health"] = 80
         data["damage"] = 10
         data["reloadTime"] = 0.5
-        data["team"] = 1
+        data["team"] = 0
         data['color-fill'] = "DarkOliveGreen4"
         self.player = PlayerTank(self, data)
         self.tanks.append(self.player)
         self.tanks_map[self.player.getImage()] = self.player
+        self.team_counts[data["team"]] += 1
         
     #AI
         
@@ -65,21 +69,22 @@ class TanksField:
             data["x"] = self.width  - 30
             data["y"] = self.height - 30
             data["angle"] = Math.pi*0.75
-            data["team"] = 0
+            data["team"] = 1
             data['color-fill'] = "cornsilk4"
             enemy = AITank(self, data)
             self.tanks.append(enemy)
             self.tanks_map[enemy.getImage()] = enemy
+            self.team_counts[data["team"]] += 1
             if nrtanks > 1 :
                 #2
                 data["x"] = self.width - 75
                 data["y"] =  75
                 data["angle"] = 3*Math.pi/2
-                data["team"] = 0
                 enemy = AITank(self, data)
                 self.tanks.append(enemy)
                 self.tanks_map[enemy.getImage()] = enemy
-                
+                self.team_2_count += 1
+                self.team_counts[data["team"]] += 1
     #End
         self.canvas.tag_raise("cannon")
         self.canvas.tag_raise("health")        
@@ -91,6 +96,12 @@ class TanksField:
         self.bulletCollision()
         for tank in self.tanks : tank.draw()
         for bullet in self.bullets: bullet.draw()
+        
+        #check if game over
+        if self.level_running :
+            for c in self.team_counts :
+                if c == 0 :
+                    self.level_running = False
 
         
     def addBullet(self, x, y, team, direction, damage, radius):

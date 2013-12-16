@@ -6,11 +6,47 @@
     <inport name="engine" />
     <inpport name="input" />
     <outport name="gui" />
-    <parameter type="PlayerTank" name="tank"/>
+    <class name="Main" default="true">
+        <attribute name="tank" type="PlayerTank"/>
+        <method name="Main">
+            <parameter type="PlayerTank" name="tank"></parameter>
+            <body>
+                self.tank = tank
+           </body>
+        </method>
+        <relationships>
+            <association class="Cannon" name="cannon" min="1" max="1"/>
+            <association class="Body" name="body" min="1" max="1"/>
+        </relationships>
+        <scxml initial="start">
+            <state id="start">
+                <transition target="../check">
+                    <raise event="create_instance" scope="CD">
+                        <parameter expr="'cannon'"/>
+                        <parameter expr="SELF.tank"/>
+                    </raise>
+                    <raise event="create_instance" scope="CD">
+                        <parameter expr="'body'"/>
+                        <parameter expr="SELF.tank"/>
+                    </raise>
+                </transition>
+            </state>
+            <state id="check">
+            
+            </state>
+        </scxml>
+    </class>
     
-    <class name="Cannon" default="true">
-        <attribute name="tank" type="PlayerTank" init-value="self.controller.tank"/>
-        <attribute name="reload_time" type="int" init-value="self.tank.reloadTime"/>
+    <class name="Cannon">
+        <attribute name="tank" type="PlayerTank"/>
+        <attribute name="reload_time" type="float"/>
+        <method name="Cannon">
+            <parameter type="PlayerTank" name="tank"></parameter>
+            <body>
+                self.tank = tank
+                self.reload_time = tank.getReloadTime()
+           </body>
+        </method>
         <scxml>
             <parallel id="container">
                 <state id="rotating" initial="none">
@@ -74,8 +110,14 @@
         </scxml>
     </class>
     
-    <class name="Engine" default="true">
-        <attribute name="tank" type="PlayerTank" init-value="self.controller.tank"/>
+    <class name="Body">
+        <attribute name="tank" type="PlayerTank"/>
+        <method name="Body">
+            <parameter type="PlayerTank" name="tank"></parameter>
+            <body>
+                self.tank = tank
+           </body>
+        </method>
         <scxml>
             <parallel id="container">
                 <state id="horizontal" initial="none">

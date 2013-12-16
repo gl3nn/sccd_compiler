@@ -48,8 +48,8 @@ class ObjectManagerBase(object):
     __metaclass__  = abc.ABCMeta
     
     def __init__(self, controller):
-        self.event_queue = []
         self.controller = controller
+        self.event_queue = []
         self.all_instances = {} #a dictionary that maps instance_reference to InstanceWrapper
         
         
@@ -81,7 +81,6 @@ class ObjectManagerBase(object):
         return wait_times
     
     def stepAll(self, delta):
-        print len(self.all_instances)
         for i in self.all_instances:
             i.step(delta)
         self.step(delta)
@@ -97,6 +96,10 @@ class ObjectManagerBase(object):
                     next_queue.append(e)
             self.event_queue = next_queue
                
+    def start(self):
+        for i in self.all_instances:
+            i.start()           
+               
     def handleEvent(self, e):
         if e.getName() == "create_instance" :
             self.handleCreateEvent(e.getParameters())
@@ -105,17 +108,19 @@ class ObjectManagerBase(object):
             self.handleNarrowCastEvent(e.getParameters())
 
     def handleCreateEvent(self, parameters):
-        if len(parameters) != 2 :
+        if len(parameters) < 2 :
             print "Wrong number of parameters for the create_instance event."
         else :
             source = parameters[0]
             association_name = parameters[1]
+            construct_params = parameters[2:]
             
             association = self.all_instances[source].getAssociation(association_name)
             if association.allowedToAdd() :
-                new_instance_wrapper = self.createInstance(association.class_name)
+                new_instance_wrapper = self.createInstance(association.class_name, construct_params)
                 association.add(new_instance_wrapper)
                 source.event(Event("instance_created", time = 0.0, parameters = [association_name]))
+                new_instance_wrapper.instance.start()
             else :
                 source.event(Event("instance_creation_error", time = 0.0, parameters = [association_name]))
                 print "Not allowed to add"
@@ -147,8 +152,8 @@ class ObjectManagerBase(object):
         pass
 
         
-    def createInstance(self, class_name):
-        instance = self.instantiate(class_name)
+    def createInstance(self, class_name, construct_params = []):
+        instance = self.instantiate(class_name, construct_params)
         if instance :
             self.all_instances[instance.instance] = instance
         return instance
@@ -225,7 +230,7 @@ class ControllerBase(object):
         self.object_manager.broadcast(new_event)
         
     def start(self):
-        pass
+        self.object_manager.start()
     
     def stop(self):
         pass
@@ -237,8 +242,10 @@ class ControllerBase(object):
         for listener in self.output_listeners :
             listener.add(event)
         
-    def addOutputListener(self, listener):
+    def addOutputListener(self, ports):
+        listener = OutputListener(ports)
         self.output_listeners.append(listener)
+        return listener
         
 class GameLoopControllerBase(ControllerBase):
     def __init__(self, object_manager, keep_running):
@@ -332,6 +339,7 @@ class ThreadsControllerBase(ControllerBase):
             self.input_condition.release()
 
     def start(self):
+        super(ThreadsControllerBase, self).start()
         self.thread.start()
 
     def stop(self):

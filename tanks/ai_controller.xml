@@ -1,0 +1,344 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="AI Tank">
+    <description>
+        Handling the npc tank.
+    </description>
+    <inport name="engine" />
+    
+    <!--  constructor  -->
+    <class name="Main" default="true">
+        <attribute name="tank" type="AITank"/>
+        <method name="Main">
+            <parameter type="AITank" name="tank"></parameter>
+            <body>
+                self.tank = tank
+           </body>
+        </method>
+        <relationships>
+            <association class="Cannon" name="cannon" min="1" max="1"/>
+            <association class="Body" name="body" min="1" max="1"/>
+        </relationships>
+        <scxml initial="start">
+            <state id="start">
+                <transition target="../check">
+                    <raise event="create_instance" scope="CD">
+                        <parameter expr="'cannon'"/>
+                        <parameter expr="SELF.tank"/>
+                    </raise>
+                    <raise event="create_instance" scope="CD">
+                        <parameter expr="'body'"/>
+                        <parameter expr="SELF.tank"/>
+                    </raise>
+                </transition>
+            </state>
+            <state id="check">
+            
+            </state>
+        </scxml>
+    </class>
+    
+    <!-- sensor -->
+    
+    <class name="Radar">
+        <attribute name="tank" type="PlayerTank"/>
+        <attribute name="range" type="float" init-value="500"/>
+        <method name="Radar">
+            <parameter type="AITank" name="tank"></parameter>
+            <body>
+                self.tank = tank
+           </body>
+        </method>
+        <method name="isEnemyVisible" type="bool">
+            <body>
+        		sighted_list = self.field.getSightedEnemies(self.tank, self.range)
+        		if len(sighted_list) > 0 :
+        			return True
+        		return False
+            </body>
+        </method>
+        <method name="getEnemyPos" type="bool">
+            <body>
+                sighted_list = self.tank.field.getSightedEnemies(self.tank, self.range)
+                if len(sighted_list) > 0 :
+                    sighted_list.sort(key=lambda x: x[1])
+                    return sighted_list[0]
+                else :
+                    return (0,0)
+            </body>
+        </method>
+        <scxml>
+            <state id="no_enemy">
+                <transition guard="SELF.isEnemyVisible()" target="../enemy_in_sight">
+                    <raise event="enemy_sighted" scope="broad">
+                        <parameter value="SELF.getEnemyPos()"/>
+                    </raise>
+                </transition>
+            </state>
+            <state id="enemy_in_sight">
+                <transition guard="not SELF.isEnemyVisible()" target="../no_enemy">
+                    <raise event="enemy_lost" scope="broad"/>
+                </transition>
+            </state>
+        </scxml>
+    </class>
+    
+    <class name="EnemyTracker">
+        <association class="Radar" name="radar" min="1" max="N"/>
+        <attribute name="enemy_pos" type="Position"/>
+        <method name="hasEnemyMoved()">
+            <body>
+                next_pos = self.radar.getEnemyPos()
+           </body>
+        </method>
+        <scxml initial="no_enemy">
+            <state id="no_enemy">
+                <transition event="enemy_sighted" target="../enemy_pos_known"> 
+                    <parameter name="enemy_position"/>
+                    <script>
+                        self.enemy_pos = enemy_position
+                    </script>
+                </transition>
+            </state>
+            <state id="enemy_pos_known">
+                <transition guard="hasEnemyMoved()" target=".">
+                    <script>
+                        self.enemy_pos = 
+                    </script>
+                    <raise event="enemy_pos_changed" scope="broad"/>
+                </transition>
+                <transition event="enemy_lost" target="../no_enemy"/>
+            </state>
+            
+        
+        </scxml>
+    </class>
+    
+    <class name="PilotStrategy">
+        <scxml initial="exploring">
+            <state id="exploring">
+                <transition event="enemy_sighted" target="../attacking"/>
+            </state>
+            <state id="attacking">
+                <transition event="enemy_lost" target="../exploring"/>
+            </state>
+        </scxml>
+    </class>
+    
+    <!-- tactical deciders -->
+    
+    <class name="ExplorePlanner">
+        <scxml initial="no_destination">
+            <state id="no_destination">
+                <transition target="../exploring">
+                    setdesti
+                </transition>
+            </state>
+            <state id="exploring">
+                <transition event="destination_reached" target="../no_destination"/>
+            </state>
+        </scxml>
+    
+    </class>
+    
+    <class name="AttackPlanner">
+        <scxml initial="idle">
+            <state id="idle">
+                <transition event="attack" target="../action"/>
+            </state>
+            <parallel id="action">
+                <state id="movement">
+                    <state id="following">
+                        <transition event="enemy_pos_changed" target=".">
+                            <raise event="new_destination" scope="broad">
+                                <parameter value=""/>
+                            </raise>
+                        </transition>
+                    </state>
+                </state>
+                <state id="shooting">
+                    <state id="loaded">
+                        <transition event="ready_to_shoot" target="../reloading">
+                            <raise event="shoot" scope="broad"/>
+                        </transition>
+                    </state>
+                    <state id="reloading">
+                        <transition after="1" target="../loaded"/>
+                    </state>
+                </state>
+            </parallel>
+        </scxml>
+    </class>
+    
+    <class name="PathFinder">
+        <method name="calculatePath">
+            <body>
+            
+            </body>
+        </method>
+        <attribute name="destination"/>
+        <scxml initial="idle">
+            <state id="idle">    
+                <transition event="waypoint_reached" target="../point_reached">
+                
+                </transition>
+                <transition event="new_destination" target=".">
+                    <parameter name="destination"/>
+                    <script>
+                        self.destination = destination
+                        self.calculatePath()
+                    </script>
+                </transition>
+            </state>
+            <state id="point_reached">
+                <transition guard=" SELF.moreWaypoints()" target="../idle">
+                    <raise event="new_waypoint">
+                        <parameter value="next waypoint"/>
+                    </raise>
+                </transition>
+                <transition guard="not SELF.moreWaypoints()" target="../idle">
+                    <raise event="destination_reached"/>
+                </transition>
+            </state>
+        </scxml>
+    </class>
+    
+    <!-- executors -->
+    
+    
+    <class name="Steering">
+        <attribute name="dest_waypoint"/>
+        <attribute name="reaction_time"/>
+        <method name="pointReached">
+            <body>
+            
+            </body>
+        </method>
+        <method name="pointAhead">
+            <body>
+            
+            </body>
+        </method>
+        <method name="pointBehind">
+            <body>
+            
+            </body>
+        </method>
+        <method name="pointLeft">
+            <body>
+            
+            </body>
+        </method>
+        <method name="pointRight">
+            <body>
+            
+            </body>
+        </method>
+        <method name="pointStraight">
+            <body>
+            
+            </body>
+        </method>
+        <scxml initial="idle">
+            <state id="idle">
+                <transition event="new_waypoint" target="../steering">
+                    <parameter name="dest_waypoint"/>
+                    <script>
+                        self.dest_waypoint = dest_waypoint
+                    </script>
+                </transition>
+            </state>
+            <state id="steering" initial="forward_backward">
+                <transition guard="SELF.pointReached()" target="idle">
+                    <raise event="waypoint_reached" scope="broad"/>
+                </transition>
+                
+                <state id="forward_backward">
+                    <transition guard="pointAhead()" target="left_right">
+                        <raise event="forward"/>
+                    </transition>
+                    <transition guard="pointBehind()" target="left_right">
+                        <raise event="stop"/>
+                    </transition>
+                </state>
+                <state id="left_right">
+                    <transition guard="pointStraight()" target="wait">
+                        <raise event="stop_turning"/>
+                    </transition>
+                    <transition guard="pointLeft()" target="wait">
+                        <raise event="turn_left"/>
+                    </transition>
+                    <transition guard="pointRight()" target="wait">
+                        <raise event="turn_right"/>
+                    </transition>
+                </state>
+                <state id="wait">
+                    <transition after="SELF.reaction_time" target="../forward_backward"/>
+                </state>
+                
+            </state>
+        </scxml>
+    </class>
+        
+    <!-- coordinators -->
+        
+    <!-- actuators  -->
+        
+    <class name="MotorControl">
+        <attribute name="tank"/>
+        <scxml>
+            <parallel id="control">
+                <state id="left_right" default="stop">
+                    <state id="stop">
+                        <transition event="forward" target="../going_forward"/>
+                        <transition event="backward" target="../going_backward"/>
+                    </state>
+                    <state id="going_forward">
+                        <transition event="stop" target="../stop"/>
+                        <transition event="backward" target="../going_backwardt"/>
+                        <transition event="update" port="engine" target=".">
+                            <script>
+                                tank.moveUp()
+                            </script>
+                        </transition>
+                    </state>
+                    <state id="going_backward">
+                        <transition event="stop" target="../stop"/>
+                        <transition event="forward" target="../going_forward"/>
+                        <transition event="update" port="engine" target=".">
+                            <script>
+                                tank.moveDown()
+                            </script>
+                        </transition>
+                    </state>
+                </state>
+                <state id="forward_backward" default="straight">
+                    <state id="straight">
+                        <transition event="turn_right" target="../turning_right"/>
+                        <transition event="turn_left" target="../turning_left"/>
+                    </state>
+                    <state id="turning_left">
+                        <transition event="stop_turning" target="../straight"/>
+                        <transition event="turn_right" target="../turning_right"/>
+                        <transition event="update" port="engine" target=".">
+                            <script>
+                                tank.turnLeft()
+                            </script>
+                        </transition>
+                    </state>
+                    <state id="turning_right">
+                        <transition event="stop_turning" target="../straight"/>
+                        <transition event="turn_left" target="../turning_left"/>
+                        <transition event="update" port="engine" target=".">
+                            <script>
+                                tank.turnRight()
+                            </script>
+                        </transition>
+                    </state>
+                </state>
+            </parallel>
+        </scxml>
+    </class>
+    
+    
+    
+</diagram>

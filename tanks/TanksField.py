@@ -226,24 +226,23 @@ class TanksField:
             return (smallestOverlap,axis)
         return False
         
-    def getClosestEnemy(self,tank):
+    def getSightedEnemies(self, tank, range = -1):
         xpos2 = tank.getX()
         ypos2 = tank.getY()
-        inRange = {}
+        in_range = []
         for enemy in self.tanks :
             if tank.getTeam() != enemy.getTeam() :
                 xpos1 = enemy.getX()
                 ypos1 = enemy.getY()
                 distance =  ( (xpos1 - xpos2) ** 2 + (ypos1 - ypos2) ** 2 ) ** 0.5
-                sighted = True
-                for obstacle in self.level.getObstacles().values() :
-                    if lineIntersectsObstacle(xpos1,ypos1,xpos2,ypos2,obstacle) : 
-                        sighted = False
-                        continue
-                if sighted : inRange[distance] = (xpos1,ypos1)
-        if len(inRange.keys()) == 0 :
-            return None
-        return inRange[min(inRange.keys())]
+                if range < 0 or range > distance :
+                    sighted = True
+                    for obstacle in self.level.getObstacles().itervalues() :
+                        if lineIntersectsObstacle(xpos1,ypos1,xpos2,ypos2,obstacle) : 
+                            sighted = False
+                            continue
+                    if sighted : in_range.append(((xpos1,ypos1),distance))
+        return in_range
         
 
 def lineIntersectsObstacle(xpos1,ypos1,xpos2,ypos2,obstacle) :

@@ -115,10 +115,18 @@ class AITank(Tank):
 	#-------Radar-------------#
 	
 	def enemyPresent(self):
-		enemyXY = self.fieldController.getClosestEnemy(self.controller)
-		if enemyXY != None :
+		sighted_list = self.field.getSightedEnemies(self.tank, self.range)
+		if len(sighted_list) > 0 :
 			return True
 		return False
+	
+	def getEnemyPos(self):
+		sighted_list = self.field.getSightedEnemies(self.tank, self.range)
+		if len(sighted_list) > 0 :
+			sighted_list.sort(key=lambda x: x[1])
+			return sighted_list[0]
+		else :
+			return (0,0)
 		
 	def checkEnemy(self):
 		enemyXY = self.fieldController.getClosestEnemy(self.controller)

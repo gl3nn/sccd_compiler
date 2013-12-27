@@ -5,13 +5,20 @@
     </description>
     <inport name="engine" />
     
+    <top>
+        from AIMap import AIMap
+        import math
+    </top>
+    
     <!--  constructor  -->
     <class name="Main" default="true">
         <attribute name="tank" type="AITank"/>
+        <attribute name="map" type="AIMap"/>
         <method name="Main">
             <parameter type="AITank" name="tank"></parameter>
             <body>
                 self.tank = tank
+                self.map = AIMap(tank.field.level)
            </body>
         </method>
         <relationships>
@@ -76,18 +83,21 @@
             </state>
             <state id="enemy_in_sight">
                 <transition guard="not SELF.isEnemyVisible()" target="../no_enemy">
-                    <raise event="enemy_lost" scope="broad"/>
+                    <raise event="enemy_out_of_sight" scope="broad"/>
                 </transition>
+                <transition 
             </state>
         </scxml>
     </class>
     
+    <!-- Memorizers -->
+    
     <class name="EnemyTracker">
-        <association class="Radar" name="radar" min="1" max="N"/>
         <attribute name="enemy_pos" type="Position"/>
         <method name="hasEnemyMoved()">
+            <parameter name="new_position"
             <body>
-                next_pos = self.radar.getEnemyPos()
+                return new_position != enemy_pos
            </body>
         </method>
         <scxml initial="no_enemy">
@@ -100,25 +110,56 @@
                 </transition>
             </state>
             <state id="enemy_pos_known">
-                <transition guard="hasEnemyMoved()" target=".">
+                <transition event="enemy_pos" guard="hasEnemyMoved(position)" target=".">
+                    <parameter name="position"/>
                     <script>
-                        self.enemy_pos = 
+                        self.enemy_pos = position
                     </script>
-                    <raise event="enemy_pos_changed" scope="broad"/>
+                    <raise event="enemy_pos_changed" scope="broad">
+                        <parameter value="SELF.enemy_pos"/>
+                    </raise>
                 </transition>
-                <transition event="enemy_lost" target="../no_enemy"/>
+                <transition event="enemy_out_of_sight" target="../enemy_pos_unsure"/>
             </state>
+            <state id="enemy_pos_unsure">
+                <transition event="destination_reached" target="../no_enemy">
+                    <raise event="enemy_lost"/>
+                </transition>
+                <transition event="enemy_sighted" target="../enemy_pos_known"> 
+                    <parameter name="position"/>
+                    <script>
+                        self.enemy_pos = enemy_position
+                    </script>
+                </transition>
+            </state>
+            
             
         
         </scxml>
     </class>
     
+    <!-- strategic deciders -->
+    
     <class name="PilotStrategy">
         <scxml initial="exploring">
             <state id="exploring">
-                <transition event="enemy_sighted" target="../attacking"/>
+                <onentry>
+                    <raise event="explore"/>
+                </onentry>
+                <onexit>
+                    <raise event="stop_exploring"/>
+                </onexit>
+                <transition event="enemy_sighted" target="../attacking">
+                    <parameter name="position"/>
+                    <raise event="attack">
+                        <parameter value="position"/>
+                    </raise>
+                </transition>
             </state>
             <state id="attacking">
+                <onexit>
+                    <raise event="stop_attacking"/>
+                </onexit>
                 <transition event="enemy_lost" target="../exploring"/>
             </state>
         </scxml>
@@ -141,16 +182,34 @@
     </class>
     
     <class name="AttackPlanner">
+        <relationships>
+            <association class="TurretSteering" name="turret_steer" min="1" max="1"/>
+        </relationships>
         <scxml initial="idle">
             <state id="idle">
-                <transition event="attack" target="../action"/>
+                <transition event="attack" target="../action">
+                    <parameter name="enemy_pos"/>
+                    <raise event="new_destination" scope="broad">
+                        <parameter value="enemy_pos"/>
+                    </raise>
+                    <raise event="aim" target="turret_steer">
+                        <parameter value="enemy_pos"/>
+                    </raise>
+                </transition>
             </state>
             <parallel id="action">
+                <transition event="stop_attack" target="../idle">
+                    <raise event="stop_aim" target="turret_steer"/>
+                </transition>
                 <state id="movement">
                     <state id="following">
                         <transition event="enemy_pos_changed" target=".">
+                            <parameter name="enemy_pos"/>
                             <raise event="new_destination" scope="broad">
-                                <parameter value=""/>
+                                <parameter value="enemy_pos"/>
+                            </raise>
+                            <raise event="aim" target="turret_steer">
+                                <parameter value="enemy_pos"/>
                             </raise>
                         </transition>
                     </state>
@@ -175,18 +234,31 @@
             
             </body>
         </method>
+        <method name="requiresNewPath">
+            <body>
+            
+            </body>
+        </method>
+        <method name="morePoints">
+            return len(self.waypoints) > 0
+        </method>
+        <attribute name="waypoints"/>
         <attribute name="destination"/>
+        <attribute name="map"/>
         <scxml initial="idle">
             <state id="idle">    
                 <transition event="waypoint_reached" target="../point_reached">
                 
                 </transition>
-                <transition event="new_destination" target=".">
+                <transition event="new_destination" guard="requiresNewPath()" target=".">
                     <parameter name="destination"/>
                     <script>
                         self.destination = destination
-                        self.calculatePath()
+                        self.waypoints = self.calculatePath()
                     </script>
+                    <raise event="new_waypoint">
+                        <parameter value="SELF.waypoints[0]"/>
+                    </raise>
                 </transition>
             </state>
             <state id="point_reached">
@@ -207,35 +279,64 @@
     
     <class name="Steering">
         <attribute name="dest_waypoint"/>
-        <attribute name="reaction_time"/>
+        <attribute name="dest_cell"/>
+        <attribute name="reaction_time" init-value="0.05"/>
+        <attribute name="tank"/>
+        <attribute name="map" />
+        <attribute name="margin" init-value="0.2"/>
         <method name="pointReached">
             <body>
-            
+                cell = map.calculateCell((self.tank.x, self.tank.y))
+                return cell == dest_cell
             </body>
         </method>
         <method name="pointAhead">
             <body>
-            
+                goal_angle = self.tank.angleToDest(dest_waypoint)
+                diff = math.fabs(self.tank.angle - goal_angle)
+                if diff <= (D45) :
+                    self.tank.moveSpeed = int(math.ceil(((D45 - diff) / D45) * self.maxMoveSpeed))
+                    return True
+                if diff >= (D360 - D45) :
+                    self.tank.moveSpeed = int(math.ceil(((diff - (D360 - D45)) / D45) * self.maxMoveSpeed))
+                    return True
+                return False
             </body>
         </method>
         <method name="pointBehind">
             <body>
-            
+                goal_angle = self.tank.angleToDest(dest_waypoint)
+                diff = math.fabs(self.tank.angle - goal_angle)
+                if diff < (D45) or diff > (D360 - D45) :
+                    return False
+                return True
             </body>
         </method>
         <method name="pointLeft">
             <body>
-            
+                goal_angle = self.tank.angleToDest(dest_waypoint)
+                diff = (self.tank.angle - goal_angle) % D360
+                if diff >= self.margin and diff <= math.pi:
+                    return True
+                return False
             </body>
         </method>
         <method name="pointRight">
             <body>
-            
+                goal_angle = self.tank.angleToDest(dest_waypoint)
+                diff = (goal_angle - self.tank.angle) % D360
+                if diff >= self.margin and diff <= math.pi:
+                    return True
+                return False
             </body>
         </method>
         <method name="pointStraight">
             <body>
-            
+                goal_angle = self.tank.angleToDest(dest_waypoint)
+                diff = math.fabs(self.tank.angle - goal_angle)
+                if diff < self.margin or diff > (D360- self.margin) :
+                    return True
+                return False
             </body>
         </method>
         <scxml initial="idle">
@@ -244,6 +345,7 @@
                     <parameter name="dest_waypoint"/>
                     <script>
                         self.dest_waypoint = dest_waypoint
+                        self.dest_cell = map.calculateCell(dest_waypoint)
                     </script>
                 </transition>
             </state>
@@ -279,6 +381,45 @@
         </scxml>
     </class>
         
+    <class name="TurretSteering">
+        <attribute name="reaction_time" init-value="0.05"/>
+        <attribute name="tank"/>
+        <attribute name="margin" init-value="0.2"/>
+        <atribute name="target"/>
+        <relationships>
+            <association class="TurretControl" name="turret_control" min="1" max="1"/>
+        </relationships>
+        <scxml initial="idle">
+            <state id="idle">
+                <transition event="aim_at" target="../aiming">
+                    <parameter name="target"/>
+                    <script>
+                        self.target = target
+                    </script>
+                </transition>
+            </state>
+            <state id="aiming" initial="adjust">
+                <transition event="stop_aiming" target="../idle">
+                </transition>
+                
+                <state id="adjust">
+                    <transition guard="pointAhead()" target="left_right">
+                        <raise event="forward"/>
+                    </transition>
+                    <transition guard="pointBehind()" target="left_right">
+                        <raise event="stop"/>
+                    </transition>
+                </state>
+                <state id="wait">
+                    <transition after="SELF.reaction_time" target="../forward_backward"/>
+                </state>
+                
+            </state>
+        </scxml>
+        
+    
+    </class>
+        
     <!-- coordinators -->
         
     <!-- actuators  -->
@@ -287,7 +428,7 @@
         <attribute name="tank"/>
         <scxml>
             <parallel id="control">
-                <state id="left_right" default="stop">
+                <state id="left_right" initial="stop">
                     <state id="stop">
                         <transition event="forward" target="../going_forward"/>
                         <transition event="backward" target="../going_backward"/>
@@ -311,7 +452,7 @@
                         </transition>
                     </state>
                 </state>
-                <state id="forward_backward" default="straight">
+                <state id="forward_backward" initial="straight">
                     <state id="straight">
                         <transition event="turn_right" target="../turning_right"/>
                         <transition event="turn_left" target="../turning_left"/>
@@ -339,6 +480,33 @@
         </scxml>
     </class>
     
+    <class name="CannonControl">
+        <attribute name="tank"/>
+        <scxml initial="none">
+            <state id="none">
+                <transition event="turn_right" target="../turning_right"/>
+                <transition event="turn_left" target="../turning_left"/>
+            </state>
+            <state id="turning_left">
+                <transition event="stop_turning" target="../straight"/>
+                <transition event="turn_right" target="../turning_right"/>
+                <transition event="update" port="engine" target=".">
+                    <script>
+                        tank.turnCannonLeft()
+                    </script>
+                </transition>
+            </state>
+            <state id="turning_right">
+                <transition event="stop_turning" target="../straight"/>
+                <transition event="turn_left" target="../turning_left"/>
+                <transition event="update" port="engine" target=".">
+                    <script>
+                        tank.turnCannonRight()
+                    </script>
+                </transition>
+            </state>
+        </scxml>
+    </class>
     
     
 </diagram>

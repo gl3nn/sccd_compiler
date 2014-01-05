@@ -19,7 +19,7 @@ INSTATE_SEQ = 'INSTATE'
 
 ##################################
 
-class Target(Visitable):
+class StateTarget(Visitable):
     def __init__(self, input_string, source_node):
         #source_node = source_node.getParentNode()
         self.input_string = input_string
@@ -137,7 +137,7 @@ class InStateCall(ExpressionPart):
     def __init__(self, state_string, current_node):
         if state_string == "" :
             raise CompilerException(INSTATE_SEQ + " call expects a non-empty statenode.")
-        self.target = Target(state_string, current_node)
+        self.target = StateTarget(state_string, current_node)
         
     def accept(self, visitor):
         visitor.enter(self)
@@ -245,6 +245,7 @@ class TriggerEvent:
     def setAfterIndex(self, after):
         self.after_index = after
         
+
 ##################################
 
 class SubAction(Visitable):
@@ -461,7 +462,7 @@ class StateChartTransition():
         target_string = self.xml.get("target","").strip()
         if target_string == "" :
             raise CompilerException("Transition from <" + self.parent_node.getFullID() + "> has empty target.")
-        self.target = Target(target_string, self.parent_node)
+        self.target = StateTarget(target_string, self.parent_node)
         
         self.action = Action(self.xml, self.parent_node)
      
@@ -1031,14 +1032,14 @@ class Class(Visitable):
             class_name = a.get("class","")
             if not class_name :
                 raise CompilerException("Faulty association.")
-            card_min_string = a.get("card-min","0")
+            card_min_string = a.get("min","0")
             try :
                 card_min = int(card_min_string)
                 if card_min < 0 :
                     raise ValueError()
             except ValueError :
                 raise CompilerException("Faulty card-min value in association.")
-            card_max_string = a.get("card-max","N")
+            card_max_string = a.get("max","N")
             if card_max_string == "N" :
                 card_max = -1
             else :
@@ -1138,14 +1139,13 @@ class ClassDiagram(Visitable):
         self.outports = names
             
         
-        # imports/includes
-        """includes = self.root.findall("include")
+        # any inital import code that has to come at the top of the generate file
+        tops = self.root.findall("top")
         self.includes = []
-        for xml_include in includes :
-            path = xml_include.get("path", "")
-            if path :
-                self.includes.append()
-        """
+        if len(tops) == 1 :
+            self.top = tops[0].text  
+        elif len(tops) > 1 : 
+            raise CompilerException("Class diagram can only have one <top> element.")
         
         # process each class in diagram
         self.classes = []

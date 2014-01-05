@@ -31,6 +31,9 @@ class PythonGenerator(CodeGenerator):
         
         #Mandatory imports
         self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper')
+        #User imports
+        if classdiagram.top and classdiagram.top.strip():
+            StringUtils.writeCodeCorrectIndent(classdiagram.top, self.fOut)
         self.fOut.write()
         
     def exit_ClassDiagram(self, class_diagram):            
@@ -724,7 +727,7 @@ class PythonGenerator(CodeGenerator):
             param.accept(self)
         if raise_event.isNarrow():
             self.fOut.extendWrite('])')
-            self.fOut.write('self.object_manager.event(Event("narrow_cast", time = 0.0, parameters = [self, [("' + raise_event.getTarget() + '",-1)] ,the_event]))')
+            self.fOut.write('self.object_manager.event(Event("narrow_cast", time = 0.0, parameters = [self, "' + raise_event.getTarget() + '" ,the_event]))')
         elif raise_event.isBroad():
             self.fOut.extendWrite('])')
             self.fOut.write('self.object_manager.event(Event("broad_cast", time = 0.0, parameters = [the_event]))')

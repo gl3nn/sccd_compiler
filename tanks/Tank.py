@@ -63,6 +63,9 @@ class Tank:
         
     def getY(self):
         return self.y
+    
+    def getPosition(self):
+        return (self.x,self.y)
         
     def getAngle(self):
         return self.angle

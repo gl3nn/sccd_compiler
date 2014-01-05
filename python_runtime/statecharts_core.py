@@ -1,4 +1,5 @@
 import abc
+import re
 import time
 import threading
 from infinity import INFINITY
@@ -100,12 +101,52 @@ class ObjectManagerBase(object):
         for i in self.all_instances:
             i.start()           
                
-    def handleEvent(self, e):
-        if e.getName() == "create_instance" :
+    def handleEvent(self, e):   
+        print "handle event " + e.getName()
+        print e.getParameters()
+                 
+        if e.getName() == "narrow_cast" :
+            self.handleNarrowCastEvent(e.getParameters())
+            
+        elif e.getName() == "create_instance" :
             self.handleCreateEvent(e.getParameters())
             
-        elif e.getName() == "narrow_cast" :
-            self.handleNarrowCastEvent(e.getParameters())
+        elif e.getName() == "associate_instance" :
+            self.handleCreateEvent(e.getParameters())
+            
+        elif e.getName() == "start_instance" :
+            self.handleStartInstanceEvent(e.getParameters())
+            
+    def processAssociationReference(self, input_string):
+        print "call processAssociationReference for"
+        print input_string
+        if len(input_string) == 0 :
+            return []
+        path_string =  input_string.split("/")
+        path = []
+        for piece in path_string :
+            match = re.match("^([a-zA-Z_]\w*)(?:\[(\d+)\])?$", piece)
+            if match :
+                name = match.group(1)
+                index = match.group(2)
+                if index is None :
+                    index = -1
+                path.append((name,index))
+            else :
+                return []
+        return path
+    
+    def handleStartInstanceEvent(self, parameters):
+        if len(parameters) != 2 :
+            print "Wrong number of parameters for the start_instance event."
+        else :
+            source = parameters[0]
+            traversal_list = self.processAssociationReference(parameters[1])
+            if not traversal_list :
+                print "error in handle start instance event"
+            for i in self.getInstances(source, traversal_list) :
+                i.instance.start()
+        
 
     def handleCreateEvent(self, parameters):
         if len(parameters) < 2 :
@@ -120,16 +161,41 @@ class ObjectManagerBase(object):
                 new_instance_wrapper = self.createInstance(association.class_name, construct_params)
                 association.add(new_instance_wrapper)
                 source.event(Event("instance_created", time = 0.0, parameters = [association_name]))
-                new_instance_wrapper.instance.start()
             else :
                 source.event(Event("instance_creation_error", time = 0.0, parameters = [association_name]))
                 print "Not allowed to add"
+                
+    def handleAssociateEvent(self, parameters):
+        if len(parameters) != 3 :
+            print "Wrong number of parameters for the associate_instance event."
+        else :
+            source = parameters[0]
+            to_copy_list = self.getInstances(source,self.processAssociationReference(parameters[1]))
+            if len(to_copy_list) != 1 :
+                print "error"
+                return
+            wrapped_to_copy_instance = to_copy_list[0]
+            dest_list = self.processAssociationReference(parameters[2])
+            if len(dest_list) == 0 :
+                print "error"
+                return
+            last = dest_list.pop()
+            for i in self.getInstances(source, dest_list) :
+                association = i.getAssociation(last)
+                if association.allowedToAdd() :
+            
+                    association.add(wrapped_to_copy_instance)
+                else :
+                    #event?
+                    print "Not allowed to add" 
         
     def handleNarrowCastEvent(self, parameters):
         if len(parameters) != 3 :
             print  "Wrong number of parameters for the narrow_cast event."
         source = parameters[0]
-        traversal_list = parameters[1]
+        traversal_list = self.processAssociationReference(parameters[1])
+        if not traversal_list :
+            print "error"
         cast_event = parameters[2]
         for i in self.getInstances(source, traversal_list) :
             i.instance.event(cast_event)

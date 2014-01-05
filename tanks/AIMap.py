@@ -1,11 +1,7 @@
 from random import choice
 import heapq
+from mymath import D60, D105, D360
 import math
-
-D60 = math.pi/3
-D90 = math.pi/2
-D105 = D90 + math.pi/8
-D360 = 2 * math.pi
 
 FREE, OBSTACLE = range(2)    
         
@@ -92,8 +88,8 @@ class AIMap():
                 heapq.heappush(self.heap,pair)
 
             def pop(self):
-                (priority,item) = heapq.heappop(self.heap)
-                return item
+                popped = heapq.heappop(self.heap)
+                return popped[1]#item
 
             def isEmpty(self):
                 return len(self.heap) == 0    

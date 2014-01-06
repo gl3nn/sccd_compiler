@@ -82,9 +82,10 @@ class ObjectManagerBase(object):
         return wait_times
     
     def stepAll(self, delta):
+        self.step(delta)
         for i in self.all_instances:
             i.step(delta)
-        self.step(delta)
+        
 
     def step(self, delta):
         if self.event_queue :
@@ -102,24 +103,23 @@ class ObjectManagerBase(object):
             i.start()           
                
     def handleEvent(self, e):   
-        print "handle event " + e.getName()
-        print e.getParameters()
                  
         if e.getName() == "narrow_cast" :
             self.handleNarrowCastEvent(e.getParameters())
+            
+        elif e.getName() == "broad_cast" :
+            self.handleBroadCastEvent(e.getParameters())
             
         elif e.getName() == "create_instance" :
             self.handleCreateEvent(e.getParameters())
             
         elif e.getName() == "associate_instance" :
-            self.handleCreateEvent(e.getParameters())
+            self.handleAssociateEvent(e.getParameters())
             
         elif e.getName() == "start_instance" :
             self.handleStartInstanceEvent(e.getParameters())
             
     def processAssociationReference(self, input_string):
-        print "call processAssociationReference for"
-        print input_string
         if len(input_string) == 0 :
             return []
         path_string =  input_string.split("/")
@@ -147,6 +147,10 @@ class ObjectManagerBase(object):
             for i in self.getInstances(source, traversal_list) :
                 i.instance.start()
         
+    def handleBroadCastEvent(self, parameters):
+        if len(parameters) != 1 :
+            print  "Wrong number of parameters for the broad_cast event."
+        self.broadcast(parameters[0])
 
     def handleCreateEvent(self, parameters):
         if len(parameters) < 2 :
@@ -163,7 +167,7 @@ class ObjectManagerBase(object):
                 source.event(Event("instance_created", time = 0.0, parameters = [association_name]))
             else :
                 source.event(Event("instance_creation_error", time = 0.0, parameters = [association_name]))
-                print "Not allowed to add"
+                print "Not allowed to create"
                 
     def handleAssociateEvent(self, parameters):
         if len(parameters) != 3 :
@@ -181,9 +185,10 @@ class ObjectManagerBase(object):
                 return
             last = dest_list.pop()
             for i in self.getInstances(source, dest_list) :
-                association = i.getAssociation(last)
+                association = i.getAssociation(last[0])
+                if not association :
+                    print "association " + last[0] +  " doesn't exist"
                 if association.allowedToAdd() :
-            
                     association.add(wrapped_to_copy_instance)
                 else :
                     #event?
@@ -208,6 +213,9 @@ class ObjectManagerBase(object):
             nexts = []
             for current in currents :
                 association = current.getAssociation(name)
+                if association is None :
+                    print "Runtime warning : unknown association in traversal list " + \
+                    str(traversal_list) +" from " + str(source)
                 nexts.extend(association.get(index))
             currents = nexts
         return currents

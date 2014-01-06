@@ -237,7 +237,7 @@ class TanksField:
                 distance =  ( (xpos1 - xpos2) ** 2 + (ypos1 - ypos2) ** 2 ) ** 0.5
                 if range < 0 or range > distance :
                     sighted = True
-                    for obstacle in self.level.getObstacles().itervalues() :
+                    for obstacle in self.level.obstacles :
                         if lineIntersectsObstacle(xpos1,ypos1,xpos2,ypos2,obstacle) : 
                             sighted = False
                             continue

@@ -16,7 +16,8 @@ class AIMap():
         self.cellsY = self.totalHeight // self.cellSize
         self.structure = [[ OBSTACLE if obstacleMap[x][y] else FREE for y in xrange(self.cellsY)] for x in xrange(self.cellsX)]     
         
-    def getExplore(self, cell, tankAngle):
+    def getNewExplore(self, position, tankAngle):
+        cell = self.calculateCell(position)
         successors = self.getSuccessors(cell)
         good = []
         for (successor,wildcard) in successors :
@@ -40,7 +41,7 @@ class AIMap():
                 max_value = value
             elif value == max_value :
                 result.append(pos)
-        return choice(result)
+        return self.calculateCoords(choice(result))
         
         
     def getSuccessors(self, (xpos,ypos)):
@@ -78,6 +79,7 @@ class AIMap():
     
     def calculatePath(self, start, destination):
         #self.controller.stop()
+        print "calculating path from " + str(start) + " to " + str(destination) + " ."
 
         class PriorityQueue:
             def  __init__(self):  
@@ -109,18 +111,20 @@ class AIMap():
             explored[currentNode[0]] = currentNode
             if currentNode[0] == destination_cell :
                 break
-            successors = self.fieldMap.getSuccessors(currentNode[0])
+            successors = self.getSuccessors(currentNode[0])
             for (successor,cost) in successors :
                 totalcost = currentNode[2] + cost            
                 if successor not in explored : #nodes that are not expanded yet, but are already on the fringe will still be added.
                     node = (successor, currentNode, totalcost)
-                    heuristic =  ((successor[0] - self.destination[0]) ** 2 + (successor[1] - self.destination[1]) ** 2 ) ** 0.5
+                    heuristic =  ((successor[0] - destination[0]) ** 2 + (successor[1] - destination[1]) ** 2 ) ** 0.5
                     fringe.push(node,(totalcost+heuristic))    
                     
         newpoints = []
-        while ( currentNode[0] != start) :
-            newpoints.insert(0, (currentNode[0],self.fieldMap.calculateCoords(currentNode[0])))
+        while ( currentNode[0] != start_cell) :
+            newpoints.insert(0, self.calculateCoords(currentNode[0]))
             currentNode = currentNode[1]
+            
+        print newpoints
         return newpoints
         
     

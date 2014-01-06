@@ -14,4 +14,4 @@ class AITank(Tank):
 		self.controller.update(delta)
 		
 	def angleToDest(self, (dest_x,dest_y)):
-		return math.atan2(self.tank.y- dest_y, dest_x-self.tank.x) % D360
+		return math.atan2(self.y- dest_y, dest_x-self.x) % D360

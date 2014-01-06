@@ -32,7 +32,7 @@ class PythonGenerator(CodeGenerator):
         #Mandatory imports
         self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper')
         #User imports
-        if classdiagram.top and classdiagram.top.strip():
+        if classdiagram.top.strip():
             StringUtils.writeCodeCorrectIndent(classdiagram.top, self.fOut)
         self.fOut.write()
         
@@ -174,13 +174,14 @@ class PythonGenerator(CodeGenerator):
                 self.fOut.write("self.timers = {}")
                 self.fOut.write()
             self.fOut.write("# Initialize statechart")
-            self.fOut.write("self.init()")
+            self.fOut.write("self.initStateChart()")
             self.fOut.write()
         self.fOut.dedent()
         
         self.writeMethodSignature("start")
         self.fOut.indent()
         if class_node.statechart :
+            self.fOut.write("self.active = True")
             for i in class_node.statechart.root.defaults:
                 if i.isComposite():
                     self.fOut.write("self.enterState_" + i.getFullName() + "()")
@@ -193,10 +194,11 @@ class PythonGenerator(CodeGenerator):
     #helper method
     def writeStateChartInitMethod(self, parent_class):
         # the following method isn't part of the actual constructor, but deals with statechart initialization, so let's leave it here :)
-        self.fOut.write("def init(self):")
+        self.fOut.write("def initStateChart(self):")
         self.fOut.indent()
         self.fOut.write()
         self.fOut.write("# Statechart variables")
+        self.fOut.write("self.active = False")
         self.fOut.write("self.eventQueue = []")
         self.fOut.write("self.stateChanged = False")
         self.fOut.write()
@@ -652,6 +654,10 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write('self.timers = next_timers')
             self.fOut.dedent()
             self.fOut.write()
+        self.fOut.write("if not self.active :")
+        self.fOut.indent()
+        self.fOut.write("return")
+        self.fOut.dedent()
         self.fOut.write("self.microstep()")
         self.fOut.write("while self.stateChanged:")
         self.fOut.indent()

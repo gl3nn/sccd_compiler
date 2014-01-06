@@ -1143,9 +1143,11 @@ class ClassDiagram(Visitable):
         tops = self.root.findall("top")
         self.includes = []
         if len(tops) == 1 :
-            self.top = tops[0].text  
+            self.top = tops[0].text
         elif len(tops) > 1 : 
             raise CompilerException("Class diagram can only have one <top> element.")
+        else :
+            self.top = ""
         
         # process each class in diagram
         self.classes = []

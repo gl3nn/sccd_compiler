@@ -155,82 +155,120 @@
                     </transition>
                 </state>
                 <state id="state_20">
-                    <transition event="instance_created" target="../state_20"/>
+                    <transition event="instance_created" target="../state_21"/>
                 </state>
                 <state id="state_21">
                     <transition target="../end">
-                        <log> state_21</log>
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'turret_control'"/>
+                        </raise> 
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'motor_control'"/>
+                        </raise>                     
+                    
                         <!-- Set turret steering associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'turret_control'"/>
-                            <paraneter expr="'turret_steering/turret_control'"/>
+                            <parameter expr="'turret_steering/turret_control'"/>
                         </raise>
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'attack_planner'"/>
-                            <paraneter expr="'turret_steering/attack_planner'"/>
+                            <parameter expr="'turret_steering/attack_planner'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'turret_steering'"/>
+                        </raise> 
                         
                         <!-- Set steering associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'motor_control'"/>
-                            <paraneter expr="'steering/motor_control'"/>
+                            <parameter expr="'steering/motor_control'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'steering'"/>
+                        </raise> 
                         
                         <!-- Set path finder associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'steering'"/>
-                            <paraneter expr="'path_finder/steering'"/>
+                            <parameter expr="'path_finder/steering'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'path_finder'"/>
+                        </raise> 
                         
                         <!-- Set attack planner associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'turret_steering'"/>
-                            <paraneter expr="'attack_planner/turret_steering'"/>
+                            <parameter expr="'attack_planner/turret_steering'"/>
                         </raise>
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'turret_control'"/>
-                            <paraneter expr="'attack_planner/turret_control'"/>
+                            <parameter expr="'attack_planner/turret_control'"/>
                         </raise>
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'path_finder'"/>
-                            <paraneter expr="'attack_planner/path_finder'"/>
+                            <parameter expr="'attack_planner/path_finder'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'attack_planner'"/>
+                        </raise> 
                         
                         <!-- Set explore planner associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'path_finder'"/>
-                            <paraneter expr="'explore_planner/path_finder'"/>
+                            <parameter expr="'explore_planner/path_finder'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'explore_planner'"/>
+                        </raise> 
                         
                         <!-- Set pilot strategy associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'explore_planner'"/>
-                            <paraneter expr="'pilot_strategy/explore_planner'"/>
+                            <parameter expr="'pilot_strategy/explore_planner'"/>
                         </raise>
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'attack_planner'"/>
-                            <paraneter expr="'pilot_strategy/attack_planner'"/>
+                            <parameter expr="'pilot_strategy/attack_planner'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'pilot_strategy'"/>
+                        </raise> 
                         
                         <!-- Set enemy_tracker associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'pilot_strategy'"/>
-                            <paraneter expr="'enemy_tracker/pilot_strategy'"/>
+                            <parameter expr="'enemy_tracker/pilot_strategy'"/>
                         </raise>
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'attack_planner'"/>
-                            <paraneter expr="'enemy_tracker/attack_planner'"/>
+                            <parameter expr="'enemy_tracker/attack_planner'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'enemy_tracker'"/>
+                        </raise> 
                         
                         <!-- Set radar associations -->
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'pilot_strategy'"/>
-                            <paraneter expr="'radar/pilot_strategy'"/>
+                            <parameter expr="'radar/pilot_strategy'"/>
                         </raise>
                         <raise event="associate_instance" scope="CD">
                             <parameter expr="'enemy_tracker'"/>
-                            <paraneter expr="'radar/enemy_tracker'"/>
+                            <parameter expr="'radar/enemy_tracker'"/>
                         </raise>
+                        
+                        <raise event="start_instance" scope="CD">
+                            <parameter expr="'radar'"/>
+                        </raise> 
 
                     </transition>
                 </state>
@@ -243,7 +281,7 @@
     
     <class name="Radar">
         <attribute name="tank" type="PlayerTank"/>
-        <attribute name="range" init-value="500"/>
+        <attribute name="range" init-value="2000"/>
         <relationships>
             <association class="EnemyTracker" name="enemy_tracker" min="1" max="1"/>
             <association class="PilotStrategy" name="pilot_strategy" min="1" max="1"/>
@@ -270,7 +308,7 @@
                 sighted_list = self.tank.field.getSightedEnemies(self.tank, self.range)
                 if len(sighted_list) > 0 :
                     sighted_list.sort(key=lambda x: x[1])
-                    return sighted_list[0]
+                    return sighted_list[0][0]
                 else :
                     return (-1,-1)
                 ]]>
@@ -407,8 +445,11 @@
             <state id="exploring" initial="no_destination">
                 <state id="no_destination">
                     <transition target="../destination_set">
+                        <log>
+                            raise new destination
+                        </log>
                         <raise event="new_destination" target="path_finder">
-                            <parameter expr="SELF.map.newExplore(self.tank.getPosition(),self.tank.getAngle())"/>
+                            <parameter expr="SELF.map.getNewExplore(self.tank.getPosition(),self.tank.getAngle())"/>
                         </raise>
                     </transition>
                 </state>
@@ -422,7 +463,7 @@
     
     <class name="AttackPlanner">
         <relationships>
-            <association class="TurretSteering" name="turret_steer" min="1" max="1"/>
+            <association class="TurretSteering" name="turret_steering" min="1" max="1"/>
             <association class="PathFinder" name="path_finder" min="1" max="1"/>
             <association class="TurretControl" name="turret_control" min="1" max="1"/>
         </relationships>
@@ -433,14 +474,14 @@
                     <raise event="new_destination" scope="broad">
                         <parameter expr="enemy_pos"/>
                     </raise>
-                    <raise event="aim" target="turret_steer">
+                    <raise event="aim" target="turret_steering">
                         <parameter expr="enemy_pos"/>
                     </raise>
                 </transition>
             </state>
             <parallel id="action">
                 <transition event="stop_attack" target="../idle">
-                    <raise event="stop_aim" target="turret_steer"/>
+                    <raise event="stop_aim" target="turret_steering"/>
                 </transition>
                 <state id="movement">
                     <state id="following">
@@ -449,7 +490,7 @@
                             <raise event="new_destination" target="path_finder">
                                 <parameter expr="enemy_pos"/>
                             </raise>
-                            <raise event="aim" target="turret_steer">
+                            <raise event="aim" target="turret_steering">
                                 <parameter expr="enemy_pos"/>
                             </raise>
                         </transition>
@@ -487,12 +528,13 @@
         </method>
         <method name="calculatePath">
             <body>
-                self.map.calculatePath(self.tank.getPosition(), self.destination)
+                return self.map.calculatePath(self.tank.getPosition(), self.destination)
             </body>
         </method>
         <method name="requiresNewPath">
             <parameter name="new_destination"/>
             <body>
+                print new_destination
                 return self.map.calculateCell(self.destination) != self.map.calculateCell(new_destination)
             </body>
         </method>
@@ -503,31 +545,38 @@
         </method>
         <scxml initial="idle">
             <state id="idle">    
-                <transition event="waypoint_reached" target="../point_reached">
-                
+                <transition event="waypoint_reached" target="../check_points">
+                    <log> received point_reached</log>
                 </transition>
-                <transition event="new_destination" cond="SELF.requiresNewPath(destination)" target=".">
+                <transition event="new_destination" cond="SELF.requiresNewPath(destination)" target="../check_points">
                     <parameter name="destination"/>
                     <script>
                         self.destination = destination
                         self.waypoints = self.calculatePath()
                     </script>
+                    <log>
+                        raise new_waypoint
+                    </log>
+                    <!--  
                     <raise event="new_waypoint" target="steering">
                         <parameter expr="SELF.waypoints[0]"/>
                     </raise>
+                    -->
                 </transition>
             </state>
-            <state id="point_reached">
-                <transition cond=" SELF.moreWaypoints()" target="../idle">
+            <state id="check_points">
+                <transition cond=" SELF.morePoints()" target="../idle">
                     <script>
                         next_waypoint = self.waypoints.pop(0)
+                        print len(self.waypoints)
                     </script>
                     <raise event="new_waypoint" target="steering">
                         <parameter expr="next_waypoint"/>
                     </raise>
                 </transition>
-                <transition cond="not SELF.moreWaypoints()" target="../idle">
+                <transition cond="not SELF.morePoints()" target="../idle">
                     <raise event="destination_reached" scope="broad"/>
+                    <log> send destination_reached</log>
                 </transition>
             </state>
         </scxml>
@@ -557,6 +606,8 @@
         <method name="pointReached">
             <body>
                 cell = self.map.calculateCell((self.tank.x, self.tank.y))
+                print cell
+                print self.dest_cell
                 return cell == self.dest_cell
             </body>
         </method>
@@ -568,7 +619,7 @@
                 if diff <= (D45) :
                     #self.tank.moveSpeed = int(math.ceil(((D45 - diff) / D45) * self.maxMoveSpeed))
                     return True
-                if diff >= (D360 - D45) :
+                elif diff >= (D360 - D45) :
                     #self.tank.moveSpeed = int(math.ceil(((diff - (D360 - D45)) / D45) * self.maxMoveSpeed))
                     return True
                 return False
@@ -580,7 +631,7 @@
                 <![CDATA[
                 goal_angle = self.tank.angleToDest(self.dest_waypoint)
                 diff = math.fabs(self.tank.angle - goal_angle)
-                if diff < (D45) or diff > (D360 - D45) :
+                if diff <= (D45) or diff >= (D360 - D45) :
                     return False
                 return True
                 ]]>
@@ -626,17 +677,21 @@
                     <script>
                         self.dest_waypoint = dest_waypoint
                         self.dest_cell = self.map.calculateCell(dest_waypoint)
+                        print "new point set " + str(dest_waypoint) 
                     </script>
+
                 </transition>
             </state>
             <state id="steering" initial="forward_backward">
                 <transition cond="SELF.pointReached()" target="../idle">
                     <raise event="waypoint_reached" scope="broad"/>
+                    <log> point reached</log>
                 </transition>
                 
                 <state id="forward_backward">
                     <transition cond="SELF.pointAhead()" target="../left_right">
                         <raise event="forward" target="motor_control"/>
+                        <log> forward </log>
                     </transition>
                     <transition cond="SELF.pointBehind()" target="../left_right">
                         <raise event="stop" target="motor_control"/>

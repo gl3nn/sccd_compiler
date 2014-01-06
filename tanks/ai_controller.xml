@@ -445,9 +445,6 @@
             <state id="exploring" initial="no_destination">
                 <state id="no_destination">
                     <transition target="../destination_set">
-                        <log>
-                            raise new destination
-                        </log>
                         <raise event="new_destination" target="path_finder">
                             <parameter expr="SELF.map.getNewExplore(self.tank.getPosition(),self.tank.getAngle())"/>
                         </raise>
@@ -474,7 +471,7 @@
                     <raise event="new_destination" scope="broad">
                         <parameter expr="enemy_pos"/>
                     </raise>
-                    <raise event="aim" target="turret_steering">
+                    <raise event="aim_at" target="turret_steering">
                         <parameter expr="enemy_pos"/>
                     </raise>
                 </transition>
@@ -490,7 +487,7 @@
                             <raise event="new_destination" target="path_finder">
                                 <parameter expr="enemy_pos"/>
                             </raise>
-                            <raise event="aim" target="turret_steering">
+                            <raise event="aim_at" target="turret_steering">
                                 <parameter expr="enemy_pos"/>
                             </raise>
                         </transition>
@@ -534,7 +531,6 @@
         <method name="requiresNewPath">
             <parameter name="new_destination"/>
             <body>
-                print new_destination
                 return self.map.calculateCell(self.destination) != self.map.calculateCell(new_destination)
             </body>
         </method>
@@ -545,18 +541,13 @@
         </method>
         <scxml initial="idle">
             <state id="idle">    
-                <transition event="waypoint_reached" target="../check_points">
-                    <log> received point_reached</log>
-                </transition>
+                <transition event="waypoint_reached" target="../check_points"/>
                 <transition event="new_destination" cond="SELF.requiresNewPath(destination)" target="../check_points">
                     <parameter name="destination"/>
                     <script>
                         self.destination = destination
                         self.waypoints = self.calculatePath()
                     </script>
-                    <log>
-                        raise new_waypoint
-                    </log>
                     <!--  
                     <raise event="new_waypoint" target="steering">
                         <parameter expr="SELF.waypoints[0]"/>
@@ -568,7 +559,6 @@
                 <transition cond=" SELF.morePoints()" target="../idle">
                     <script>
                         next_waypoint = self.waypoints.pop(0)
-                        print len(self.waypoints)
                     </script>
                     <raise event="new_waypoint" target="steering">
                         <parameter expr="next_waypoint"/>
@@ -576,7 +566,6 @@
                 </transition>
                 <transition cond="not SELF.morePoints()" target="../idle">
                     <raise event="destination_reached" scope="broad"/>
-                    <log> send destination_reached</log>
                 </transition>
             </state>
         </scxml>
@@ -606,8 +595,6 @@
         <method name="pointReached">
             <body>
                 cell = self.map.calculateCell((self.tank.x, self.tank.y))
-                print cell
-                print self.dest_cell
                 return cell == self.dest_cell
             </body>
         </method>
@@ -637,7 +624,7 @@
                 ]]>
             </body>
         </method>
-        <method name="pointLeft">
+        <method name="pointRight">
             <body>
                 <![CDATA[
                 goal_angle = self.tank.angleToDest(self.dest_waypoint)
@@ -648,7 +635,7 @@
                 ]]>
             </body>
         </method>
-        <method name="pointRight">
+        <method name="pointLeft">
             <body>
                 <![CDATA[
                 goal_angle = self.tank.angleToDest(self.dest_waypoint)
@@ -677,7 +664,6 @@
                     <script>
                         self.dest_waypoint = dest_waypoint
                         self.dest_cell = self.map.calculateCell(dest_waypoint)
-                        print "new point set " + str(dest_waypoint) 
                     </script>
 
                 </transition>
@@ -685,13 +671,11 @@
             <state id="steering" initial="forward_backward">
                 <transition cond="SELF.pointReached()" target="../idle">
                     <raise event="waypoint_reached" scope="broad"/>
-                    <log> point reached</log>
                 </transition>
                 
                 <state id="forward_backward">
                     <transition cond="SELF.pointAhead()" target="../left_right">
                         <raise event="forward" target="motor_control"/>
-                        <log> forward </log>
                     </transition>
                     <transition cond="SELF.pointBehind()" target="../left_right">
                         <raise event="stop" target="motor_control"/>
@@ -725,7 +709,7 @@
             <parameter type="AITank" name="tank"/>
             <body>
                 self.tank = tank
-                self.margin = tank.cannonSpeed * D1
+                self.margin = tank.cannonSpeed * D1 * 5
             </body>
         </method>
         <relationships>

@@ -79,7 +79,6 @@ class AIMap():
     
     def calculatePath(self, start, destination):
         #self.controller.stop()
-        print "calculating path from " + str(start) + " to " + str(destination) + " ."
 
         class PriorityQueue:
             def  __init__(self):  
@@ -124,7 +123,6 @@ class AIMap():
             newpoints.insert(0, self.calculateCoords(currentNode[0]))
             currentNode = currentNode[1]
             
-        print newpoints
         return newpoints
         
     

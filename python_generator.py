@@ -418,7 +418,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.enterHistory_" + enters[-1].getParentNode().getFullName() + "(" + str(enters[-1].isHistoryDeep()) + ")")
         else:
             self.fOut.write("self.enterAction_" + enters[-1].getFullName() + "()")
-        self.fOut.write('catched = True')
+        #self.fOut.write('catched = True')
         self.fOut.dedent()
                         
     def writeTransitionCondition(self, transition, index):

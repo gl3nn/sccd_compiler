@@ -118,8 +118,10 @@ class TanksField:
                 if "tank" in self.canvas.gettags(hit) :
                     if self.tanks_map[hit].getTeam() != bullet.getTeam() :
                         if self.tanks_map[hit].doDamage(bullet.getDamage()) : 
-                            self.tanks.remove(self.tanks_map[hit])
-                            del self.tanks_map[hit] 
+                            dead_tank = self.tanks_map.pop(hit)
+                            self.team_counts[dead_tank.team] -= 1
+                            self.tanks.remove(dead_tank)
+                            
                     bullet.destroy()
                 if "obstacle" in self.canvas.gettags(hit) :
                     bullet.destroy()

@@ -186,6 +186,11 @@
                             <parameter expr="'steering/motor_control'"/>
                         </raise>
                         
+                        <raise event="associate_instance" scope="CD">
+                            <parameter expr="'path_finder'"/>
+                            <parameter expr="'steering/path_finder'"/>
+                        </raise>
+                        
                         <raise event="start_instance" scope="CD">
                             <parameter expr="'steering'"/>
                         </raise> 
@@ -372,11 +377,14 @@
                         <parameter expr="SELF.enemy_pos"/>
                     </raise>
                 </transition>
-                <transition event="enemy_out_of_sight" target="../enemy_pos_unsure"/>
+                <transition event="enemy_out_of_sight" target="../enemy_pos_unsure">
+                    <raise event="enemy_out_of_sight" target="attack_planner"/>
+                </transition>
             </state>
             <state id="enemy_pos_unsure">
                 <transition event="destination_reached" target="../no_enemy">
                     <raise event="enemy_lost" target="pilot_strategy"/>
+                    <log>raise enemy_lost</log>
                 </transition>
                 <transition event="enemy_sighted" target="../enemy_pos_known"> 
                     <parameter name="position"/>
@@ -416,8 +424,11 @@
             <state id="attacking">
                 <onexit>
                     <raise event="stop_attacking" target="attack_planner"/>
+                    <log>raise stop_attacking</log>
                 </onexit>
-                <transition event="enemy_lost" target="../exploring"/>
+                <transition event="enemy_lost" target="../exploring">
+                    <log>received enemy lost</log>
+                </transition>
             </state>
         </scxml>
     </class>
@@ -443,6 +454,9 @@
                 <transition event="explore" target="../exploring"/>
             </state>
             <state id="exploring" initial="no_destination">
+                <transition event="stop_exploring" target="../idle">
+                    <log>stop_exploring received</log>
+                </transition>
                 <state id="no_destination">
                     <transition target="../destination_set">
                         <raise event="new_destination" target="path_finder">
@@ -467,8 +481,9 @@
         <scxml initial="idle">
             <state id="idle">
                 <transition event="attack" target="../action">
+                    <log>received attack</log>
                     <parameter name="enemy_pos"/>
-                    <raise event="new_destination" scope="broad">
+                    <raise event="new_destination" target="path_finder">
                         <parameter expr="enemy_pos"/>
                     </raise>
                     <raise event="aim_at" target="turret_steering">
@@ -477,8 +492,9 @@
                 </transition>
             </state>
             <parallel id="action">
-                <transition event="stop_attack" target="../idle">
-                    <raise event="stop_aim" target="turret_steering"/>
+                <transition event="stop_attacking" target="../idle">
+                    <log>received stop attack</log>
+                    <raise event="stop_aiming" target="turret_steering"/>
                 </transition>
                 <state id="movement">
                     <state id="following">
@@ -491,18 +507,22 @@
                                 <parameter expr="enemy_pos"/>
                             </raise>
                         </transition>
+                        <transition event="enemy_out_of_sight" target=".">
+                            <raise event="stop_aiming" target="turret_steering"/>
+                        </transition>
                     </state>
                 </state>
-                <parallel id="shooting">
+                <state id="shooting" initial="loaded">
                     <state id="loaded">
                         <transition event="ready_to_shoot" target="../reloading">
                             <raise event="shoot" target="turret_control"/>
+                            <log>raise shoot</log>
                         </transition>
                     </state>
                     <state id="reloading">
-                        <transition after="1" target="../loaded"/>
+                        <transition after="0.5" target="../loaded"/>
                     </state>
-                </parallel>
+                </state>
             </parallel>
         </scxml>
     </class>
@@ -583,6 +603,7 @@
         <attribute name="margin" init-value="0.2"/>
         <relationships>
             <association class="MotorControl" name="motor_control" min="1" max="1"/>
+            <association class="PathFinder" name="path_finder" min="1" max="1"/>
         </relationships>
         <method name="Steering">
             <parameter type="AITank" name="tank"/>
@@ -670,7 +691,7 @@
             </state>
             <state id="steering" initial="forward_backward">
                 <transition cond="SELF.pointReached()" target="../idle">
-                    <raise event="waypoint_reached" scope="broad"/>
+                    <raise event="waypoint_reached" target="path_finder"/>
                 </transition>
                 
                 <state id="forward_backward">
@@ -709,7 +730,7 @@
             <parameter type="AITank" name="tank"/>
             <body>
                 self.tank = tank
-                self.margin = tank.cannonSpeed * D1 * 5
+                self.margin = tank.cannonSpeed * D1
             </body>
         </method>
         <relationships>
@@ -758,8 +779,17 @@
                     </script>
                 </transition>
             </state>
+            
             <state id="aiming" initial="adjust">
                 <transition event="stop_aiming" target="../idle">
+                    <log>received stop aiming</log>
+                    <raise event="stop_turning" target="turret_control"/>
+                </transition>
+                <transition event="aim_at" target=".">
+                    <parameter name="target"/>
+                    <script>
+                        self.target = target
+                    </script>
                 </transition>
                 
                 <state id="adjust">

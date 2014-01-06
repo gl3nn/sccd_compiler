@@ -8,7 +8,6 @@ class PlayerTank(Tank):
 		self.controller.start()
 		
 	def destroy(self):
-		self.reloadState.set("Exploded.\n\nGame Over") #should send out an event maybe? 
 		Tank.destroy(self)
 				
 	def addListener(self, ports):

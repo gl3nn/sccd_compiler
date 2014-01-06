@@ -161,6 +161,8 @@ class TanksGame(tk.Tk):
                     self.setReloading()
                 elif fetched.getName() == "loaded" :
                     self.setLoaded()
+                elif fetched.getName() == "game_over" :
+                    self.setGameOver()
                     
         if self.game_running == True :
             if not self.field.level_running :

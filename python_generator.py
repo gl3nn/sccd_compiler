@@ -9,22 +9,22 @@ class PythonGenerator(CodeGenerator):
         super(PythonGenerator,self).__init__(class_diagram, output_file, protocol)
         self.supported_protocols = ["threads", "gameloop"]
                 
-    def enter_ClassDiagram(self, classdiagram):
+    def visit_ClassDiagram(self, class_diagram):
         self.fOut.write("# Statechart compiler by Glenn De Jonghe")
         self.fOut.write("#")
-        self.fOut.write("# Source: " + classdiagram.source)
+        self.fOut.write("# Source: " + class_diagram.source)
         self.fOut.write("# Date:   " + time.asctime())
-        if classdiagram.name or classdiagram.author or classdiagram.description:
+        if class_diagram.name or class_diagram.author or class_diagram.description:
             self.fOut.write()
-        if classdiagram.author:
-            self.fOut.write("# Model Author: " + classdiagram.author)
-        if classdiagram.name:
-            self.fOut.write("# Model name:   " + classdiagram.name)
-        if classdiagram.description.strip():
+        if class_diagram.author:
+            self.fOut.write("# Model Author: " + class_diagram.author)
+        if class_diagram.name:
+            self.fOut.write("# Model name:   " + class_diagram.name)
+        if class_diagram.description.strip():
             self.fOut.write("# Model description:")
             self.fOut.write('"""')
             self.fOut.indent()
-            self.fOut.write(classdiagram.description.strip())
+            self.fOut.write(class_diagram.description.strip())
             self.fOut.dedent()
             self.fOut.write('"""')
         self.fOut.write()
@@ -32,12 +32,15 @@ class PythonGenerator(CodeGenerator):
         #Mandatory imports
         self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper')
         #User imports
-        if classdiagram.top.strip():
-            StringUtils.writeCodeCorrectIndent(classdiagram.top, self.fOut)
+        if class_diagram.top.strip():
+            StringUtils.writeCodeCorrectIndent(class_diagram.top, self.fOut)
         self.fOut.write()
         
-    def exit_ClassDiagram(self, class_diagram):            
-        # ObjectManager
+        #visit children
+        for c in class_diagram.classes :
+            c.accept(self)
+         
+        #writing out ObjectManager
         self.fOut.write('class ObjectManager (ObjectManagerBase):')
         self.fOut.indent()
         self.fOut.write('def __init__(self, controller):')
@@ -118,7 +121,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         self.fOut.dedent()
 
-    def enter_Class(self, class_node):
+    def visit_Class(self, class_node):
         self.fOut.write()
         # take care of inheritance
         if class_node.super_classes:
@@ -147,8 +150,6 @@ class PythonGenerator(CodeGenerator):
         else :
             self.writeMethodSignature("commonConstructor")
         self.fOut.indent()
-        
-
 
         # write attributes
         if class_node.attributes:
@@ -190,6 +191,19 @@ class PythonGenerator(CodeGenerator):
         else :
             self.fOut.write("pass")
         self.fOut.dedent()
+        
+        #visit children
+        for i in class_node.constructors :
+            i.accept(self)
+        for i in class_node.destructors :
+            i.accept(self)
+        for i in class_node.methods :
+            i.accept(self)
+        if class_node.statechart is not None:
+            class_node.statechart.accept(self)
+          
+        # write out str method
+        self.fOut.dedent()
 
     #helper method
     def writeStateChartInitMethod(self, parent_class):
@@ -214,10 +228,6 @@ class PythonGenerator(CodeGenerator):
         for c in [root] + parent_class.statechart.composites :
             self.fOut.write("self.currentState[self." + c.getFullName() + "] = []")
         self.fOut.write()
-        self.fOut.dedent()
-        
-    def exit_Class(self, class_node):    
-        # write out str method
         self.fOut.dedent()
         
     #helper method
@@ -356,14 +366,14 @@ class PythonGenerator(CodeGenerator):
     def visit_SelfReference(self, self_reference):
         self.fOut.extendWrite("self")
         
-    def visit_Target(self, target):
-        node = target.getNode()
+    def visit_StatePath(self, state_path):
+        node = state_path.getTargetNode()
         self.fOut.extendWrite(node.getParentStateChart().className + "." + node.getFullName())
         
-    def enter_InStateCall(self, in_state_call):
-        self.fOut.extendWrite("self.inState(")
         
-    def exit_InStateCall(self, in_state_call):
+    def visit_InStateCall(self, in_state_call):
+        self.fOut.extendWrite("self.inState(")
+        in_state_call.target.accept(self)
         self.fOut.extendWrite(")")
         
     def writeTransitionAction(self, transition, index):
@@ -385,7 +395,7 @@ class PythonGenerator(CodeGenerator):
                 self.fOut.extendWrite(' = parameters[' + str(index) + ']')
         
         
-        target = transition.getTarget().getNode()
+        target = transition.getTarget().getTargetNode()
         exits, enters = statechart.getTransitionPath(source_node, target)
         
         # write out exit actions
@@ -571,10 +581,14 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.dedent()
 
-    def enter_StateChart(self, statechart):
+    def visit_StateChart(self, statechart):
         self.fOut.write("# First statechart enter/exit action methods")
-                
-    def exit_StateChart(self, statechart): 
+        
+        #visit children
+        for i in statechart.composites + statechart.basics:
+            i.getEnterAction().accept(self)
+            i.getExitAction().accept(self)
+
         # write out statecharts methods for enter/exit state
         if statechart.composites :
             self.fOut.write("# Statechart enter/exit state methods")
@@ -745,20 +759,6 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Log(self, log):
         self.fOut.write('print "' + log.message + '"')
-        
-    def visit_Append(self, append):
-        self.fOut.write()
-        append.lvalue.accept(self)
-        self.fOut.extendWrite(".append(") 
-        append.expression.accept(self)
-        self.fOut.extendWrite(")")
-        
-    def visit_Remove(self, remove):
-        self.fOut.write()
-        remove.lvalue.accept(self)
-        self.fOut.extendWrite(".pop(") 
-        remove.expression.accept(self)
-        self.fOut.extendWrite(")")
         
     def visit_Assign(self, assign):
         self.fOut.write()

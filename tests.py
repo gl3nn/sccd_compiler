@@ -109,7 +109,7 @@ class TestSequenceFunctions(TestCase):
         ])
         self.expect([
             ("test_output", "request_send"),
-            ("test_output", "associate_added"),
+            ("test_output", "instance_created"),
             ("test_output", "second_working")
         ])
     

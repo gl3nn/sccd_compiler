@@ -4,7 +4,7 @@
         Handling the player tank.
     </description>
     <inport name="engine" />
-    <inpport name="input" />
+    <inport name="input" />
     <outport name="gui" />
     <class name="Main" default="true">
         <attribute name="tank" type="PlayerTank"/>

@@ -2,7 +2,6 @@ import xml.etree.ElementTree as ET
 import os
 import abc
 import re
-import python_generator as Python
 from visitor import Visitable
 
 
@@ -19,112 +18,17 @@ INSTATE_SEQ = 'INSTATE'
 
 ##################################
 
-class StateTarget(Visitable):
-    def __init__(self, input_string, source_node):
-        #source_node = source_node.getParentNode()
-        self.input_string = input_string
-        self.statechart = source_node.getParentStateChart()
-        self.original_source = source_node
-        self.source = source_node
-        if len(input_string) == 0 :
-            raise CompilerException("Target node expects non-empty string.")
-        shift = 0
-        if input_string[0] == "/" :
-            self.source = self.statechart.root
-            shift = 1
-        while True :
-            if input_string[shift:shift+3] == "../":
-                self.source = self.source.getParentNode()
-                if self.source == None :
-                    raise CompilerException("Illegal use of parent operator. Root of statechart reached.")
-                shift += 3
-            elif shift == len(input_string) -1 and input_string[shift] == "." :
-                shift +=1   
-            elif input_string[shift:shift+2] == "./":
-                shift += 2
-            else :
-                break
-        path_string = input_string[shift:]
-        if path_string != "" :
-            self.path =  path_string.split("/")
-        else :
-            self.path = []
-        self.target_node = None #added when validation of the target is done
-    
-    def validate(self):
-        parent = self.source
-        for step in self.path :
-            found = False
-            for child in parent.children :
-                if child.getName() == step : 
-                    found = True
-                    parent = child
-                    break
-            if not found :
-                raise CompilerException('Invalid state reference "' + self.input_string + '".')
-        self.target_node = parent
+class StatePath(Visitable):
+    def __init__(self, input_string):
+        self.path_string = input_string
+        self.target_node = None #calculted in consequent visits
         
-    def getNode(self):
+    def getTargetNode(self):
         return self.target_node
-    
-##################################
-
-"""
-    produces a list of parts where macro's are replaced by objects.
-"""
-def processString(string, current_node = None):
-    pieces = []             
-    stack = []
-    pointer = 0
-    last_end = -1
-    skip = False
-    for match in re.finditer(r"\b[a-zA-Z_]\w*\b", string) :
-        while pointer < match.start() :
-            if skip :
-                skip = False
-                continue
-            i = string[pointer]
-            if i == "'" or i == '"' :
-                if stack and stack[-1] == i :
-                    stack.pop()
-                else :
-                    stack.append(i)
-            elif i == "/" : #Escape character! Ignore next char
-                skip = True
-            pointer += 1
-        if not stack :
-            processed_string = string[last_end+1:pointer]
-            matched_string = string[match.start():match.end()]
-            created_object = None
-            if matched_string == SELF_REFERENCE_SEQ :
-                created_object = SelfReference()
-                last_end = match.end()-1
-            elif matched_string == INSTATE_SEQ :
-                if current_node is None :
-                    raise CompilerException(INSTATE_SEQ + " call is not allowed here.")
-                pattern = re.compile("\\s*\((?P<quoting>[\"\'])([^\"\']+)(?P=quoting)\)")
-                result = pattern.search(string, match.end())
-                if result :
-                    created_object = InStateCall(result.group(2), current_node)
-                    last_end = result.end() - 1
-            
-            if created_object :    
-                if processed_string != "" :
-                    pieces.append(BareString(processed_string))
-                pieces.append(created_object)
-                
-        pointer = match.end()
-    processed_string = string[last_end+1:]
-    if processed_string != "" :
-        pieces.append(BareString(processed_string))
-    return pieces
    
 ##################################
 class ExpressionPart(Visitable):
     __metaclass__  = abc.ABCMeta
-    
-    def validate(self):
-        pass
     
 class BareString(ExpressionPart):
     def __init__(self, string):
@@ -134,51 +38,83 @@ class SelfReference(ExpressionPart):
     pass
     
 class InStateCall(ExpressionPart):
-    def __init__(self, state_string, current_node):
+    def __init__(self, state_string):
         if state_string == "" :
-            raise CompilerException(INSTATE_SEQ + " call expects a non-empty statenode.")
-        self.target = StateTarget(state_string, current_node)
-        
-    def accept(self, visitor):
-        visitor.enter(self)
-        self.target.accept(visitor)
-        visitor.exit(self)
-        
-    def validate(self):
-        try :
-            self.target.validate()
-        except CompilerException :
-            raise CompilerException("Invalid state reference for " + INSTATE_SEQ + " call.")
+            raise CompilerException(INSTATE_SEQ + " call expects a non-empty state reference.")
+        self.target = StatePath(state_string)
 
 ##################################
     
 class Expression(Visitable):
-    def __init__(self, string, current_node):
+    def __init__(self, string):
         if not string :
             raise CompilerException("Empty Expression.")
-        self.pieces = processString(string, current_node)
+        self.processString(string)
+        
+    def processString(self, string):
+        """
+            produces a list of parts where macro's are replaced by objects.
+        """
+        self.pieces = []             
+        stack = []
+        pointer = 0
+        last_end = -1
+        skip = False
+        for match in re.finditer(r"\b[a-zA-Z_]\w*\b", string) :
+            while pointer < match.start() :
+                if skip :
+                    skip = False
+                    continue
+                i = string[pointer]
+                if i == "'" or i == '"' :
+                    if stack and stack[-1] == i :
+                        stack.pop()
+                    else :
+                        stack.append(i)
+                elif i == "/" : #Escape character! Ignore next char
+                    skip = True
+                pointer += 1
+            if not stack :
+                processed_string = string[last_end+1:pointer]
+                matched_string = string[match.start():match.end()]
+                created_object = None
+                if matched_string == SELF_REFERENCE_SEQ :
+                    created_object = SelfReference()
+                    last_end = match.end()-1
+                elif matched_string == INSTATE_SEQ :
+                    pattern = re.compile("\\s*\((?P<quoting>[\"\'])([^\"\']+)(?P=quoting)\)")
+                    result = pattern.search(string, match.end())
+                    if result :
+                        created_object = InStateCall(result.group(2))
+                        last_end = result.end() - 1
+                
+                if created_object :    
+                    if processed_string != "" :
+                        self.pieces.append(BareString(processed_string))
+                    self.pieces.append(created_object)
+                    
+            pointer = match.end()
+        processed_string = string[last_end+1:]
+        if processed_string != "" :
+            self.pieces.append(BareString(processed_string))
           
     def accept(self, visitor):
         for piece in self.pieces :
             piece.accept(visitor)
-            
-    def validate(self):
-        for piece in self.pieces :
-            piece.validate()
 
 class LValue(Expression):
     def __init__(self, string):
         if not string :
             raise CompilerException("Empty LValue.")
-        self.pieces = processString(string)
+        self.processString(string)
         #do some validation, provide parameters to processString to make the function more efficient
      
 ##################################     
      
 class FormalEventParameter(Visitable):
-    def __init__(self, name, type = "", default = ""):
+    def __init__(self, name, ptype = "", default = ""):
         self.name = name
-        self.type = type
+        self.type = ptype
         self.default = default
         
     def getName(self):
@@ -206,7 +142,7 @@ class TriggerEvent:
             if self.port :
                 raise CompilerException("After event can not have a port.")
             self.is_after = True
-            self.after = Expression(self.after, parent_transition.parent_node)
+            self.after = Expression(self.after)
             return
         elif not self.event :
             self.is_uc = True
@@ -256,15 +192,12 @@ class SubAction(Visitable):
         pass
     
     @classmethod
-    def create(cls, xml_element, current_node):
+    def create(cls, xml_element):
         for subcls in cls.__subclasses__():
             tag = xml_element.tag.lower()
             if subcls.check(tag):
-                return subcls(xml_element, current_node)
+                return subcls(xml_element)
         raise CompilerException("Invalid subaction.")
-    
-    def validate(self):
-        pass
     
 ##################################
 """
@@ -281,7 +214,7 @@ class RaiseEvent(SubAction):
     CD_SCOPE = 5
     
     
-    def __init__(self, xml_element, current_node):
+    def __init__(self, xml_element):
         self.event = xml_element.get("event","").strip()
         scope_string = xml_element.get("scope","").strip().lower()
         if scope_string == "local" :
@@ -332,14 +265,7 @@ class RaiseEvent(SubAction):
             value = p.get("expr","")
             if not value :
                 raise CompilerException("Parameter without value detected.")
-            self.params.append(Expression(value, current_node))
-   
-    def __str__(self):
-        presentation = "Scope  : %s \n" % self.scope
-        if not self.isLocal() : 
-            presentation += "Target : %s \n" % self.getNode().getFullName()
-        presentation += "Event  : %s \n" % self.getEvent()
-        return presentation
+            self.params.append(Expression(value))
     
     @staticmethod
     def check(tag):
@@ -377,7 +303,7 @@ class RaiseEvent(SubAction):
             
 class Script(SubAction):
     tag = "script"
-    def __init__(self, xml_element, current_node):
+    def __init__(self, xml_element):
         self.code = xml_element.text
         
     @staticmethod
@@ -386,45 +312,22 @@ class Script(SubAction):
             
 class Log(SubAction):
     tag = "log"
-    def __init__(self, xml_element, current_node):
+    def __init__(self, xml_element):
         self.message = xml_element.text.strip()
         
     @staticmethod
     def check(tag):
         return tag == Log.tag
     
-class Append(SubAction):
-    tag = "append"
-    def __init__(self, xml_element, current_node):
-        self.lvalue = LValue(xml_element.get("ident",""))
-        self.expression = Expression(xml_element.get("item",""), current_node)
-
-    @staticmethod
-    def check(tag):
-        return tag == Append.tag
-    
-class Remove(SubAction):
-    tag = "remove"
-    def __init__(self, xml_element, current_node):
-        self.lvalue = LValue(xml_element.get("ident",""))
-        self.expression = Expression(xml_element.get("index",""), current_node)
-        
-    @staticmethod
-    def check(tag):
-        return tag == Remove.tag
-    
 class Assign(SubAction):
     tag = "assign"
-    def __init__(self, xml_element, current_node):
+    def __init__(self, xml_element):
         self.lvalue = LValue(xml_element.get("ident",""))
-        self.expression = Expression(xml_element.get("expr",""), current_node)
+        self.expression = Expression(xml_element.get("expr",""))
     
     @staticmethod   
     def check(tag):
         return tag == Assign.tag
-    
-    def validate(self):
-        self.expression.validate()
   
 ##################################
 
@@ -432,23 +335,19 @@ class Assign(SubAction):
     Exists out of multiple subactions
 """
 class Action(Visitable):
-    def __init__(self, xml_element, current_node):
+    def __init__(self, xml_element):
         self.sub_actions = []
         for subaction in list(xml_element) :
             if subaction.tag not in ["parameter"] :      
-                self.sub_actions.append(SubAction.create(subaction, current_node))
+                self.sub_actions.append(SubAction.create(subaction))
             
     def accept(self, visitor):
         for subaction in self.sub_actions :
             subaction.accept(visitor)
-            
-    def validate(self):
-        for subaction in self.sub_actions :
-            subaction.validate()
         
 ##################################
 
-class StateChartTransition():
+class StateChartTransition(Visitable):
     def __init__(self,xml_element,parent):
         self.xml = xml_element
         self.parent_node = parent
@@ -456,31 +355,15 @@ class StateChartTransition():
         self.trigger = TriggerEvent(self.xml, self)
         guard_string = self.xml.get("cond","").strip()
         if guard_string != "" : 
-            self.guard = Expression(guard_string, self.parent_node)
+            self.guard = Expression(guard_string)
         else :
             self.guard = None
         target_string = self.xml.get("target","").strip()
         if target_string == "" :
             raise CompilerException("Transition from <" + self.parent_node.getFullID() + "> has empty target.")
-        self.target = StateTarget(target_string, self.parent_node)
+        self.target = StatePath(target_string)
         
-        self.action = Action(self.xml, self.parent_node)
-     
-    def validate(self):
-        try :
-            self.target.validate()
-        except CompilerException as exception :
-            raise CompilerException("Transition from <" + self.parent_node.getFullID() + "> has invalid target. " + exception.message)
-        try :
-            self.action.validate()
-        except CompilerException as exception :
-            raise CompilerException("Transition from <" + self.parent_node.getFullID() + "> has invalid action. " + exception.message)
-        try :
-            if self.guard : 
-                self.guard.validate()
-        except CompilerException as exception :
-            raise CompilerException("Transition from <" + self.parent_node.getFullID() + "> has invalid guard. " + exception.message)
-        
+        self.action = Action(self.xml)
         
     def isUCTransition(self):
         """ Returns true iff is an unconditional transition (i.e. no trigger)
@@ -508,13 +391,9 @@ class EnterExitAction(Visitable):
     def __init__(self, parent_node, xml_element = None):
         self.parent_node = parent_node
         if xml_element is not None:
-            self.action = Action(xml_element, parent_node)
+            self.action = Action(xml_element)
         else :
             self.action = None
-            
-    def validate(self):
-        if self.action :
-            self.action.validate()
         
 class EnterAction(EnterExitAction):
     def __init__(self, parent_node, xml_element = None):
@@ -526,7 +405,7 @@ class ExitAction(EnterExitAction):
         
 ##################################  
 
-class StateChartNode:
+class StateChartNode(Visitable):
     def __init__(self,xml_element,state_type, is_orthogonal, parent):
         self.children = []
         self.defaults = []        
@@ -686,12 +565,6 @@ class StateChartNode:
     
     def solvesConflictsOuter(self):
         return self.solves_conflict_outer
-    
-    def validate(self):
-        self.entry_action.validate()
-        self.exit_action.validate()
-        for transition in self.transitions :
-            transition.validate()
         
 ##################################
 
@@ -719,10 +592,7 @@ class StateChart(Visitable):
         self.historyParents = []
         for node in self.historys:
             self.calculateHistory(node.getParentNode(), node.isHistoryDeep())
-        
-        #do semantic additions and validation
-        for node in self.basics + self.composites:
-            node.validate()
+
         
     def addToHierarchy(self,parent) :
         children_names = []
@@ -853,13 +723,6 @@ class StateChart(Visitable):
         enterpath.reverse()
 
         return (exitpath, enterpath)
-    
-    def accept(self, visitor):
-        visitor.enter(self)
-        for i in self.composites + self.basics:
-            i.getEnterAction().accept(visitor)
-            i.getExitAction().accept(visitor)
-        visitor.exit(self)
 
 ###################################
 
@@ -972,18 +835,6 @@ class Class(Visitable):
         
     def getName(self):
         return self.name
-    
-    def accept(self, visitor):
-        visitor.enter(self)
-        for i in self.constructors :
-            i.accept(visitor)
-        for i in self.destructors :
-            i.accept(visitor)
-        for i in self.methods :
-            i.accept(visitor)
-        if self.statechart is not None:
-            self.statechart.accept(visitor)
-        visitor.exit(self)
         
     def processMethod(self, method_xml) :
         name = method_xml.get("name", "")
@@ -1174,12 +1025,6 @@ class ClassDiagram(Visitable):
             else :
                 raise CompilerException("Provide one and only one default class to instantiate on start up.")
         self.default_class = default_classes[0]
-            
-    def accept(self, visitor):
-        visitor.enter(self)
-        for c in self.classes :
-            c.accept(visitor)
-        visitor.exit(self)
 
 ###################################
 class CompilerException(Exception):
@@ -1206,13 +1051,18 @@ def showInfo(info):
         print "INFO : " + info
         
 ###################################
+
+import python_generator as Python
+from state_linker import StateLinker
    
 def generate(input_file, output_file, protocol = "Threads", target_code = "Python"):
     class_diagram = process(input_file)
     _generate(class_diagram, output_file, protocol, target_code)
       
 def process(input_file):
-    return ClassDiagram(input_file)
+    cd = ClassDiagram(input_file) #create AST
+    cd.accept(StateLinker()) #visitor fixing state references
+    return cd
     
 def _generate(class_diagram, output_file, protocol = "Threads", target_code = "Python"):
     target_code = target_code.lower()

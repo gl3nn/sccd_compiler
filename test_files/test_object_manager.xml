@@ -16,13 +16,17 @@
                         <parameter expr="'test2_association'"/>
                     </raise>
                     <raise port="test_output" event="request_send"/>
+                    
                 </transition>
             </state>
 
             <state id="wait">
                 <transition event="instance_created" target="../start">
                     <parameter name="association_name" />
-                    <raise port="test_output" event="associate_added"/>
+                    <raise port="test_output" event="instance_created"/>
+                    <raise scope="cd" event="start_instance">
+	                    <parameter expr="'test2_association'"/>
+	                </raise> 
                     <raise target="test2_association" event="hello" />
                 </transition>
             </state>
@@ -31,6 +35,7 @@
     <class name="Test2" default="false">
         <scxml>
             <state id="start">
+            	<log>started</log>
                 <transition event="hello" target=".">
                     <raise port="test_output" event="second_working" />
                 </transition>

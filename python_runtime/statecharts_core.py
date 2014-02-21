@@ -53,8 +53,6 @@ class ObjectManagerBase(object):
         self.event_queue = []
         self.all_instances = {} #a dictionary that maps instance_reference to InstanceWrapper
         
-        
-
     def event(self, new_event):
         self.event_queue.append(new_event)
         
@@ -103,7 +101,6 @@ class ObjectManagerBase(object):
             i.start()           
                
     def handleEvent(self, e):   
-                 
         if e.getName() == "narrow_cast" :
             self.handleNarrowCastEvent(e.getParameters())
             

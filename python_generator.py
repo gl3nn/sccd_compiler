@@ -1,13 +1,13 @@
-import utils.StringUtils as StringUtils
+import utils as StringUtils
 import time
-import SCCDC
-from visitor import CodeGenerator
+from constructs import FormalParameter
+from code_generation import CodeGenerator, Protocols
 
 class PythonGenerator(CodeGenerator):
     
-    def __init__(self, class_diagram, output_file, protocol = "threads"):
+    def __init__(self, class_diagram, output_file, protocol):
         super(PythonGenerator,self).__init__(class_diagram, output_file, protocol)
-        self.supported_protocols = ["threads", "gameloop"]
+        self.supported_protocols = [Protocols.Threads, Protocols.GameLoop]
                 
     def visit_ClassDiagram(self, class_diagram):
         self.fOut.write("# Statechart compiler by Glenn De Jonghe")
@@ -75,9 +75,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         
         self.fOut.write()
-        if self.protocol == "threads" :
+        if self.protocol == Protocols.Threads :
             controller_sub_class = "ThreadsControllerBase"
-        elif self.protocol == "gameloop" :
+        elif self.protocol == Protocols.GameLoop :
             controller_sub_class = "GameLoopControllerBase"
         self.fOut.write("from python_runtime.statecharts_core import " + controller_sub_class)
 
@@ -109,7 +109,7 @@ class PythonGenerator(CodeGenerator):
         
     #helper method
     def writeInitMethod(self, class_diagram, parameters = []):
-        self.writeMethodSignature('__init__', parameters + [SCCDC.FormalParameter("keep_running", "", "True")])
+        self.writeMethodSignature('__init__', parameters + [FormalParameter("keep_running", "", "True")])
         self.fOut.indent()
         self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running)")
         for i in class_diagram.inports:
@@ -146,7 +146,7 @@ class PythonGenerator(CodeGenerator):
     
             self.fOut.write()
             self.writeStateChartInitMethod(class_node)
-            self.writeMethodSignature("commonConstructor", [SCCDC.FormalParameter("controller", "", "None")])
+            self.writeMethodSignature("commonConstructor", [FormalParameter("controller", "", "None")])
         else :
             self.writeMethodSignature("commonConstructor")
         self.fOut.indent()
@@ -259,7 +259,7 @@ class PythonGenerator(CodeGenerator):
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")
-        parameters =  [SCCDC.FormalParameter("controller", "", None)] + constructor.getParams()
+        parameters =  [FormalParameter("controller", "", None)] + constructor.getParams()
         self.writeMethodSignature("__init__", parameters)
         self.fOut.indent()
         if constructor.parent_class.statechart is not None :
@@ -536,7 +536,7 @@ class PythonGenerator(CodeGenerator):
             
     #helper method
     def writeEnterHistory(self, entered_node):
-        self.writeMethodSignature("enterHistory_" + entered_node.getFullName(), [SCCDC.FormalParameter("deep","")])
+        self.writeMethodSignature("enterHistory_" + entered_node.getFullName(), [FormalParameter("deep","")])
         self.fOut.indent()
         class_name = entered_node.parent_statechart.className
         self.fOut.write("if self.historyState[" + class_name + "." + entered_node.getFullName() + "] == []:")

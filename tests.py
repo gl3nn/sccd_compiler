@@ -1,13 +1,44 @@
 from unittest import TestCase, main
-import SCCDC
+import sccdc
 import importlib
 import os
+from compiler_exceptions import CompilerException, TransitionException
+from code_generation import Protocols
 from python_generator import PythonGenerator
-from python_runtime.statecharts_core import Event, OutputListener
+from python_runtime.statecharts_core import Event
 
 #http://docs.python.org/2/library/unittest.html
 
 TEST_FILES_FOLDER = "test_files"
+
+
+class TestEvent(object):
+    def __init__(self, name, port, parameters = []):
+        self.name = name
+        self.port = port
+        self.parameters = parameters
+        
+    def matches(self, event):
+        if event is None :
+            return False
+        if event.getName() != self.name :
+            return False
+        if event.getPort() != self.port :
+            return False
+        compare_parameters = event.getParameters()
+        if len(self.parameters) != len(compare_parameters) :
+            return False
+        for index in xrange(len(self.parameters)) :
+            if self.parameters[index] !=  compare_parameters[index]:
+                return False
+        return True
+    
+    def __repr__(self):
+        representation = "(event name : " + str(self.name) + "; port : " + str(self.port)
+        if self.parameters :
+            representation += "; parameters : " + str(self.parameters)
+        representation += ")"
+        return representation
 
 class TestSequenceFunctions(TestCase):
     def setUp(self):
@@ -17,22 +48,33 @@ class TestSequenceFunctions(TestCase):
         self.expected_output = None
         self.delete_generated_file = False
         
+        
+        
     def checkOutput(self):
         if(self.output_listener):
-            for count, entry in enumerate(self.expected_output, start=1) :
-                port = entry[0]
-                event = entry[1]       
-                output_event = self.output_listener.fetch()
-                self.assertNotEqual(output_event, None, "Output event " + str(count) + " is None.")
-                self.assertEqual(output_event.getPort(), port, "Ports of output event " + str(count) + " did not match. Expected " + port + ", got " + output_event.getPort() + ".")
-                self.assertEqual(output_event.getName(), event, "Names of output event " + str(count) + " did not match. Expected " + event + ", got " + output_event.getName() + ".")
-                if len(entry) > 2 :
-                    expected_parameters = entry[2:]
-                    received_parameters = output_event.getParameters()
-                    self.assertLessEqual(len(expected_parameters), len(received_parameters), "Parameters of output event" + str(count) + " did not match. Expected " + str(len(expected_parameters)) + " parameters but only got " + str(len(received_parameters)) + ".")
-                    for pindex,p in enumerate(expected_parameters) :
-                        self.assertEqual(p, received_parameters[pindex], "Parameter " + str(pindex+1) + " of output event " + str(count) + " did not match. Expected " + str(p) + ", got " + str(received_parameters[pindex]) + ".")
+            for (entry_index, expected_entry) in enumerate(self.expected_output, start=1) :
                 
+                all_options = []
+                if isinstance(expected_entry, tuple) :
+                    all_options.append(TestEvent(expected_entry[1],expected_entry[0],expected_entry[2:]))
+                else :
+                    for expected_event in expected_entry :
+                        all_options.append(TestEvent(expected_event[1],expected_event[0],expected_event[2:]))                    
+                     
+                remaining_options = all_options[:]
+                received_output = [] 
+                while remaining_options :
+                    output_event = self.output_listener.fetch()
+                    received_output.append(output_event)
+                    match_index = -1
+                    for (index, option) in enumerate(remaining_options) :
+                        if option.matches(output_event) :
+                            match_index = index
+                            break
+                    
+                    self.assertNotEqual(match_index, -1, "Expected results entry " + str(entry_index) + " mismatch. Expected " + str(all_options) + ", but got " + str(received_output) +  " instead.") #no match found in the options
+                    remaining_options.pop(match_index)
+                                
             #check if there are no extra events          
             self.assertEqual(self.output_listener.fetch(0), None, "More output events than expected.")    
                
@@ -44,10 +86,10 @@ class TestSequenceFunctions(TestCase):
             self.generated_file = None
         
     def generate(self, source_file):
-        abstract_class_diagram  = SCCDC.process(TEST_FILES_FOLDER + "/" + source_file + ".xml")
+        abstract_class_diagram  = sccdc.createAST(TEST_FILES_FOLDER + "/" + source_file + ".xml")
         self.generated_file = source_file + ".py"
         self.delete_generated_file = not os.path.isfile(self.generated_file)
-        PythonGenerator(abstract_class_diagram, self.generated_file).generate()
+        PythonGenerator(abstract_class_diagram, self.generated_file, Protocols.Threads).generate()
         import_file = importlib.import_module(source_file)
         self.controller = import_file.Controller(False)
         
@@ -93,8 +135,7 @@ class TestSequenceFunctions(TestCase):
                                                       
         ])
         self.expect([
-            ("test_output", "in_state_1"),
-            ("test_output", "in_state_3"),
+            [("test_output", "in_state_1"),("test_output", "in_state_3")],
             ("test_output", "in_state_2"),
             ("test_output", "in_state_4"),
             ("test_output", "in_state_1"),
@@ -163,8 +204,7 @@ class TestSequenceFunctions(TestCase):
             Event("to_history_2", 0.0, "test_input", []),                                        
         ])
         self.expect([
-            ("test_output", "in_state_1"),
-            ("test_output", "in_state_3"),
+            [("test_output", "in_state_1"),("test_output", "in_state_3")],
             ("test_output", "in_state_2"),
             ("test_output", "in_state_4"),
             ("test_output", "in_outer_1"),
@@ -190,7 +230,7 @@ class TestSequenceFunctions(TestCase):
         ])
         
     def test_fault_duplicate_state_id(self):
-        with self.assertRaises(SCCDC.CompilerException):
+        with self.assertRaises(CompilerException):
             self.generate("test_fault_duplicate_state_id")
     
     def test_correct_duplicate_state_id(self):
@@ -215,7 +255,7 @@ class TestSequenceFunctions(TestCase):
         ])
         
     def test_fault_multiple_unconditional(self):
-        with self.assertRaises(SCCDC.TransitionException):
+        with self.assertRaises(TransitionException):
             self.generate("test_fault_multiple_unconditional")
     
 if __name__ == '__main__':

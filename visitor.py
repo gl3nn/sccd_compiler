@@ -1,5 +1,3 @@
-from utils.FileOutputer import FileOutputer
-
 class Visitor(object):
     def _visit(self, node, prepend, *args):
         prepend = prepend + "_"
@@ -28,22 +26,4 @@ class Visitor(object):
         
 class Visitable(object):
     def accept(self, visitor):
-        visitor.visit(self)
-        
-class CodeGenerator(Visitor):
-    def __init__(self, class_diagram, output_file, protocol):
-        self.output_file = output_file
-        self.class_diagram = class_diagram
-        self.protocol = protocol
-        self.supported_protocols = []
-        
-    def generate(self):
-        if self.protocol not in self.supported_protocols :
-            print "Unsupported protocol."
-            return
-        try :
-            self.fOut = FileOutputer(self.output_file)
-            self.class_diagram.accept(self)
-        finally :
-            self.fOut.close()
-    
+        visitor.visit(self) 

@@ -1,8 +1,9 @@
-import xml.etree.ElementTree as ET
-import os
 import abc
 import re
+import xml.etree.ElementTree as ET
+import logger as Logger
 from visitor import Visitable
+from compiler_exceptions import CompilerException, TransitionException
 
 
 # http://docs.python.org/2/library/xml.etree.elementtree.html
@@ -247,16 +248,16 @@ class RaiseEvent(SubAction):
                 
         if self.scope == self.LOCAL_SCOPE or self.scope == self.BROAD_SCOPE or self.scope == self.CD_SCOPE:
             if self.target :
-                showWarning("Raise event target detected, not matching with scope. Ignored.")
+                Logger.showWarning("Raise event target detected, not matching with scope. Ignored.")
                 self.target = ""
             if self.port :
-                showWarning("Raise event port detected, not matching with scope. Ignored.")
+                Logger.showWarning("Raise event port detected, not matching with scope. Ignored.")
                 self.port = ""
         if self.scope == self.NARROW_SCOPE and self.port :
-            showWarning("Raise event port detected, not matching with scope. Ignored.")
+            Logger.showWarning("Raise event port detected, not matching with scope. Ignored.")
             self.port = ""
         if self.scope == self.OUTPUT_SCOPE and self.target :
-            showWarning("Raise event target detected, not matching with scope. Ignored.")
+            Logger.showWarning("Raise event target detected, not matching with scope. Ignored.")
             self.target = ""
                 
         self.params = []
@@ -426,7 +427,7 @@ class StateChartNode(Visitable):
             elif history_type == "shallow" :
                 pass
             else :
-                showWarning("Invalid history type.") 
+                Logger.showWarning("Invalid history type.") 
             self.is_history = True
         elif state_type == "Root" :
             self.is_root = True
@@ -455,7 +456,7 @@ class StateChartNode(Visitable):
             self.solves_conflict_outer = False
         else :    
             if not (conflict == "" or conflict == "inherit") :
-                showWarning("Unknown conflict attribute for " + self.getFullID() + ", defaulting to 'inherit'.")
+                Logger.showWarning("Unknown conflict attribute for " + self.getFullID() + ", defaulting to 'inherit'.")
             #Do our default inherit action
             if self.is_root or self.parent_node.solvesConflictsOuter(): 
                 self.solves_conflict_outer = True
@@ -466,7 +467,7 @@ class StateChartNode(Visitable):
         on_entries = xml_element.findall("onentry")
         if on_entries :
             if len(on_entries) > 1:
-                showWarning("A node can only have one onentry tag! Only compiling first tag of node" + self.getFullID() + ".")
+                Logger.showWarning("A node can only have one onentry tag! Only compiling first tag of node" + self.getFullID() + ".")
             self.entry_action = EnterAction(self, on_entries[0])
         else :
             self.entry_action = EnterAction(self)
@@ -474,7 +475,7 @@ class StateChartNode(Visitable):
         on_exits = xml_element.findall("onexit")
         if on_exits :
             if len(on_exits) > 1:
-                showWarning("A node can only have one onexit tag! Only compiling first tag of node" + self.getFullID() + ".")
+                Logger.showWarning("A node can only have one onexit tag! Only compiling first tag of node" + self.getFullID() + ".")
             self.exit_action = ExitAction(self, on_exits[0])    
         else :
             self.exit_action = ExitAction(self)
@@ -638,7 +639,7 @@ class StateChart(Visitable):
         if parent.isParallel() :
             parent.defaults = [x for x in children if not x.isHistory()]
             if parent.getInitial() != "" : 
-                showWarning("Component <" + parent.getFullID() + "> in class <" + self.className + ">. contains an initial state while being parallel. Ignoring.")    
+                Logger.showWarning("Component <" + parent.getFullID() + "> in class <" + self.className + ">. contains an initial state while being parallel. Ignoring.")    
         elif parent.getInitial() == "" :
             if parent.isBasic() or parent.isHistory():
                 pass
@@ -675,7 +676,7 @@ class StateChart(Visitable):
         """ Figures out which components need to be kept track of for history.
         """
         if parent == self.root:
-            showWarning("Root component cannot contain history in class <" + self.className + ">. Not processed!")
+            Logger.showWarning("Root component cannot contain history in class <" + self.className + ">. Not processed!")
         if parent not in self.historyParents:
             self.historyParents.append(parent)
         if parent.isParallel() or is_deep :
@@ -874,7 +875,7 @@ class Class(Visitable):
             priorityChecker[priority] = checkIt
         for priority, checkIt in priorityChecker.iteritems():
             if len(checkIt) > 1:
-                showWarning("Class <" + self.name + "> inherits from classes <" + ", ".join(checkIt) + "> with same priority <" + str(priority) + ">. Given inheritance order is chosen.")
+                Logger.showWarning("Class <" + self.name + "> inherits from classes <" + ", ".join(checkIt) + "> with same priority <" + str(priority) + ">. Given inheritance order is chosen.")
                 
         self.super_classes = [entry[0] for entry in self.super_classes]        
         
@@ -1013,111 +1014,15 @@ class ClassDiagram(Visitable):
                 raise e
     
             # let user know this class was successfully loaded
-            showInfo("Class <" + processed_class.name + "> has been successfully loaded.")
+            Logger.showInfo("Class <" + processed_class.name + "> has been successfully loaded.")
             self.classes.append(processed_class)
             if processed_class.is_default :
                 default_classes.append(processed_class)
             
         if not default_classes or len(default_classes) > 1:
             if len(self.classes) == 1 :
-                showInfo("Only one class given. Using <" + self.classes[0].getName() + "> as the default class.")
+                Logger.showInfo("Only one class given. Using <" + self.classes[0].getName() + "> as the default class.")
                 default_classes.append(self.classes[0])
             else :
                 raise CompilerException("Provide one and only one default class to instantiate on start up.")
         self.default_class = default_classes[0]
-
-###################################
-class CompilerException(Exception):
-    def __init__(self, message):
-        self.message = message
-    def __str__(self):
-        return repr(self.message)
-    
-class TransitionException(CompilerException):
-    pass
-    
-###################################
-
-verbose = 0 #0 = no output
-            #1 = only warnings
-            #2 = all output
-
-def showWarning(warning):
-    if(verbose > 0) :
-        print "WARNING : " + warning
-        
-def showInfo(info):
-    if(verbose > 1) :
-        print "INFO : " + info
-        
-###################################
-
-import python_generator as Python
-from state_linker import StateLinker
-   
-def generate(input_file, output_file, protocol = "Threads", target_code = "Python"):
-    class_diagram = process(input_file)
-    _generate(class_diagram, output_file, protocol, target_code)
-      
-def process(input_file):
-    cd = ClassDiagram(input_file) #create AST
-    cd.accept(StateLinker()) #visitor fixing state references
-    return cd
-    
-def _generate(class_diagram, output_file, protocol = "Threads", target_code = "Python"):
-    target_code = target_code.lower()
-    if target_code == "python" :
-        Python.PythonGenerator(class_diagram, output_file, protocol.lower()).generate()
-    elif target_code == "csharp" or target_code == "c#" :
-        showWarning("C# generation not implemented yet.")
-    # let user know ALL classes have been processed and loaded
-    showInfo("The following classes <" + ", ".join(class_diagram.class_names) + "> have been exported to the following file: " + output_file)
-        
-###################################
-
-
-
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('source', help='The path to the XML file to be compiled.')
-    parser.add_argument('-t', '--target', type=str, help='The path to the target python file. Defaults to the same name as the source file.')
-    parser.add_argument('-v', '--verbose', type=int, help='0 = no output, 1 = only show warnings, 2 = show all output. Defaults to 2.', default = 2)
-    parser.add_argument('-p', '--protocol', type=str, help="Let the compiled code run on top of threads or gameloop. The default is threads.")
-    
-    args = vars(parser.parse_args())
-
-    source = args['source'].lower()
-    if not source.endswith(".xml") :
-        print "Input file not valid"
-        return
-    if args['target'] :
-        target = args['target'].lower()
-        if not target.endswith(".py") :
-            print "Output file not valid"
-            return
-    else :
-        target = os.path.splitext(os.path.split(source)[1])[0] + ".py"
-    global verbose
-    if args['verbose'] :
-        if args['verbose'] in [0,1,2] :
-            verbose = args['verbose']
-        else :
-            print "Invalid verbose argument"
-    else :
-        verbose = 2
-        
-    if args['protocol'] :
-        protocol = args['protocol']
-    else :
-        protocol = "threads"
-        
-    try :
-        generate(source, target, protocol)
-    except CompilerException as exception :
-        print exception
-
-if __name__ == "__main__":
-    main()
-
-

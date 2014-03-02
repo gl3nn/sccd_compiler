@@ -1,7 +1,8 @@
 from visitor import Visitor
-import SCCDC
+from constructs import INSTATE_SEQ
+from compiler_exceptions import CompilerException
 
-class StateReferenceException(SCCDC.CompilerException):
+class StateReferenceException(CompilerException):
     pass
 
 class StateLinker(Visitor):
@@ -81,7 +82,7 @@ class StateLinker(Visitor):
                     break
             if not found :
                 raise StateReferenceException('Invalid state reference "' + state_path.path_string + '".')
-                #more elobate exception
+                #more elobate py
         state_path.target_node = current_node
         
     #edit this class out
@@ -97,7 +98,7 @@ class StateLinker(Visitor):
         try :
             call.target.accept(self)
         except StateReferenceException :
-            raise StateReferenceException("Invalid state reference for " + SCCDC.INSTATE_SEQ + " call.")
+            raise StateReferenceException("Invalid state reference for " + INSTATE_SEQ + " call.")
         
     def visit_Assign(self, assign):
         assign.expression.accept(self)

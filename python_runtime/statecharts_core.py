@@ -71,7 +71,7 @@ class ObjectManagerBase(object):
         wait_times = []
         #first get waiting time of the object manager which acts as statechart too
         t = self.getEarliestEvent()
-        if t : wait_times.append(t)
+        if t is not None : wait_times.append(t)
         #check all the instances
         for i in self.all_instances :
             t = i.getEarliestEvent()
@@ -228,7 +228,7 @@ class ObjectManagerBase(object):
         if instance :
             self.all_instances[instance.instance] = instance
         return instance
-
+    
 class Event(object):
     def __init__(self, event_name, time = 0.0, port = "", parameters = []):
         self.name = event_name
@@ -250,6 +250,13 @@ class Event(object):
 
     def getParameters(self):
         return self.parameters
+    
+    def __repr__(self):
+        representation = "(event name : " + str(self.name) + "; port : " + str(self.port)
+        if self.parameters :
+            representation += "; parameters : " + str(self.parameters)
+        representation += ")"
+        return representation
     
 class OutputListener(object):
     def __init__(self, port_names):

@@ -324,6 +324,10 @@ class ControllerBase(object):
         listener = OutputListener(ports)
         self.output_listeners.append(listener)
         return listener
+    
+    def addEventList(self, event_list):
+        for event in event_list :
+            self.input_queue.append(event)
         
 class GameLoopControllerBase(ControllerBase):
     def __init__(self, object_manager, keep_running):

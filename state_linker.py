@@ -82,7 +82,7 @@ class StateLinker(Visitor):
                     break
             if not found :
                 raise StateReferenceException('Invalid state reference "' + state_path.path_string + '".')
-                #more elobate py
+                #TODO : detailed exception
         state_path.target_node = current_node
         
     #edit this class out

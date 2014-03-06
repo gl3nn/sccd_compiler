@@ -38,7 +38,7 @@ Tanks Example
 In the `tanks` folder a tanks game can be found for which both the input handling of the player-controlled tank, and the behaviour of the NPC tank are modelled using the SCCD formalism. For this specific example the commands to compile the models are as follows :
 
 ```sh
-python SCCDC.py tanks/player_controller.xml -o tanks/player_controller.py -p gameloop
-python SCCDC.py tanks/ai_controller.xml -o tanks/ai_controller.py -p gameloop
+python sccdc.py tanks/player_controller.xml -o tanks/player_controller.py -p gameloop
+python sccdc.py tanks/ai_controller.xml -o tanks/ai_controller.py -p gameloop
 ```
-The resulting files `player_controller.py` and `player_controller.py` (and any other compiled code) depend on the runtime files found in `python_runtime`. 
+The resulting files `player_controller.py` and `ai_controller.py` (and any other compiled code) depend on the runtime files found in `python_runtime`, so this folder should either be put in `PYTHONPATH` or directly in the `tanks` directory (you can use a symbolic link).

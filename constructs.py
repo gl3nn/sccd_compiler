@@ -1,7 +1,7 @@
 import abc
 import re
 import xml.etree.ElementTree as ET
-import logger as Logger
+from utils import Logger
 from visitor import Visitable
 from compiler_exceptions import CompilerException, TransitionException
 

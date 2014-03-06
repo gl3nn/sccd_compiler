@@ -22,7 +22,8 @@ class Visitor(object):
         self._visit(node, "exit", *args)
 
     def generic_visit(self, node):
-        print 'generic_visit '+node.__class__.__name__
+        #print 'generic_visit '+node.__class__.__name__
+        pass
         
 class Visitable(object):
     def accept(self, visitor):

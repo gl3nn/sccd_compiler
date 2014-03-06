@@ -1,7 +1,7 @@
 from visitor import Visitor
 from utils import FileOutputer
 from utils import Enum
-import logger as Logger
+from utils import Logger
 
 Languages = Enum("Python","CSharp") 
 Protocols = Enum("Threads","GameLoop") 

@@ -9,4 +9,5 @@
             <state id="state1"/>
         </scxml>
     </class>
+    <test exception="CompilerException"/>
 </diagram>

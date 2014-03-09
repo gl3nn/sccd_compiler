@@ -25,4 +25,11 @@
             </state>
         </scxml>
     </class>
+    <test>
+       <expected>
+           <slot>
+               <event name="in_state_2" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
 </diagram>

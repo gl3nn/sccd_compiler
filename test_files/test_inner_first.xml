@@ -25,4 +25,14 @@
             </state>
         </scxml>
     </class>
+    <test>
+        <input>
+            <event name="event" port="test_input" time="0.0"/>
+        </input>
+       <expected>
+           <slot>
+               <event name="in_a" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
 </diagram>

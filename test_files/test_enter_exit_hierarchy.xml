@@ -70,4 +70,52 @@
             </state>
         </scxml>
     </class>
+    <test>
+        <input>
+            <event name="to_composite" port="test_input" time="0.0"/>
+            <event name="to_inner2" port="test_input" time="0.0"/>
+            <event name="to_outside" port="test_input" time="0.0"/>
+            <event name="to_inner3" port="test_input" time="0.0"/>
+            <event name="to_outside" port="test_input" time="0.0"/>
+            <event name="to_inner4" port="test_input" time="0.0"/>
+        </input>
+       <expected>
+           <slot>
+               <event name="enter_state1" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_inner1" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="exit_inner1" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_inner2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="exit_inner2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="exit_state1" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_state2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_inner3" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="exit_inner3" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="exit_state2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_state2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_inner4" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
 </diagram>

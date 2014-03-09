@@ -32,4 +32,24 @@
             </state>
         </scxml>
     </class>
+    <test>
+    	<input>
+    		<event name="to_state_2" port="test_input" time="0.0"/>
+    		<event name="to_state_3" port="test_input" time="0.0"/>
+    	</input>
+	   <expected>
+	       <slot>
+	           <event name="in_state_1" port="test_output"/>
+	       </slot>
+           <slot>
+               <event name="in_state_2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="in_state_3" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="in_state_2" port="test_output"/>
+           </slot>
+	    </expected>
+	</test>
 </diagram>

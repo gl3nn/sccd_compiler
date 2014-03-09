@@ -26,4 +26,13 @@
             </state>
         </scxml>
     </class>
+    <test>
+       <expected>
+           <slot>
+               <event name="received" port="test_output">
+                   <parameter value="3"/>
+               </event>
+           </slot>
+        </expected>
+    </test>
 </diagram>

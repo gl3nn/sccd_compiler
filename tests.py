@@ -1,16 +1,12 @@
-from unittest import TestCase, main
+import unittest
 import sccdc
 import importlib
 import os
+import xml.etree.ElementTree as ET
 from compiler_exceptions import CompilerException, TransitionException
-from code_generation import Protocols
-from python_generator import PythonGenerator
-from python_runtime.statecharts_core import Event
+from code_generation import Protocols, Languages
 
-#http://docs.python.org/2/library/unittest.html
-
-TEST_FILES_FOLDER = "test_files"
-
+SHARED_TEST_FILES_FOLDER = "test_files"
 
 class TestEvent(object):
     def __init__(self, name, port, parameters = []):
@@ -29,7 +25,7 @@ class TestEvent(object):
         if len(self.parameters) != len(compare_parameters) :
             return False
         for index in xrange(len(self.parameters)) :
-            if self.parameters[index] !=  compare_parameters[index]:
+            if self.parameters[index] !=  str(compare_parameters[index]):
                 return False
         return True
     
@@ -40,223 +36,118 @@ class TestEvent(object):
         representation += ")"
         return representation
 
-class TestSequenceFunctions(TestCase):
-    def setUp(self):
-        self.controller = None
-        self.generated_file = None
-        self.output_listener = None
-        self.expected_output = None
-        self.delete_generated_file = False
-        
-        
-        
-    def checkOutput(self):
-        if(self.output_listener):
-            for (entry_index, expected_entry) in enumerate(self.expected_output, start=1) :
-                
-                all_options = []
-                if isinstance(expected_entry, tuple) :
-                    all_options.append(TestEvent(expected_entry[1],expected_entry[0],expected_entry[2:]))
-                else :
-                    for expected_event in expected_entry :
-                        all_options.append(TestEvent(expected_event[1],expected_event[0],expected_event[2:]))                    
-                     
-                remaining_options = all_options[:]
-                received_output = [] 
-                while remaining_options :
-                    output_event = self.output_listener.fetch()
-                    received_output.append(output_event)
-                    match_index = -1
-                    for (index, option) in enumerate(remaining_options) :
-                        if option.matches(output_event) :
-                            match_index = index
-                            break
+class XMLTestCase(unittest.TestCase):
+    
+    def __init__(self, file_name):
+        super(XMLTestCase, self).__init__()
+        self.file_name = file_name
+        self.name = os.path.splitext(file_name)[0]
+        self.source_path = os.getcwd() + "/" + SHARED_TEST_FILES_FOLDER + "/" + self.file_name
+        self.target_path = os.getcwd() + "/" + self.name + ".py"
+        self.file_generated = False
                     
-                    self.assertNotEqual(match_index, -1, "Expected results entry " + str(entry_index) + " mismatch. Expected " + str(all_options) + ", but got " + str(received_output) +  " instead.") #no match found in the options
-                    remaining_options.pop(match_index)
-                                
-            #check if there are no extra events          
-            self.assertEqual(self.output_listener.fetch(0), None, "More output events than expected.")    
-               
-    def tearDown(self):
-        self.controller = None
-        if self.generated_file and self.delete_generated_file :
-            os.remove(self.generated_file)
-            os.remove(self.generated_file + "c")
-            self.generated_file = None
+    def __str__(self):
+        return self.file_name
         
-    def generate(self, source_file):
-        abstract_class_diagram  = sccdc.createAST(TEST_FILES_FOLDER + "/" + source_file + ".xml")
-        self.generated_file = source_file + ".py"
-        self.delete_generated_file = not os.path.isfile(self.generated_file)
-        PythonGenerator(abstract_class_diagram, self.generated_file, Protocols.Threads).generate()
-        import_file = importlib.import_module(source_file)
+    def setUp(self):
+        self.delete_generated_file = not os.path.isfile(self.target_path)
+        
+    def tearDown(self):
+        if self.file_generated and self.delete_generated_file :
+            os.remove(self.target_path)
+            os.remove(self.target_path + "c")
+            
+
+    def runTest(self):
+        test_xml = ET.parse(self.source_path).getroot().find("test")
+        self.assertIsNot(test_xml, None, "No test data found. (A test that should just compile correctly, still needs an empthy test tag.)")
+        
+        #Check if the exception attribute is set and act accordingly
+        exception_attribute = test_xml.get("exception","")
+        if exception_attribute == "" :
+            sccdc.generate(self.source_path, self.target_path, Languages.Python, Protocols.Threads)
+        else :
+            if exception_attribute == "CompilerException" :
+                with self.assertRaises(CompilerException):
+                    sccdc.generate(self.source_path, self.target_path, Languages.Python, Protocols.Threads)
+            elif exception_attribute == "TransitionException" :
+                with self.assertRaises(TransitionException):
+                    sccdc.generate(self.source_path, self.target_path, Languages.Python, Protocols.Threads)
+            else :
+                raise AssertionError("Invalid value for the exception attribute.")
+            return
+            
+        
+        self.file_generated = True
+        import_file = importlib.import_module(self.name)
         self.controller = import_file.Controller(False)
         
-    def expect(self, expected):                
-        ports = set([entry[0] for entry in expected])
-        if not ports :
-            print "Invalid expected eventslist."
+        #Preparing input for controller
+        input_xml = test_xml.find("input")
+        if input_xml is not None :
+            for event_xml in input_xml :
+                if event_xml.tag == "event" :
+                    self.controller.addInput(event_xml.get("name"), event_xml.get("port"))
+                    
+        expected_xml = test_xml.find("expected")
+        if expected_xml is None : 
+            #no expected result, so we just simulate without catching output
+            self.controller.start()
+            self.controller.join()
             return
-        self.expected_output = expected
-        self.output_listener = self.controller.addOutputListener(list(ports))
+        
+        #Creating a datastructure for the expected output
+        expected_result = []
+        output_ports = set()
+
+        for slot_xml in expected_xml :
+            if slot_xml.tag == "slot" :
+                slot = []
+                for event_xml in slot_xml :
+                    if event_xml.tag == "event" :
+                        event_name = event_xml.get("name")
+                        port = event_xml.get("port")
+                        parameters = []
+                        parameters_xml = event_xml.findall("parameter")
+                        for parameter_xml in parameters_xml :
+                            parameter_value = parameter_xml.get("value", None)
+                            if parameter_value is not None :
+                                parameters.append(parameter_value)
+                        slot.append(TestEvent(event_name, port,parameters))
+                        output_ports.add(port)
+                if slot :
+                    expected_result.append(slot)
+
+        #Execution
+        output_listener = self.controller.addOutputListener(list(output_ports))
         self.controller.start()
         self.controller.join()
-        self.checkOutput()
-            
-               
-    def test_after(self) :
-        self.generate("test_after")
-        self.expect([
-            ("test_output", "in_state_2")
-        ])
         
-    def test_history(self) :
-        self.generate("test_history")
-        self.controller.addEventList([
-            Event("to_state_2", 0.0, "test_input", []),
-            Event("to_state_3", 0.0, "test_input", [])                                          
-        ])
-        self.expect([
-            ("test_output", "in_state_1"),
-            ("test_output", "in_state_2"),
-            ("test_output", "in_state_3"),
-            ("test_output", "in_state_2")
-        ])
+        #Check output
+        for (slot_index, slot) in enumerate(expected_result, start=1) : 
+            remaining_options = slot[:]
+            received_output = [] 
+            while remaining_options :
+                output_event = output_listener.fetch()
+                received_output.append(output_event)
+                match_index = -1
+                for (index, option) in enumerate(remaining_options) :
+                    if option.matches(output_event) :
+                        match_index = index
+                        break
+                
+                self.assertNotEqual(match_index, -1, "Expected results slot " + str(slot_index) + " mismatch. Expected " + str(slot) + ", but got " + str(received_output) +  " instead.") #no match found in the options
+                remaining_options.pop(match_index)
+                            
+        #check if there are no extra events          
+        self.assertEqual(output_listener.fetch(0), None, "More output events than expected on selected ports.")   
         
-    def test_parallel(self):
-        self.generate("test_parallel")
-        self.controller.addEventList([
-            Event("to_state_2", 0.0, "test_input", []),
-            Event("to_state_4", 0.0, "test_input", []),
-            Event("to_state_1", 0.0, "test_input", []),
-            Event("to_state_2", 0.0, "test_input", []),
-            Event("to_state_3", 0.0, "test_input", []),
-                                                      
-        ])
-        self.expect([
-            [("test_output", "in_state_1"),("test_output", "in_state_3")],
-            ("test_output", "in_state_2"),
-            ("test_output", "in_state_4"),
-            ("test_output", "in_state_1"),
-            ("test_output", "in_state_2"),
-            ("test_output", "in_state_3")
-        ])
         
-    def test_object_manager(self):
-        self.generate("test_object_manager")
-        self.controller.addEventList([
-            Event("create", 0.0, "test_input", [])                                               
-        ])
-        self.expect([
-            ("test_output", "request_send"),
-            ("test_output", "instance_created"),
-            ("test_output", "second_working")
-        ])
-    
-    def test_guard(self):
-        self.generate("test_guard")
-        self.expect([
-            ("test_output", "received", 3)
-        ])
-        
-    def test_instate(self):
-        self.generate("test_instate")
-        self.expect([
-            ("test_output", "check1"),
-            ("test_output", "check2"),
-            ("test_output", "check3")      
-        ])
-        
-    def test_enter_exit_hierarchy(self):
-        self.generate("test_enter_exit_hierarchy")
-        self.controller.addEventList([
-            Event("to_composite", 0.0, "test_input", []),
-            Event("to_inner2", 0.0, "test_input", []),
-            Event("to_outside", 0.0, "test_input", []),
-            Event("to_inner3", 0.0, "test_input", []),
-            Event("to_outside", 0.0, "test_input", []),
-            Event("to_inner4", 0.0, "test_input", []),                                        
-        ])
-        self.expect([
-            ("test_output", "enter_state1"),
-            ("test_output", "enter_inner1"),
-            ("test_output", "exit_inner1"),
-            ("test_output", "enter_inner2"),
-            ("test_output", "exit_inner2"),
-            ("test_output", "exit_state1"),
-            ("test_output", "enter_state2"),
-            ("test_output", "enter_inner3"),
-            ("test_output", "exit_inner3"),
-            ("test_output", "exit_state2"),
-            ("test_output", "enter_state2"),
-            ("test_output", "enter_inner4"),
-        ])
-        
-    def test_parallel_history(self):
-        self.generate("test_parallel_history")
-        self.controller.addEventList([
-            Event("to_state_2", 0.0, "test_input", []),
-            Event("to_state_4", 0.0, "test_input", []),
-            Event("to_outer_1", 0.0, "test_input", []),
-            Event("to_outer_2", 0.0, "test_input", []),
-            Event("to_history_1", 0.0, "test_input", []),
-            Event("to_history_2", 0.0, "test_input", []),                                        
-        ])
-        self.expect([
-            [("test_output", "in_state_1"),("test_output", "in_state_3")],
-            ("test_output", "in_state_2"),
-            ("test_output", "in_state_4"),
-            ("test_output", "in_outer_1"),
-            ("test_output", "in_outer_2"),
-            ("test_output", "in_state_2"),
-            ("test_output", "in_state_4")
-        ])
-        
-    def test_history_deep(self):
-        self.generate("test_history_deep")
-        self.expect([
-            ("test_output", "check1"),
-            ("test_output", "check2"),
-            ("test_output", "check3")
-        ])
-        
-    def test_history_parallel_deep(self):
-        self.generate("test_history_parallel_deep")
-        self.expect([
-            ("test_output", "check1"),
-            ("test_output", "check2"),
-            ("test_output", "check3")
-        ])
-        
-    def test_fault_duplicate_state_id(self):
-        with self.assertRaises(CompilerException):
-            self.generate("test_fault_duplicate_state_id")
-    
-    def test_correct_duplicate_state_id(self):
-        self.generate("test_correct_duplicate_state_id")
-        
-    def test_outer_first(self):
-        self.generate("test_outer_first")
-        self.controller.addEventList([
-            Event("event", 0.0, "test_input", [])                                      
-        ])
-        self.expect([
-            ("test_output", "in_b")
-        ])
-        
-    def test_inner_first(self):
-        self.generate("test_inner_first")
-        self.controller.addEventList([
-            Event("event", 0.0, "test_input", [])                                      
-        ])
-        self.expect([
-            ("test_output", "in_a")
-        ])
-        
-    def test_fault_multiple_unconditional(self):
-        with self.assertRaises(TransitionException):
-            self.generate("test_fault_multiple_unconditional")
-    
 if __name__ == '__main__':
-    main()
+    suite = unittest.TestSuite()
+
+    for file_name in os.listdir(os.getcwd() + "/" + SHARED_TEST_FILES_FOLDER):
+        if file_name.endswith(".xml"): 
+            suite.addTest(XMLTestCase(file_name))
+
+    unittest.TextTestRunner(verbosity=2).run(suite)

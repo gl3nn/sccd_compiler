@@ -42,4 +42,20 @@
             </state>
         </scxml>
     </class>
+    <test>
+    	<input>
+    		<event name="create" port="test_input" time="0.0"/>
+    	</input>
+       <expected>
+           <slot>
+               <event name="request_send" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="instance_created" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="second_working" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
 </diagram>

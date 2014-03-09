@@ -15,4 +15,5 @@
             </state>
         </scxml>
     </class>
+    <test/> <!-- Should just compile without a thrown exception. -->
 </diagram>

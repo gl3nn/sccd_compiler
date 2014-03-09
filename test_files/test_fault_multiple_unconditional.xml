@@ -12,4 +12,5 @@
             <state id="state2"/>
         </scxml>
     </class>
+    <test exception="TransitionException"/>
 </diagram>

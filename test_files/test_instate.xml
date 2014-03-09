@@ -37,4 +37,17 @@
             </parallel>
         </scxml>
     </class>
+    <test>
+       <expected>
+           <slot>
+               <event name="check1" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="check2" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="check3" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
 </diagram>

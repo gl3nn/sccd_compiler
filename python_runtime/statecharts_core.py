@@ -5,6 +5,13 @@ import threading
 from infinity import INFINITY
 from Queue import Queue, Empty
 
+
+class AssociationException(Exception):
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return repr(self.message)
+
 class Association(object):
     #wrapper object for one association relation
     def __init__(self, name, class_name, min_card, max_card):
@@ -18,22 +25,25 @@ class Association(object):
         return self.max_card == -1 or len(self.instances) < self.max_card
         
     def add(self, instance):
-        assert self.allowedToAdd()
-        self.instances.append(instance)
+        if self.allowedToAdd() :
+            self.instances.append(instance)
+        else :
+            raise AssociationException("")
         
     def get(self, index):
-        if index >= 0 :
-            return [self.instances[index]]
-        elif index == -1 :
-            return self.instances
-        else :
-            raise
+        try :
+            if index == -1 :
+                return self.instances[:]
+            else :
+                return [self.instances[index]]
+        except IndexError :
+            raise AssociationException("Invalid index for fetching instance(s) from association.")
 
 class InstanceWrapper(object):
     #wrapper object for an instance and its relevant information needed in the object manager
     def __init__(self):
         self.instance = None
-        self.associations = {}#maps association_name to list of InstanceAssociationInfo
+        self.associations = {}#maps association_name to list of Association
         
     def addAssociation(self, name, class_name, min_card, max_card):
         self.associations[name] = Association(name, class_name, min_card, max_card)

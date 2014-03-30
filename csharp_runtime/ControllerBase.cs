@@ -9,7 +9,7 @@ namespace sccdlib
         protected bool keep_running;
         protected bool done = false;
         protected List<string> input_ports;
-        protected List<Event> input_queue;
+        protected EventQueue input_queue;
 
         protected List<string> output_ports;
         protected List<OutputListener> output_listeners;
@@ -46,9 +46,10 @@ namespace sccdlib
         {
         }
     
-        public virtual void addInput(string event_name, string port, double time = 0.0, List<object> parameters = new List<object>())
+        public virtual void addInput(string event_name, string port, double time = 0.0, List<object> parameters = null)
         {
-            this.input_queue.Add(Event(event_name, time, port, parameters));
+            //Check event_name and port to be not empty?
+            this.input_queue.Add(new Event(event_name, port, parameters), time);
         }
 
         private void outputEvent(Event output_event)
@@ -59,7 +60,7 @@ namespace sccdlib
             }
         }
         
-        public void addOutputListener(string[] ports)
+        public OutputListener addOutputListener(string[] ports)
         {
             OutputListener listener = new OutputListener(ports);
             this.output_listeners.Add(listener);
@@ -70,8 +71,9 @@ namespace sccdlib
         {
             foreach (Event input_event in event_list)
             {   
-                this.input_queue.Add(input_event);
+                this.input_queue.Add(input_event,0.0);
             }
         }
+    }
 }
 

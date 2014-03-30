@@ -9,7 +9,7 @@ namespace sccdlib
         ConcurrentQueue<Event> queue = new ConcurrentQueue<Event>();
         List<string> ports = new List<string>();
         
-        public ConcurrentOutputListener (string[] port_names = new string[]{})
+        public ConcurrentOutputListener (string[] port_names)
         {
             foreach (string port_name in port_names)
             {
@@ -20,7 +20,7 @@ namespace sccdlib
         public void addOutput (Event output_event)
         {
             if (this.ports.Count == 0 || this.ports.Contains (output_event.getPort ())) {
-                this.queue.Enqueue (Event);
+                this.queue.Enqueue (output_event);
             }
         }
                 

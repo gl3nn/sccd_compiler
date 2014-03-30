@@ -21,7 +21,11 @@ namespace sccdlib
         
         public Association getAssociation (string name)
         {
-            return this.associations.TryGetValue(name, null);
+            try{
+                return this.associations[name];
+            }catch (Exception e) {
+                throw new AssociationReferenceException("Unknown association.");
+            }
         }
         
         public RuntimeClassBase getInstance ()

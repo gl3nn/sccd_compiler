@@ -140,7 +140,7 @@ class ObjectManagerBase(object):
                     index = -1
                 path.append((name,index))
             else :
-                return []
+                return [] #Throw exception?
         return path
     
     def handleStartInstanceEvent(self, parameters):
@@ -229,7 +229,7 @@ class ObjectManagerBase(object):
             
     
     @abc.abstractmethod
-    def instantiate(self, class_name):
+    def instantiate(self, class_name, construct_params):
         pass
 
         

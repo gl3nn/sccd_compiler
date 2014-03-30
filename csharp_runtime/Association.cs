@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace sccdlib
 {
@@ -28,7 +30,12 @@ namespace sccdlib
             return this.name;
         }
         
-        private bool allowedToAdd ()
+        public string getClassName ()
+        {
+            return this.class_name;   
+        }
+        
+        public bool allowedToAdd ()
         {
             return ( (this.max_card == -1) || ( this.instances.Count < this.max_card ) );    
         }
@@ -42,10 +49,18 @@ namespace sccdlib
             }
         }
         
-        public IList<InstanceWrapper> getAllInstances ()
+        public ReadOnlyCollection<InstanceWrapper> getAllInstances ()
         {
-            return this.instances.AsReadOnly ();
+            return this.instances.AsReadOnly();   
         }
+        
+        /*
+        public List<InstanceWrapper> getAllInstances ()
+        {
+            return new List<InstanceWrapper>(this.instances);
+        }*/
+        
+        
         
         public InstanceWrapper getInstance(int index)
         {

@@ -6,23 +6,20 @@ namespace sccdlib
     public class Event
     {
         string name = "";
-        double time = 0.0;
         string port = "";
         List<object> parameters;
         
 
-        public Event ()
+        public Event (string name = "", string port = "", List<object> parameters = null)
         {
+            this.name = name;
+            this.port = port;
+            this.parameters = (parameters == null ? new List<object>() : parameters);
         }
 
         public string getName ()
         {
             return this.name;
-        }
-
-        public double getTime ()
-        {
-            return this.time;
         }
 
         public string getPort ()
@@ -34,13 +31,6 @@ namespace sccdlib
         {
             return this.parameters;
         }
-        
-        public void decTime(double delta)
-        {
-            this.time -= delta;
-        }
-
-
     }
 }
 

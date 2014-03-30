@@ -1,23 +1,24 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace sccdlib
 {
     public abstract class ObjectManagerBase
     {
         ControllerBase controller;
-        List<Event> event_queue = new List<Event>();
-        Dictionary<RunTimeClassBase,InstanceWrapper> instances_map = new Dictionary<RunTimeClassBase,InstanceWrapper> ();
+        EventQueue events = new EventQueue();
+        Dictionary<RuntimeClassBase,InstanceWrapper> instances_map = new Dictionary<RuntimeClassBase,InstanceWrapper> ();
         
         public ObjectManagerBase (ControllerBase controller)
         {
             this.controller = controller;
-            
         }
+       
         
-        public void addEvent (Event new_event)
+        public void addEvent (Event input_event, double time_offset = 0.0)
         {
-            this.event_queue.Add (new_event);
+            this.events.Add (input_event, time_offset);
         }
         
         public void broadcast (Event new_event)
@@ -25,39 +26,37 @@ namespace sccdlib
             foreach (RuntimeClassBase instance in this.instances_map.Keys)
                 instance.addEvent(new_event);
         }
-
-        public double getEarliestEvent()
-        {
-            if (this.event_queue.Count > 0 )
-                return this.event_queue[0].getTime ();
-            return Double.MaxValue;
-        }
         
         public  double getWaitTime()
         {
-            //first get waiting time of the object manager which acts as statechart too
-            double smallest_time = this.getEarliestEvent();
+            //first get waiting time of the object manager's events
+            double smallest_time = this.events.getEarliestTime();
             //check all the instances
             foreach (RuntimeClassBase instance in this.instances_map.Keys)
-                smallest_time = min(smallest_time, instance.getEarliestEvent());
+                smallest_time = Math.Min(smallest_time, instance.getEarliestEventTime());
             return smallest_time;
         }
         
         public void step (double delta)
         {
-               
-            if (this.event_queue.Count > 0)
-            {
-                List<Event> next_event_queue = new List<Event>();
-                foreach( Event input_event in this.next_event_queue)
-                {
-                    input_event.decTime(delta);
-                    if (input_event.getTime() <= 0.0)
-                        this.handleEvent(input_event);
-                    else
-                        next_input_queue.Add(input_event);
-                }
-                this.event_queue = next_event_queue;
+            this.events.decreaseTime(delta);
+            foreach( Event e in this.events.popDueEvents())
+                this.handleEvent (e);
+        }
+        
+        private void handleEvent (Event handle_event)
+        {
+            string event_name = handle_event.getName ();
+            if (event_name == "narrow_cast") {
+                this.handleNarrowCastEvent(handle_event.getParameters());
+            } else if (event_name == "broad_cast") {
+                this.handleBroadCastEvent(handle_event.getParameters());
+            } else if (event_name == "create_instance") {
+                this.handleCreateEvent(handle_event.getParameters());
+            } else if (event_name == "associate_instance") {
+                this.handleAssociateEvent(handle_event.getParameters());
+            } else if (event_name == "start_instance") {
+                this.handleStartInstanceEvent(handle_event.getParameters());
             }
         }
         
@@ -74,5 +73,180 @@ namespace sccdlib
             foreach (RuntimeClassBase instance in this.instances_map.Keys)
                 instance.start(); 
         }
+        
+        /// <summary>
+        /// Processes the association reference.
+        /// </summary>
+        /// <returns>
+        /// The association reference.
+        /// </returns>
+        /// <param name='input_string'>
+        /// Input_string.
+        /// </param>
+        private List<Tuple<string, int>> processAssociationReference (string input_string)
+        {
+            if (input_string.Length == 0)
+                throw new AssociationReferenceException("Empty association reference.");
+            string[] path_string = input_string.Split (new char[] {'/'});
+            Regex regex = new Regex(@"^([a-zA-Z_]\w*)(?:\[(\d+)\])?$");
+            
+            var result = new List<Tuple<string, int>>();
+            
+            foreach (string string_piece in path_string) {
+                Match match = regex.Match (string_piece);
+                if (match.Success ){
+                    string name = match.Groups[1].ToString ();
+                    int index;
+                    if (match.Groups[2].Success)
+                        int.TryParse(match.Groups[2].ToString(), out index);
+                    else
+                        index = -1;
+                    result.Add( new Tuple<string, int>(name,index));
+                }else{
+                    throw new AssociationReferenceException("Invalid entry in association reference.");
+                }   
+            }
+            return result;
+        }
+        
+        /// <summary>
+        /// Gets the instances.
+        /// </summary>
+        /// <returns>
+        /// The instances.
+        /// </returns>
+        /// <param name='source'>
+        /// Source.
+        /// </param>
+        /// <param name='traversal_list'>
+        /// Traversal_list.
+        /// </param>
+        private List<InstanceWrapper> getInstances (RuntimeClassBase source, List<Tuple<string, int>> traversal_list)
+        {
+            var currents = new List<InstanceWrapper> ();
+            currents.Add (this.instances_map [source]);
+            foreach (Tuple<string, int> tuple in traversal_list) {
+                var nexts = new List<InstanceWrapper> ();
+                foreach ( InstanceWrapper current in currents ){
+                    Association association = current.getAssociation (tuple.Item1);   
+                    if (tuple.Item2 >= 0 )
+                        nexts.Add ( association.getInstance(tuple.Item2) );
+                    else if (tuple.Item2 == -1)
+                        nexts.AddRange ( association.getAllInstances() );
+                    else
+                        throw new AssociationReferenceException("Incorrect index in association reference.");
+                }
+                currents = nexts;
+            }
+            return currents;
+        }
+        
+        /// <summary>
+        /// Handles the start instance event.
+        /// </summary>
+        /// <param name='parameters'>
+        /// [0] The instance the event originates from.
+        /// [1] An association reference string targeting the instance to start.
+        /// </param>
+        private void handleStartInstanceEvent (List<object> parameters)
+        {
+            if (parameters.Count != 2) {
+                throw new ParameterException ("The start instance event needs 2 parameters.");    
+            } else {
+                RuntimeClassBase source = (RuntimeClassBase) parameters[0];
+                var traversal_list = this.processAssociationReference((string) parameters [1]);
+                
+                foreach( InstanceWrapper i in this.getInstances (source, traversal_list)){
+                    i.getInstance().start();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Handles the broad cast event.
+        /// </summary>
+        /// <param name='parameters'>
+        /// [0] The event to be broadcasted.
+        /// </param>
+        private void handleBroadCastEvent(List<object> parameters)
+        {
+            if (parameters.Count != 1 ) 
+                throw new ParameterException ("The broadcast event needs 1 parameter.");   
+            else
+                this.broadcast((Event)parameters[0]); 
+        }
+
+        private void handleCreateEvent (List<object> parameters)
+        {
+            if (parameters.Count < 2) {
+                throw new ParameterException ("The create event needs at least 2 parameters.");   
+            } else {
+                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                string association_name = (string)parameters [1];
+                Association association = this.instances_map[source].getAssociation (association_name);
+                if (association.allowedToAdd ()){
+                    InstanceWrapper new_instance_wrapper = this.createInstance(association.getClassName (), parameters.GetRange (2, parameters.Count-2));
+                    association.addInstance (new_instance_wrapper);
+                    source.addEvent(
+                        new Event(name: "instance_created", parameters : new List<object> {association_name})
+                    );
+                }else{
+                    source.addEvent (
+                        new Event(name: "instance_creation_error", parameters : new List<object> {association_name})    
+                    );
+                }    
+            }
+        }
+        
+                
+        private void handleAssociateEvent (List<object> parameters)
+        {
+            if (parameters.Count != 3) {
+                throw new ParameterException ("The associate_instance event needs 3 parameters.");
+            } else {
+                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                List<InstanceWrapper> to_copy_list = this.getInstances (source, this.processAssociationReference ((string)parameters [1]));
+                if (to_copy_list.Count != 1)
+                    throw new Exception ();
+                InstanceWrapper wrapped_to_copy_instance = to_copy_list [0];
+                List<Tuple<string,int>> dest_list = this.processAssociationReference ((string)parameters [2]);
+                if (dest_list.Count == 0)
+                    throw new AssociationReferenceException ("Invalid destination association reference.");
+                Tuple<string,int> last_tuple = dest_list [dest_list.Count - 1];
+                if (last_tuple.Item2 != -1)
+                    throw new AssociationReferenceException ("Last association name in association reference should not be accompanied by an index.");
+                dest_list.RemoveAt (dest_list.Count - 1);
+                foreach (InstanceWrapper i in this.getInstances(source, dest_list)) {
+                    i.getAssociation (last_tuple.Item1).addInstance (wrapped_to_copy_instance);
+                }
+            }
+        }
+            
+        private void handleNarrowCastEvent(List<object> parameters)
+        {
+            if (parameters.Count != 3)
+            {
+                throw new ParameterException ("The associate_instance event needs 3 parameters.");
+            }else{
+                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                Event cast_event = (Event) parameters[2];
+                foreach (InstanceWrapper i in this.getInstances(source, this.processAssociationReference( (string) parameters[1])))
+                    i.getInstance ().addEvent(cast_event);
+            
+            }
+        }   
+        
+        
+        public abstract InstanceWrapper instantiate(string class_name, List<object> construct_params);
+
+            
+        InstanceWrapper createInstance(string class_name, List<object> construct_params)
+        {
+            InstanceWrapper iw = this.instantiate(class_name, construct_params);
+            if (iw != null)
+                this.instances_map[iw.getInstance ()] = iw;
+            return iw;
+        }
+    }
 }
 

@@ -17,7 +17,7 @@ class PythonGenerator(CodeGenerator):
         if class_diagram.name or class_diagram.author or class_diagram.description:
             self.fOut.write()
         if class_diagram.author:
-            self.fOut.write("# Model Author: " + class_diagram.author)
+            self.fOut.write("# Model author: " + class_diagram.author)
         if class_diagram.name:
             self.fOut.write("# Model name:   " + class_diagram.name)
         if class_diagram.description.strip():
@@ -52,8 +52,14 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write('def instantiate(self, class_name, construct_params):')
         self.fOut.indent()
         self.fOut.write("wrapper = InstanceWrapper()")
+        first = True
         for c in class_diagram.classes :
-            self.fOut.write('if class_name == "' + c.name + '" :')
+            if first : 
+                self.fOut.write()
+                first = False
+            else :
+                self.fOut.write('el')
+            self.fOut.extendWrite('if class_name == "' + c.name + '" :')
             self.fOut.indent()
             if c.statechart :
                 self.fOut.write('wrapper.instance =  ' + c.name + '(self.controller, *construct_params)')
@@ -89,9 +95,9 @@ class PythonGenerator(CodeGenerator):
         # write out __init__ method
         if class_diagram.default_class.constructors :
             for constructor in class_diagram.default_class.constructors :
-                self.writeInitMethod(class_diagram, constructor.parameters)
+                self.writeControllerConstructor(class_diagram, constructor.parameters)
         else :
-            self.writeInitMethod(class_diagram)
+            self.writeControllerConstructor(class_diagram)
 
         self.fOut.dedent()
         self.fOut.write("def main():")
@@ -108,7 +114,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         
     #helper method
-    def writeInitMethod(self, class_diagram, parameters = []):
+    def writeControllerConstructor(self, class_diagram, parameters = []):
         self.writeMethodSignature('__init__', parameters + [FormalParameter("keep_running", "", "True")])
         self.fOut.indent()
         self.fOut.write("super(Controller, self).__init__(ObjectManager(self), keep_running)")
@@ -170,7 +176,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.currentState = {}")
             self.fOut.write("self.historyState = {}")
             self.fOut.write()
-            if class_node.statechart.number_time_transitions:
+            if class_node.statechart.nr_of_after_transitions:
                 self.fOut.write("# AFTER events of statechart")
                 self.fOut.write("self.timers = {}")
                 self.fOut.write()
@@ -648,7 +654,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("event.decTime(delta)")
         self.fOut.dedent()
         self.fOut.write()
-        if statechart.number_time_transitions != 0:
+        if statechart.nr_of_after_transitions != 0:
             self.fOut.write("# Check AFTER timers")
             self.fOut.write("if self.timers :")
             self.fOut.indent()
@@ -712,7 +718,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("temp.append(j.getTime())")
         self.fOut.dedent()
-        if statechart.number_time_transitions:
+        if statechart.nr_of_after_transitions:
             self.fOut.write("for j in self.timers.itervalues():")
             self.fOut.indent()
             self.fOut.write("temp.append(j)")

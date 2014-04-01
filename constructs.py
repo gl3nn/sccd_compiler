@@ -586,7 +586,7 @@ class StateChart(Visitable):
         self.composites = []
         self.historys = []
 
-        self.number_time_transitions = 0
+        self.nr_of_after_transitions = 0
         self.addToHierarchy(self.root)  
             
         # Calculate the history that needs to be taken care of.
@@ -664,10 +664,10 @@ class StateChart(Visitable):
         for transition in parent.transitions:
             trigger = transition.trigger
             if trigger.isAfter() :
-                trigger.setAfterIndex(self.number_time_transitions)
+                trigger.setAfterIndex(self.nr_of_after_transitions)
                 value = "_" + str(trigger.getAfterIndex()) + "after"
                 trigger.setEvent(value)
-                self.number_time_transitions += 1
+                self.nr_of_after_transitions += 1
             
         for child in children :
             self.addToHierarchy(child)
@@ -800,7 +800,7 @@ class Attribute(Visitable):
     def __init__(self, xml):
         self.name = xml.get('name',"")
         self.type = xml.get('type',"")
-        self.init_value = xml.get("init-value",None)
+        self.init_value = xml.get("init-value", None)
         
     def getIdent(self):
         return self.name

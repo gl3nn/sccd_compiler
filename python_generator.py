@@ -372,7 +372,7 @@ class PythonGenerator(CodeGenerator):
     def visit_SelfReference(self, self_reference):
         self.fOut.extendWrite("self")
         
-    def visit_StatePath(self, state_path):
+    def visit_StateReference(self, state_path):
         node = state_path.getTargetNode()
         self.fOut.extendWrite(node.getParentStateChart().className + "." + node.getFullName())
         

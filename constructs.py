@@ -19,13 +19,13 @@ INSTATE_SEQ = 'INSTATE'
 
 ##################################
 
-class StatePath(Visitable):
+class StateReference(Visitable):
     def __init__(self, input_string):
         self.path_string = input_string
-        self.target_node = None #calculted in consequent visits
+        self.target_states = [] #calculated in state linker
         
     def getTargetNode(self):
-        return self.target_node
+        return self.target_states[0]
    
 ##################################
 class ExpressionPart(Visitable):
@@ -42,7 +42,7 @@ class InStateCall(ExpressionPart):
     def __init__(self, state_string):
         if state_string == "" :
             raise CompilerException(INSTATE_SEQ + " call expects a non-empty state reference.")
-        self.target = StatePath(state_string)
+        self.target = StateReference(state_string)
 
 ##################################
     
@@ -362,7 +362,7 @@ class StateChartTransition(Visitable):
         target_string = self.xml.get("target","").strip()
         if target_string == "" :
             raise CompilerException("Transition from <" + self.parent_node.getFullID() + "> has empty target.")
-        self.target = StatePath(target_string)
+        self.target = StateReference(target_string)
         
         self.action = Action(self.xml)
         

@@ -566,6 +566,26 @@ class StateChartNode(Visitable):
     
     def solvesConflictsOuter(self):
         return self.solves_conflict_outer
+    
+    def getAncestors(self):
+        """ Returns a list representing the containment hierarchy of node.
+            node is always the first element, and its outermost parent is the last.
+        """
+        ancestors=[]
+        current = self
+        while not current.is_root :
+            ancestors.append(current)
+            current = current.getParentNode()
+        ancestors.append(current)
+        return ancestors
+    
+    def isDescendantOf(self, anc):
+        current = self
+        while not current.is_root :
+            current = current.getParentNode()
+            if current == anc :
+                return True
+        return False
         
 ##################################
 
@@ -683,47 +703,39 @@ class StateChart(Visitable):
             for i in parent.children:
                 if i.isComposite() :
                     self.calculateHistory(i, is_deep)
-        
-    def getOuterNodes(self, node):
-        """ Returns a list representing the containment hierarchy of node.
-            node is always the first element, and its outermost parent is the last.
-        """
-        outernodes=[]
-        while node != self.root :
-            outernodes.append(node)
-            node = node.getParentNode()
-        outernodes.append(self.root)
-        return outernodes
 
     def getTransitionPath(self, startnode, endnode):
         """ Computes the states that must be exited and entered if the system is to make
             a transition from 'startnode' to 'endnode'. These ordered lists are returned
             in a tuple, (exitedNodes, enteredNodes).
         """
-        #first get the ancestors of each node
-        startAncestors=self.getOuterNodes(startnode)
-        endAncestors=self.getOuterNodes(endnode)
 
         #now find the scope of the transition (lowest common proper ancestor)
-        LCA=None
-        while not(startAncestors[-1] == startnode or
-                  endAncestors[-1] == endnode or
-                  startAncestors[-1] != endAncestors[-1]):
-            LCA=startAncestors.pop()
-            endAncestors.pop()
+        LCA = self.getLCA([startnode,endnode])
 
         #the states to be exited are all proper descendants of the scope in which
         #currentState resides
         #the states to be entered are all the proper descendants of the scope in
         #which the final basic state resides
-        enterpath = self.getOuterNodes(endnode)
-        exitpath = self.getOuterNodes(startnode)
+        enterpath = endnode.getAncestors()
+        exitpath = startnode.getAncestors()
         if LCA:
             exitpath=exitpath[:exitpath.index(LCA)]    ## last element (LCA) is
             enterpath=enterpath[:enterpath.index(LCA)] ## not included in slice
         enterpath.reverse()
 
         return (exitpath, enterpath)
+    
+    def getLCA(self, nodes):
+        x = nodes.pop()
+        for anc in x.getAncestors() :
+            all_descendants = True 
+            for node in nodes :
+                if not node.isDescendantOf(anc) :
+                    all_descendants = False
+                    break
+            if all_descendants :
+                return anc
 
 ###################################
 

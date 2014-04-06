@@ -149,5 +149,5 @@ if __name__ == '__main__':
     for file_name in os.listdir(os.getcwd() + "/" + SHARED_TEST_FILES_FOLDER):
         if file_name.endswith(".xml"): 
             suite.addTest(XMLTestCase(file_name))
-
+            
     unittest.TextTestRunner(verbosity=2).run(suite)

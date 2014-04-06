@@ -6,3 +6,6 @@ class CompilerException(Exception):
     
 class TransitionException(CompilerException):
     pass
+
+class UnprocessedException(CompilerException):
+    pass

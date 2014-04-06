@@ -46,12 +46,14 @@ class StateLinker(Visitor):
         except StateReferenceException as exception :
             raise StateReferenceException("Transition from <" + self.visiting_node.getFullID() + "> has invalid guard. " + exception.message)
         
-    def visit_StateReference(self, state_path):
+    def visit_StateReference(self, state_reference):
+        state_reference.target_nodes = []
+        
         current_node = None #Will be used to find the target state(s)
         split_stack = [] #used for branching
 
         lx = Lexer()
-        lx.input(state_path.path_string)
+        lx.input(state_reference.path_string)
         token = None
         last_token = None
 
@@ -95,7 +97,7 @@ class StateLinker(Visitor):
             elif token.type == TokenType.RB :
                 split_stack.pop()
             elif token.type == TokenType.COMMA :
-                state_path.target_states.append(current_node)
+                state_reference.target_nodes.append(current_node)
                 if len(split_stack) > 0 :
                     current_node = split_stack[-1]
                 else :
@@ -110,14 +112,10 @@ class StateLinker(Visitor):
         if (len(split_stack) != 0) or (current_node is None) : #RB missing or extra COMMA
             raise StateReferenceException("Missing token at position " + str(last_token.pos) + ".")
         
-        state_path.target_states.append(current_node)
+        state_reference.target_nodes.append(current_node)
             
-        if len(state_path.target_states) == 0 :
+        if len(state_reference.target_nodes) == 0 :
             raise StateReferenceException("Meaningless state reference.")
-        
-
-        
-
         
     #edit this class out
     def visit_EnterExitAction(self, action):

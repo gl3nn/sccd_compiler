@@ -4,6 +4,7 @@ import python_generator as Python
 from utils import Logger
 from code_generation import Languages, Protocols
 from state_linker import StateLinker
+from path_calculator import PathCalculator
 from constructs import ClassDiagram
 from compiler_exceptions import CompilerException
 
@@ -14,7 +15,8 @@ def generate(input_file, output_file, target_language, protocol):
       
 def createAST(input_file):
     cd = ClassDiagram(input_file) #create AST
-    cd.accept(StateLinker()) #visitor fixing state references
+    StateLinker().visit(cd) #visitor fixing state references
+    PathCalculator().visit(cd) #visitor calculating paths
     return cd
     
 def generateFromAST(class_diagram, output_file, target_language, protocol):

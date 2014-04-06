@@ -3,7 +3,7 @@ import re
 import xml.etree.ElementTree as ET
 from utils import Logger
 from visitor import Visitable
-from compiler_exceptions import CompilerException, TransitionException
+from compiler_exceptions import CompilerException, TransitionException, UnprocessedException
 
 
 # http://docs.python.org/2/library/xml.etree.elementtree.html
@@ -22,10 +22,14 @@ INSTATE_SEQ = 'INSTATE'
 class StateReference(Visitable):
     def __init__(self, input_string):
         self.path_string = input_string
-        self.target_states = [] #calculated in state linker
         
-    def getTargetNode(self):
-        return self.target_states[0]
+        self.target_nodes = None #calculated in state linker
+        
+    def getNodes(self):
+        #if no target nodes are set, it means that the visitor corresponding for that hasn't visited yet
+        if self.target_nodes is None:
+            raise UnprocessedException("State reference not resolved yet.")
+        return self.target_nodes
    
 ##################################
 class ExpressionPart(Visitable):
@@ -366,10 +370,27 @@ class StateChartTransition(Visitable):
         
         self.action = Action(self.xml)
         
+        self.enter_nodes = None #Ordered list of nodes to be entered upon taking the transition, set by the path calculator
+        self.exit_nodes = None #Ordered list of nodes to be exited upon taking the transition, set by the path calculator
+        
+    def getEnterNodes(self):
+        if self.enter_nodes is None :
+            raise UnprocessedException("State reference not resolved yet.")
+        return self.enter_nodes
+    
+    def getExitNodes(self):
+        if self.exit_nodes is None :
+            raise UnprocessedException("State reference not resolved yet.")
+        return self.exit_nodes
+
+        
     def isUCTransition(self):
         """ Returns true iff is an unconditional transition (i.e. no trigger)
         """
         return self.trigger.isUC()
+    
+    def getParentNode(self):
+        return self.parent_node
         
     def getTrigger(self):
         return self.trigger
@@ -377,8 +398,8 @@ class StateChartTransition(Visitable):
     def getGuard(self):
         return self.guard
         
-    def getTarget(self):
-        return self.target
+    def getTargetNodes(self):
+        return self.target.getNodes()
 
     def hasGuard(self):
         return self.guard != None
@@ -703,40 +724,7 @@ class StateChart(Visitable):
             for i in parent.children:
                 if i.isComposite() :
                     self.calculateHistory(i, is_deep)
-
-    def getTransitionPath(self, startnode, endnode):
-        """ Computes the states that must be exited and entered if the system is to make
-            a transition from 'startnode' to 'endnode'. These ordered lists are returned
-            in a tuple, (exitedNodes, enteredNodes).
-        """
-
-        #now find the scope of the transition (lowest common proper ancestor)
-        LCA = self.getLCA([startnode,endnode])
-
-        #the states to be exited are all proper descendants of the scope in which
-        #currentState resides
-        #the states to be entered are all the proper descendants of the scope in
-        #which the final basic state resides
-        enterpath = endnode.getAncestors()
-        exitpath = startnode.getAncestors()
-        if LCA:
-            exitpath=exitpath[:exitpath.index(LCA)]    ## last element (LCA) is
-            enterpath=enterpath[:enterpath.index(LCA)] ## not included in slice
-        enterpath.reverse()
-
-        return (exitpath, enterpath)
     
-    def getLCA(self, nodes):
-        x = nodes.pop()
-        for anc in x.getAncestors() :
-            all_descendants = True 
-            for node in nodes :
-                if not node.isDescendantOf(anc) :
-                    all_descendants = False
-                    break
-            if all_descendants :
-                return anc
-
 ###################################
 
 class Association(Visitable):

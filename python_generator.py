@@ -144,11 +144,8 @@ class PythonGenerator(CodeGenerator):
         if class_node.statechart is not None:
             # assign each node a unique ID
             self.fOut.write("# Unique IDs for all statechart nodes")
-            self.fOut.write("Root = 0")
-            j = 1
-            for i in class_node.statechart.composites + class_node.statechart.basics:
-                self.fOut.write(i.getFullName() + " = " + str(j))
-                j += 1
+            for (i,node) in enumerate(class_node.statechart.composites + class_node.statechart.basics):
+                self.fOut.write(node.getFullName() + " = " + str(i))
     
             self.fOut.write()
             self.writeStateChartInitMethod(class_node)
@@ -189,11 +186,11 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         if class_node.statechart :
             self.fOut.write("self.active = True")
-            for i in class_node.statechart.root.defaults:
-                if i.isComposite():
-                    self.fOut.write("self.enterDefault_" + i.getFullName() + "()")
-                elif i.isBasic():
-                    self.fOut.write("self.enter_" + i.getFullName() + "()")
+            for default_node in class_node.statechart.root.defaults:
+                if default_node.isComposite():
+                    self.fOut.write("self.enterDefault_" + default_node.getFullName() + "()")
+                elif default_node.isBasic():
+                    self.fOut.write("self.enter_" + default_node.getFullName() + "()")
         else :
             self.fOut.write("pass")
         self.fOut.dedent()
@@ -222,16 +219,14 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("self.eventQueue = []")
         self.fOut.write("self.stateChanged = False")
         self.fOut.write()
-        # write out history state
+
         if parent_class.statechart.historys:
             self.fOut.write("# History states")
             for node in parent_class.statechart.historyParents:
                 self.fOut.write("self.historyState[" + parent_class.name + "." + node.getFullName() + "] = []")
             self.fOut.write()
-        # write out initial statechart code
-        root = parent_class.statechart.root
-        self.fOut.write("# Initial statechart code")
-        for c in [root] + parent_class.statechart.composites :
+
+        for c in parent_class.statechart.composites :
             self.fOut.write("self.currentState[self." + c.getFullName() + "] = []")
         self.fOut.write()
         self.fOut.dedent()
@@ -302,11 +297,13 @@ class PythonGenerator(CodeGenerator):
                 valid_children.append(child)  
          
         self.fOut.write("catched = False")
-        
+        do_dedent = False
         if current_node.solvesConflictsOuter() :
             self.writeFromTransitions(current_node)
-            self.fOut.write("if not catched :")
-            self.fOut.indent()
+            if current_node.isParallel() or current_node.isComposite() :
+                self.fOut.write("if not catched :")
+                self.fOut.indent()
+                do_dedent = True
             
         if current_node.isParallel():
             for child in valid_children :     
@@ -321,19 +318,19 @@ class PythonGenerator(CodeGenerator):
                 self.fOut.indent()
                 self.fOut.write("catched = self.transition_" + child.getFullName() + "(event)")
                 self.fOut.dedent()
-        else :
-            self.fOut.write("pass")
                 
         if current_node.solvesConflictsOuter() :
-            self.fOut.dedent()
-        else :
-            self.fOut.write("if not catched :")
-            self.fOut.indent()
-            self.writeFromTransitions(current_node)
-            self.fOut.dedent()
+            if do_dedent :
+                self.fOut.dedent()
+        elif len(current_node.getTransitions()) > 0 :
+                self.fOut.write("if not catched :")
+                self.fOut.indent()
+                self.writeFromTransitions(current_node)
+                self.fOut.dedent()
             
         self.fOut.write("return catched")
         self.fOut.dedent()
+        self.fOut.write();
         
         for child in valid_children :
             self.writeTransitionsRecursively(child)
@@ -343,7 +340,6 @@ class PythonGenerator(CodeGenerator):
         # get all transition out of this state
         out_transitions = current_node.getTransitions()
         if len(out_transitions) == 0 :
-            self.fOut.write("pass")
             return
         
         self.fOut.write('enableds = []')
@@ -366,7 +362,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()         
         self.fOut.write()
             
-    def visit_BareString(self, bare_string):
+    def visit_ExpressionPartString(self, bare_string):
         self.fOut.extendWrite(bare_string.string)
         
     def visit_SelfReference(self, self_reference):
@@ -580,14 +576,16 @@ class PythonGenerator(CodeGenerator):
         
         #visit children
         for i in statechart.composites + statechart.basics:
-            i.getEnterAction().accept(self)
-            i.getExitAction().accept(self)
+            if i is not statechart.root :
+                i.getEnterAction().accept(self)
+                i.getExitAction().accept(self)
 
         # write out statecharts methods for enter/exit state
-        if statechart.composites :
-            self.fOut.write("# Statechart enter/exit state methods")
+        if len(statechart.composites) > 1 :
+            self.fOut.write("# Statechart enter/exit default methods")
             for i in statechart.composites :
-                self.writeEnterDefault(i)
+                if i is not statechart.root :
+                    self.writeEnterDefault(i)
 
         # write out statecharts methods for enter/exit history
         if statechart.historys:

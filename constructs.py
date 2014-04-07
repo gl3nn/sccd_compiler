@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from utils import Logger
 from visitor import Visitable
 from compiler_exceptions import CompilerException, TransitionException, UnprocessedException
+from lexer import Lexer, TokenType
 
 
 # http://docs.python.org/2/library/xml.etree.elementtree.html
@@ -35,7 +36,7 @@ class StateReference(Visitable):
 class ExpressionPart(Visitable):
     __metaclass__  = abc.ABCMeta
     
-class BareString(ExpressionPart):
+class ExpressionPartString(ExpressionPart):
     def __init__(self, string):
         self.string = string
     
@@ -59,7 +60,8 @@ class Expression(Visitable):
     def processString(self, string):
         """
             produces a list of parts where macro's are replaced by objects.
-        """
+        """            
+        
         self.pieces = []             
         stack = []
         pointer = 0
@@ -95,13 +97,13 @@ class Expression(Visitable):
                 
                 if created_object :    
                     if processed_string != "" :
-                        self.pieces.append(BareString(processed_string))
+                        self.pieces.append(ExpressionPartString(processed_string))
                     self.pieces.append(created_object)
                     
             pointer = match.end()
         processed_string = string[last_end+1:]
         if processed_string != "" :
-            self.pieces.append(BareString(processed_string))
+            self.pieces.append(ExpressionPartString(processed_string))
           
     def accept(self, visitor):
         for piece in self.pieces :
@@ -628,6 +630,7 @@ class StateChart(Visitable):
         self.historys = []
 
         self.nr_of_after_transitions = 0
+        self.composites.append(self.root)
         self.addToHierarchy(self.root)  
             
         # Calculate the history that needs to be taken care of.
@@ -764,7 +767,8 @@ class XMLFormalParameter(FormalParameter):
 ###################################
 class Method(Visitable):
     def __init__(self, xml, parent_class):
-        self.name = xml.get("name", "");
+        self.name = xml.get("name", "")
+        self.access = xml.get("access", "public")
         parameters = xml.findall("parameter")
         self.parameters = []
         for p in parameters:
@@ -920,6 +924,11 @@ class Class(Visitable):
         methods = self.xml.findall("method")
         for m in methods:
             self.processMethod(m)
+        
+        if len(self.destructors) > 1 :
+            raise CompilerException("Multiple destructors defined for class <" + self.name + ">.")
+        
+        #TODO default destructor?
             
         if len(self.constructors) < 1 :
             #add a default constructor

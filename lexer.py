@@ -31,14 +31,14 @@ class LexerError(Exception):
         
 class Lexer(object):
     
-    def __init__(self):
+    def __init__(self, skip_white_space = True):
+        self.skip_white_space = skip_white_space
         self.single_rules = {
             '/': TokenType.SLASH,
             '(': TokenType.LB,
             ')': TokenType.RB,
             ',': TokenType.COMMA    
         }
-
 
     def input(self, buf):
         """ Initialize the lexer with a buffer as input.
@@ -54,7 +54,8 @@ class Lexer(object):
             In case of a lexing error (the current chunk of the
             buffer matches no rule), a LexerError is raised.
         """
-        self.skipNonTokens()
+        if self.skip_white_space :
+            self.skipWhiteSpace()
         if self.pos >= len(self.buf):
             return None
 
@@ -103,7 +104,7 @@ class Lexer(object):
             if tok is None: break
             yield tok
             
-    def skipNonTokens(self):
+    def skipWhiteSpace(self):
         while (self.pos < self.buflen) : 
             c = self.buf[self.pos]
             if (c == ' ' or c == '\t' or c == '\r' or c == '\n') :

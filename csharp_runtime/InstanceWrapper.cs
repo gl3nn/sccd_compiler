@@ -9,14 +9,12 @@ namespace sccdlib
         Dictionary<string,Association> associations = new Dictionary<string, Association>();
         
         
-        public InstanceWrapper (RuntimeClassBase instance)
+        public InstanceWrapper (RuntimeClassBase instance, List<Association> associations)
         {
             this.instance = instance;
-        }
-        
-        public void addAssociation (Association association)
-        {
-            this.associations[association.getName()] = association;
+            foreach (var association in associations) {
+                this.associations[association.getName()] = association;   
+            }
         }
         
         public Association getAssociation (string name)

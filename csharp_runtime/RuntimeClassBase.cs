@@ -6,11 +6,10 @@ namespace sccdlib
     public abstract class RuntimeClassBase
     {
         
-        bool active = false;
-        bool state_changed = false;
-        
-        EventQueue events = new EventQueue();
-        
+        protected bool active = false;
+        protected bool state_changed = false;
+        protected EventQueue events = new EventQueue();
+
         public RuntimeClassBase ()
         {
         }

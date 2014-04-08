@@ -118,7 +118,7 @@ def writeCodeCorrectIndent(body, fOut):
     lines = splitToLines(body)
     if lines == [] :
         return
-    if lines[0].strip() == '' :
+    while( lines[0].strip() == '') :
         del lines[0]
     to_strip = len(lines[0]) - len(lines[0].strip()) 
     for line in lines:

@@ -237,7 +237,7 @@ namespace sccdlib
         }   
         
         
-        public abstract InstanceWrapper instantiate(string class_name, List<object> construct_params);
+        protected abstract InstanceWrapper instantiate(string class_name, List<object> construct_params);
 
             
         InstanceWrapper createInstance(string class_name, List<object> construct_params)

@@ -11,6 +11,7 @@ class StateLinker(Visitor):
     def __init__(self):
         self.visiting_statechart = None
         self.visiting_node = None
+        self.lexer = Lexer()
     
     def visit_ClassDiagram(self, class_diagram): 
         for c in class_diagram.classes :
@@ -52,14 +53,13 @@ class StateLinker(Visitor):
         current_node = None #Will be used to find the target state(s)
         split_stack = [] #used for branching
 
-        lx = Lexer()
-        lx.input(state_reference.path_string)
+        self.lexer.input(state_reference.path_string)
         token = None
         last_token = None
 
         while True :
             last_token = token
-            token = lx.nextToken() #get next token
+            token = self.lexer.nextToken() #get next token
             if token == None : #if that next token is None, then we ran out of tokens and break
                 break
             

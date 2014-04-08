@@ -74,6 +74,11 @@ namespace sccdlib
                 this.input_queue.Add(input_event,0.0);
             }
         }
+        
+        public ObjectManagerBase getObjectManager ()
+        {
+            return this.object_manager;
+        }
     }
 }
 

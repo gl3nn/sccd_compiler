@@ -119,13 +119,15 @@ class LValue(Expression):
 ##################################     
      
 class FormalEventParameter(Visitable):
-    def __init__(self, name, ptype = "", default = ""):
+    def __init__(self, name, ptype = ""):
         self.name = name
         self.type = ptype
-        self.default = default
         
     def getName(self):
         return self.name
+    
+    def getType(self):
+        return self.type
     
 ##################################
 class TriggerEvent:
@@ -162,7 +164,7 @@ class TriggerEvent:
             name = p.get("name","")
             if not name :
                 raise CompilerException("Parameter without name detected.")
-            self.params.append(FormalEventParameter(name, p.get("type",""), p.get("default","")))
+            self.params.append(FormalEventParameter(name, p.get("type","")))
             
     def getEvent(self):    
         return self.event

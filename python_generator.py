@@ -254,9 +254,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.extendWrite(formal_parameter.getIdent())
         if formal_parameter.hasDefault() :
             self.fOut.extendWrite(" = " + formal_parameter.getDefault())
-            
-    def visit_FormalEventParameter(self, formal_event_parameter):
-        self.fOut.extendWrite(formal_event_parameter.getName())
         
     def visit_Constructor(self, constructor):
         self.fOut.write("#The actual constructor")
@@ -351,7 +348,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write('print "Runtime warning : indeterminism detected in a transition from node ' +  current_node.getFullID()+ '. Only the first in document order enabled transition is executed."')
         self.fOut.dedent()
         self.fOut.write()
-        self.fOut.write("if len(enableds) == 1 :")
+        self.fOut.write("if len(enableds) > 0 :")
         self.fOut.indent()
         self.fOut.write('enabled = enableds[0]')      
               
@@ -361,20 +358,19 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write('catched = True')   
         self.fOut.dedent()         
         self.fOut.write()
-            
-    def visit_ExpressionPartString(self, bare_string):
-        self.fOut.extendWrite(bare_string.string)
         
-    def visit_SelfReference(self, self_reference):
-        self.fOut.extendWrite("self")
+    def visit_FormalEventParameter(self, formal_event_parameter):
+        self.fOut.extendWrite(formal_event_parameter.getName())
         
-    def visit_StateReference(self, state_ref):
-        self.fOut.extendWrite("[" + ",".join(["self." + node.getFullName() for node in state_ref.getNodes()]) + "]")
+    def writeFormalEventParameters(self, transition):
+        parameters = transition.getTrigger().getParameters()
+        if(len(parameters) > 0) :
+            self.fOut.write('parameters = event.getParameters()')
+            for index, parameter in enumerate(parameters):
+                self.fOut.write()
+                parameter.accept(self)
+                self.fOut.extendWrite(' = parameters[' + str(index) + ']')
         
-    def visit_InStateCall(self, in_state_call):
-        self.fOut.extendWrite("self.inState(")
-        in_state_call.target.accept(self)
-        self.fOut.extendWrite(")")
         
     def writeTransitionAction(self, transition, index):
         if index > 1 :
@@ -385,14 +381,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
 
         # handle parameters to actually use them             
-        parameters = transition.getTrigger().getParameters()
-        if(len(parameters) > 0) :
-            self.fOut.write('parameters = event.getParameters()')
-            for index, parameter in enumerate(parameters):
-                self.fOut.write()
-                parameter.accept(self)
-                self.fOut.extendWrite(' = parameters[' + str(index) + ']')
-        
+        self.writeFormalEventParameters(transition)
         
         exits = transition.getExitNodes()
         
@@ -431,13 +420,7 @@ class PythonGenerator(CodeGenerator):
         # evaluate guard
         if transition.hasGuard() :   
             # handle parameters for guard evaluation       
-            parameters = trigger.getParameters();
-            if(len(parameters) > 0) :
-                self.fOut.write('parameters = event.getParameters()')
-                for i, parameter in enumerate(parameters):
-                    self.fOut.write()
-                    parameter.accept(self)
-                    self.fOut.extendWrite(' = parameters[' + str(i) + ']')   
+            self.writeFormalEventParameters(transition)
 
             self.fOut.write('if ')
             transition.getGuard().accept(self)
@@ -531,8 +514,7 @@ class PythonGenerator(CodeGenerator):
     def writeEnterHistory(self, entered_node):
         self.writeMethodSignature("enterHistory_" + entered_node.getFullName(), [FormalParameter("deep","")])
         self.fOut.indent()
-        class_name = entered_node.parent_statechart.className
-        self.fOut.write("if self.historyState[" + class_name + "." + entered_node.getFullName() + "] == []:")
+        self.fOut.write("if self.historyState[self." + entered_node.getFullName() + "] == []:")
         self.fOut.indent()
         defaults = entered_node.getDefaults()
 
@@ -553,7 +535,7 @@ class PythonGenerator(CodeGenerator):
         else:
             for child in children:
                 if not child.isHistory() :
-                    self.fOut.write("if " +  class_name + "." + child.getFullName() + " in self.historyState[" + class_name + "." + entered_node.getFullName() + "] :")
+                    self.fOut.write("if self." + child.getFullName() + " in self.historyState[self." + entered_node.getFullName() + "] :")
                     self.fOut.indent()
                     if child.isComposite():
                         self.fOut.write("if deep:")
@@ -723,6 +705,20 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write()
+        
+    def visit_ExpressionPartString(self, bare_string):
+        self.fOut.extendWrite(bare_string.string)
+        
+    def visit_SelfReference(self, self_reference):
+        self.fOut.extendWrite("self")
+        
+    def visit_StateReference(self, state_ref):
+        self.fOut.extendWrite("[" + ",".join(["self." + node.getFullName() for node in state_ref.getNodes()]) + "]")
+        
+    def visit_InStateCall(self, in_state_call):
+        self.fOut.extendWrite("self.inState(")
+        in_state_call.target.accept(self)
+        self.fOut.extendWrite(")")
         
     def visit_RaiseEvent(self, raise_event):
         if raise_event.isNarrow() or raise_event.isBroad():

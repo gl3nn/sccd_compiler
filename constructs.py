@@ -4,8 +4,6 @@ import xml.etree.ElementTree as ET
 from utils import Logger
 from visitor import Visitable
 from compiler_exceptions import CompilerException, TransitionException, UnprocessedException
-from lexer import Lexer, TokenType
-
 
 # http://docs.python.org/2/library/xml.etree.elementtree.html
 
@@ -748,7 +746,7 @@ class FormalParameter(Visitable):
         self.default = default  
             
     def getType(self):
-        return self.type
+        return self.param_type
             
     def getIdent(self):
         return self.identifier
@@ -791,6 +789,7 @@ class Constructor(Method):
         if xml is None :
             self.body = ""
             self.name = ""
+            self.access = "public"            
             self.parent_class = parent_class
             self.return_type = ""
             self.parameters = []

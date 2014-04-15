@@ -9,6 +9,8 @@ namespace sccdlib
         protected bool active = false;
         protected bool state_changed = false;
         protected EventQueue events = new EventQueue();
+        protected ControllerBase controller;
+        protected ObjectManagerBase object_manager;
 
         public RuntimeClassBase ()
         {
@@ -45,10 +47,11 @@ namespace sccdlib
         
         private void microstep ()
         {
-            if (this.events.isEmpty()) {
+            var due = this.events.popDueEvents();
+            if (due.Count == 0) {
                 this.transition ();   
             } else {
-                foreach( Event e in this.events.popDueEvents())
+                foreach( Event e in due)
                     this.transition (e);
             }
         }

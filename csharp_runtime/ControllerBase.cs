@@ -6,20 +6,15 @@ namespace sccdlib
     public abstract class ControllerBase
     {
         protected ObjectManagerBase object_manager;
-        protected bool keep_running;
         protected bool done = false;
         protected List<string> input_ports;
-        protected EventQueue input_queue;
+        protected EventQueue input_queue = new EventQueue();
 
         protected List<string> output_ports;
         protected List<OutputListener> output_listeners;
 
-
-
-        public ControllerBase (ObjectManagerBase object_manager, bool keep_running = true)
+        public ControllerBase ()
         {
-            this.object_manager = object_manager;
-            this.keep_running = keep_running;
         }
 
         public void addInputPort(string port_name)
@@ -45,12 +40,6 @@ namespace sccdlib
         public virtual void stop()
         {
         }
-    
-        public virtual void addInput(string event_name, string port, double time = 0.0, List<object> parameters = null)
-        {
-            //Check event_name and port to be not empty?
-            this.input_queue.Add(new Event(event_name, port, parameters), time);
-        }
 
         private void outputEvent(Event output_event)
         {
@@ -66,12 +55,17 @@ namespace sccdlib
             this.output_listeners.Add(listener);
             return listener;
         }
-    
-        public void addEventList(List<Event> event_list)
+        
+        public virtual void addInput(Event input_event, double time_offset = 0.0)
         {
-            foreach (Event input_event in event_list)
+            this.input_queue.Add(input_event, time_offset);
+        }
+    
+        public virtual void addEventList(List<Tuple<Event,double>> event_list)
+        {
+            foreach (Tuple<Event,double> event_tuple in event_list)
             {   
-                this.input_queue.Add(input_event,0.0);
+                this.input_queue.Add(event_tuple.Item1, event_tuple.Item2);
             }
         }
         

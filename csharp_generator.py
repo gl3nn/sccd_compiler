@@ -9,7 +9,7 @@ class CSharpGenerator(CodeGenerator):
     
     def __init__(self, class_diagram, output_file, protocol):
         super(CSharpGenerator,self).__init__(class_diagram, output_file, protocol)
-        self.supported_protocols = [Protocols.GameLoop]
+        self.supported_protocols = [Protocols.Threads, Protocols.GameLoop]
                 
     def visit_ClassDiagram(self, class_diagram):
         self.fOut.write("/*")
@@ -60,14 +60,14 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write('protected InstanceWrapper instantiate(string class_name, List<object> construct_params)')
         self.fOut.write('{')
         self.fOut.indent()
-        self.fOut.write("RuntimeBaseClass instance = null;")
+        self.fOut.write("RuntimeClassBase instance = null;")
         self.fOut.write("List<Association> associations = new List<Association>();")
         for index, c in enumerate(class_diagram.classes) :
             if index == 0 :
                 self.fOut.write()
             else :
                 self.fOut.write('}else ')
-            self.fOut.extendwrite('if (class_name == "' + c.name + '" ){')
+            self.fOut.extendWrite('if (class_name == "' + c.name + '" ){')
             self.fOut.indent()
             self.fOut.write('instance =  new' + c.name + '(self.controller, *construct_params)')
             for a in c.associations :
@@ -81,16 +81,17 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write('return new InstanceWrapper(instance, associations);')
         self.fOut.dedent()
         self.fOut.write('}')
-        self.fOut.write('return null')
+        self.fOut.write('return null;')
         self.fOut.dedent()
         self.fOut.write('}')
         self.fOut.dedent()
+        self.fOut.write('}')
         
         # write out controller
         self.fOut.write()
-        if self.protocol == "threads" :
+        if self.protocol == Protocols.Threads :
             controller_sub_class = "ThreadsControllerBase"
-        elif self.protocol == "gameloop" :
+        elif self.protocol == Protocols.GameLoop :
             controller_sub_class = "GameLoopControllerBase"
         self.fOut.write("public class Controller : " + controller_sub_class)
         self.fOut.write("{")
@@ -106,7 +107,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("public static void Main()")
         self.fOut.write("{")
         self.fOut.indent()
-        self.fOut.write(controller_sub_class + " controller = new " + controller_sub_class + "();")
+        self.fOut.write("Controller controller = new Controller();")
         self.fOut.write("controller.start();")
         self.fOut.dedent()
         self.fOut.write("}")
@@ -118,7 +119,7 @@ class CSharpGenerator(CodeGenerator):
     def writeControllerConstructor(self, class_diagram, parameters = []):
         self.fOut.write('public Controller(')
         self.writeFormalParameters(parameters + [FormalParameter("keep_running", "bool", "true")])
-        self.fOut.extendWrite(") : base( new ObjectManager(this), keep_running)")
+        self.fOut.extendWrite(") : base(keep_running)")
         self.fOut.write('{')
         self.fOut.indent()
         
@@ -126,10 +127,12 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write('this.addInputPort("' + p + '");')
         for p in class_diagram.outports:
             self.fOut.write('this.addOutputPort("' + p + '");')
+        self.fOut.write('this.object_manager = new ObjectManager(this);')
         actual_parameters = [p.getIdent() for p in parameters]
         self.fOut.write('this.object_manager.createInstance("'+ class_diagram.default_class.name +'", [' +  ', '.join(actual_parameters)+ '])')
         self.fOut.write()
         self.fOut.dedent()
+        self.fOut.write('}')
 
     def visit_Class(self, class_node):
         """
@@ -156,20 +159,20 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("enum Node {")
             self.fOut.indent()
             for node in class_node.statechart.composites + class_node.statechart.basics:
-                self.fOut.write(",\n".join([node.getFullName() for node in class_node.statechart.composites + class_node.statechart.basics]))
+                self.fOut.write(node.getFullName() + ",");
             self.fOut.dedent();
             self.fOut.write("};")
             self.fOut.write()
             self.fOut.write("Dictionary<Node,Node> current_state = new Dictionary<Node,Node>();");
             if len(class_node.statechart.historys) > 0 :
-                self.fOut.write("Dictionary<Node,Node> history_state = new Dictionary<Node,Node>();");
+                self.fOut.write("Dictionary<Node,List<Node>> history_state = new Dictionary<Node,List<Node>>();");
             if class_node.statechart.nr_of_after_transitions != 0:
                 self.fOut.write("Dictionary<int,double> timers = new Dictionary<int,double>();}")
             self.fOut.write();
             
         #User defined attributes
         if class_node.attributes:
-            self.fOut.write("// User defined attributes")
+            self.fOut.write("//User defined attributes")
             for attribute in class_node.attributes:
                 self.fOut.write(attribute.type + " " + attribute.name)
                 if attribute.init_value is not None :
@@ -179,7 +182,7 @@ class CSharpGenerator(CodeGenerator):
 
         if class_node.statechart is not None:  
             self.fOut.write("/// <summary>")
-            self.fOut.write("/// Constructor part specifically for the statechart that is common for all constructors.")
+            self.fOut.write("/// Constructor part that is common for all constructors.")
             self.fOut.write("/// </summary>")
             self.fOut.write("private void commonConstructor(ControllerBase controller = null)")
             self.fOut.write("{")
@@ -188,7 +191,7 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("this.object_manager = controller.getObjectManager();")
 
             self.fOut.write()
-            self.fOut.write("// Initialize statechart")
+            self.fOut.write("//Initialize statechart")
 
             if class_node.statechart.historys:
                 for node in class_node.statechart.historyParents:
@@ -196,14 +199,17 @@ class CSharpGenerator(CodeGenerator):
                 self.fOut.write()
 
             for node in class_node.statechart.composites :
-                self.fOut.write("this.current_state[self." + node.getFullName() + "] = new List<Node>();")
-            self.fOut.write()
+                self.fOut.write("this.current_state[Node." + node.getFullName() + "] = new List<Node>();")
+                
         self.fOut.dedent()
+        self.fOut.write("}")
+        self.fOut.write()
         
-        self.fOut.write("public void start()")
+        self.fOut.write("public override void start()")
         self.fOut.write("{")
         
         self.fOut.indent()
+        self.fOut.write("base.start();")
         for default_node in class_node.statechart.root.defaults:
             if default_node.isComposite():
                 self.fOut.write("this.enterDefault_" + default_node.getFullName() + "();")
@@ -211,6 +217,7 @@ class CSharpGenerator(CodeGenerator):
                 self.fOut.write("this.enter_" + default_node.getFullName() + "();")
         self.fOut.dedent()
         self.fOut.write("}")
+        self.fOut.write()
         
         #visit children
         for i in class_node.constructors :
@@ -224,11 +231,17 @@ class CSharpGenerator(CodeGenerator):
           
         # write out str method
         self.fOut.dedent()
+        self.fOut.write("}")
+        self.fOut.write()
 
     def writeFormalParameters(self, parameters = []):
-        """Helper method that writes a correct comma separated list of formal parameters"""           
+        """Helper method that writes a correct comma separated list of formal parameters"""    
+        first = True       
         for param in parameters :
-            self.fOut.extendWrite(', ')
+            if first :
+                first = False
+            else :
+                self.fOut.extendWrite(', ')
             param.accept(self)
         
     def visit_FormalParameter(self, formal_parameter):
@@ -240,11 +253,12 @@ class CSharpGenerator(CodeGenerator):
 
         self.fOut.write(constructor.access + " " + constructor.parent_class.getName() + "(")
         self.writeFormalParameters([FormalParameter("controller", "ControllerBase", None)] + constructor.getParams())
-        self.fOut.extendWrite(")\n{")
+        self.fOut.extendWrite(")")
+        self.fOut.write("{")
         self.fOut.indent()
-        self.fOut.write("this.commonConstructor(controller)")
-        self.fOut.write()
+        self.fOut.write("this.commonConstructor(controller);")
         if constructor.body :
+            self.fOut.write()
             self.fOut.write("//constructor body (user-defined)")
             StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
         self.fOut.dedent()
@@ -279,7 +293,7 @@ class CSharpGenerator(CodeGenerator):
         
     #helper method
     def writeTransitionsRecursively(self, current_node):
-        self.fOut.write("private bool transition_" + current_node.getFullName() + "(Event event)")
+        self.fOut.write("private bool transition_" + current_node.getFullName() + "(Event e)")
         self.fOut.write("{")
         self.fOut.indent()
         
@@ -299,15 +313,15 @@ class CSharpGenerator(CodeGenerator):
             
         if current_node.isParallel():
             for child in valid_children :     
-                self.fOut.write("catched = this.transition_" + child.getFullName() + "(event) || catched;")
+                self.fOut.write("catched = this.transition_" + child.getFullName() + "(e) || catched;")
         elif current_node.isComposite():
             self.fOut.write()
             for i, child in enumerate(valid_children) :
                 if i > 0 :
                     self.fOut.extendWrite(" else ")
-                self.fOut.extendWrite("if (this.currentState[Node." + current_node.getFullName() + "][0] == Node." + child.getFullName() + "){")
+                self.fOut.extendWrite("if (this.current_state[Node." + current_node.getFullName() + "][0] == Node." + child.getFullName() + "){")
                 self.fOut.indent()
-                self.fOut.write("catched = this.transition_" + child.getFullName() + "(event);")
+                self.fOut.write("catched = this.transition_" + child.getFullName() + "(e);")
                 self.fOut.dedent()
                 self.fOut.write("}")
                 
@@ -324,6 +338,7 @@ class CSharpGenerator(CodeGenerator):
             
         self.fOut.write("return catched;")
         self.fOut.dedent()
+        self.fOut.write("}")
         self.fOut.write();
         
         for child in valid_children :
@@ -336,7 +351,7 @@ class CSharpGenerator(CodeGenerator):
         if len(out_transitions) == 0 :
             return
         
-        self.fOut.write('var enableds = new List<int>()')
+        self.fOut.write('var enableds = new List<int>();')
         for index, transition in enumerate(out_transitions, start=1):
             self.writeTransitionCondition(transition, index)
             
@@ -385,11 +400,11 @@ class CSharpGenerator(CodeGenerator):
         
         # write out exit actions
         if not exits[-1].isBasic():
-            self.fOut.write("this.exit_" + exits[-1].getFullName() + "()")
+            self.fOut.write("this.exit_" + exits[-1].getFullName() + "();")
         else:
             for node in exits:
                 if node.isBasic():
-                    self.fOut.write("this.exit_" + node.getFullName() + "()")
+                    self.fOut.write("this.exit_" + node.getFullName() + "();")
                     
         # write out trigger actions
         transition.getAction().accept(self)
@@ -409,6 +424,7 @@ class CSharpGenerator(CodeGenerator):
 
 
         self.fOut.dedent()
+        self.fOut.write('}')
                         
     def writeTransitionCondition(self, transition, index):
         trigger = transition.getTrigger()
@@ -492,7 +508,7 @@ class CSharpGenerator(CodeGenerator):
             else:
                 for child in children:
                     if not child.isHistory() :
-                        self.fOut.write("if (this.current_state[this." + exited_node.getFullName() + "].Contains(Node." + child.getFullName() +  ")){")
+                        self.fOut.write("if (this.current_state[Node." + exited_node.getFullName() + "].Contains(Node." + child.getFullName() +  ")){")
                         self.fOut.indent()
                         self.fOut.write("this.exit_" + child.getFullName() + "();")
                         self.fOut.dedent()  
@@ -510,9 +526,7 @@ class CSharpGenerator(CodeGenerator):
             exit_method.action.accept(self)
             
         #Adjust state
-        self.fOut.write("//Note that this clears the parent state for every active child, and thus this happens multiple times for a parallel parent state.")
-        self.fOut.write("//It would make sense to do a .Remove(ID), but Clear() is way more performant, and the end result is the same.")
-        self.fOut.write("this.current_state[Node." + exited_node.getParentNode().getFullName() + "].Clear();")
+        self.fOut.write("this.current_state[Node." + exited_node.getParentNode().getFullName() + "].Remove(Node." + exited_node.getFullName() + ");")
 
         self.fOut.dedent()
         self.fOut.write("}")
@@ -570,7 +584,8 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("}")
 
     def visit_StateChart(self, statechart):
-        self.fOut.write("//Statechart enter/exit action methods")
+        self.fOut.write("//Statechart enter/exit action method(s) :")
+        self.fOut.write()
         
         #visit children
         for i in statechart.composites + statechart.basics:
@@ -580,14 +595,16 @@ class CSharpGenerator(CodeGenerator):
 
         # write out statecharts methods for enter/exit state
         if len(statechart.composites) > 1 :
-            self.fOut.write("//Statechart enter/exit default methods")
+            self.fOut.write("//Statechart enter/exit default method(s) :")
+            self.fOut.write()
             for i in statechart.composites :
                 if i is not statechart.root :
                     self.writeEnterDefault(i)
 
         # write out statecharts methods for enter/exit history
         if statechart.historys:
-            self.fOut.write("//Statechart enter/exit history methods")
+            self.fOut.write("//Statechart enter/exit history method(s) :")
+            self.fOut.write()
             for i in statechart.historyParents:
                 self.writeEnterHistory(i)     
                 
@@ -606,23 +623,26 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("this.state_changed = this.transition_" + statechart.root.getFullName() + "(e);")
         self.fOut.dedent()
         self.fOut.write("}")
+        self.fOut.write()
 
         # write out inState function
-        self.fOut.write("public bool inState(List<Node> nodes){")
+        self.fOut.write("public bool inState(List<Node> nodes)")
         self.fOut.write("{")
         self.fOut.indent()
         self.fOut.write("foreach(List<Node> actives in current_state.Values){")
-        self.fOut.write("{")
         self.fOut.indent()
-        self.fOut.write("nodes = nodes.Except (actives);")
+        self.fOut.write("foreach(Node node in actives)")
+        self.fOut.indent()
+        self.fOut.write("nodes.Remove (node);")
+        self.fOut.dedent()
         self.fOut.write("if (nodes.Count == 0){")
         self.fOut.indent()
-        self.fOut.write("return true")
+        self.fOut.write("return true;")
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.dedent()
         self.fOut.write("}")
-        self.fOut.write("return false")
+        self.fOut.write("return false;")
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()

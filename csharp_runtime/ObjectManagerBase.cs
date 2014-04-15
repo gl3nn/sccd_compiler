@@ -6,7 +6,7 @@ namespace sccdlib
 {
     public abstract class ObjectManagerBase
     {
-        ControllerBase controller;
+        protected ControllerBase controller;
         EventQueue events = new EventQueue();
         Dictionary<RuntimeClassBase,InstanceWrapper> instances_map = new Dictionary<RuntimeClassBase,InstanceWrapper> ();
         
@@ -240,7 +240,7 @@ namespace sccdlib
         protected abstract InstanceWrapper instantiate(string class_name, List<object> construct_params);
 
             
-        InstanceWrapper createInstance(string class_name, List<object> construct_params)
+        public InstanceWrapper createInstance(string class_name, List<object> construct_params)
         {
             InstanceWrapper iw = this.instantiate(class_name, construct_params);
             if (iw != null)

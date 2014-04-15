@@ -16,9 +16,10 @@ class CodeGenerator(Visitor):
     def generate(self):
         if self.protocol not in self.supported_protocols :
             Logger.showError("Unsupported protocol.")
-            return
+            return False
         try :
             self.fOut = FileOutputer(self.output_file)
             self.class_diagram.accept(self)
         finally :
             self.fOut.close()
+        return True

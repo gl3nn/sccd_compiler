@@ -5,8 +5,8 @@ namespace sccdlib
 {
     public class GameControllerBase : ControllerBase
     {
-        public GameControllerBase (ObjectManagerBase object_manager, bool keep_running = true)
-            : base(object_manager, keep_running)
+        public GameControllerBase ()
+            : base()
         {        
         }
         

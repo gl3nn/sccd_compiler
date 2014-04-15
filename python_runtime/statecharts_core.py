@@ -363,7 +363,6 @@ class ThreadsControllerBase(ControllerBase):
         super(ThreadsControllerBase, self).__init__(object_manager, keep_running)
         self.input_condition = threading.Condition()
         self.stop_thread = False
-        self.run_semaphore = threading.Semaphore()
         self.thread = threading.Thread(target=self.run)
         
     def handleInput(self, delta):

@@ -1,6 +1,7 @@
 import argparse
 import os
-import python_generator as Python
+from python_generator import PythonGenerator
+from csharp_generator import CSharpGenerator
 from utils import Logger
 from code_generation import Languages, Protocols
 from state_linker import StateLinker
@@ -20,12 +21,14 @@ def createAST(input_file):
     return cd
     
 def generateFromAST(class_diagram, output_file, target_language, protocol):
+    succesfull_generation = False
     if target_language == Languages.Python :
-        Python.PythonGenerator(class_diagram, output_file, protocol).generate()
+        succesfull_generation = PythonGenerator(class_diagram, output_file, protocol).generate()
     elif target_language == Languages.CSharp:
-        Logger.showWarning("C# generation not implemented yet.")
+        succesfull_generation = CSharpGenerator(class_diagram, output_file, protocol).generate()
     # let user know ALL classes have been processed and loaded
-    Logger.showInfo("The following classes <" + ", ".join(class_diagram.class_names) + "> have been exported to the following file: " + output_file)
+    if succesfull_generation :
+        Logger.showInfo("The following classes <" + ", ".join(class_diagram.class_names) + "> have been exported to the following file: " + output_file)
         
 def main():
     parser = argparse.ArgumentParser()
@@ -89,7 +92,8 @@ def main():
         elif args['protocol'] == "gameloop" :
             protocol = Protocols.GameLoop
         else :
-            Logger.showError("Invalid protocol.")          
+            Logger.showError("Invalid protocol.")
+            return          
     else :
         protocol = Protocols.Threads
         

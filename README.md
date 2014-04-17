@@ -3,6 +3,7 @@ Statecharts and Class Diagram Compiler
 
 Usage
 -------------
+Manual for the compiler written in Python :
 ```sh
 $python sccdc.py --help
 usage: sccdc.py [-h] [-o OUTPUT] [-v VERBOSE] [-p PROTOCOL] [-l LANGUAGE]
@@ -14,12 +15,12 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -o OUTPUT, --output OUTPUT
-                        The path to the target python file. Defaults to the
-                        same name as the input file.
+                        The path to the generated code. Defaults to the same
+                        name as the input file but with matching extension.
   -v VERBOSE, --verbose VERBOSE
                         0 = no output, 1 = only show warnings, 2 = show all
                         output. Defaults to 2.
-  -p PROTOCOL, --protocol PROTOCOL
+  -p PLATFORM, --platform PLATFORM
                         Let the compiled code run on top of threads or
                         gameloop. The default is threads.
   -l LANGUAGE, --language LANGUAGE
@@ -31,7 +32,7 @@ For a detailed explanation on the formalism's syntax please consult the latest r
 
 Tests
 -------------
-Executing the unit tests can be done by running `tests.py`. This file imports the test cases from the `test_files` folder.
+Executing the tests written for the Python compiler and generated Python code can be done by running `tests.py`. This file imports the test cases from the `test_files` folder.
 
 Tanks Example
 -------------

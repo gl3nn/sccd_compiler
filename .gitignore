@@ -1,1 +1,12 @@
 *.pyc
+.metadata*
+*.dll
+*.dll.mdb
+*.userprefs
+*~
+RemoteSystemsTempFiles
+csharp_tests/test-results
+csharp_tests/bin
+tanks/python_runtime
+python_sccd_compiler/python_runtime
+

@@ -14,8 +14,8 @@
                 <transition target="/state_2"/>          
             </state>
             <state id="state_2">
-                <transition cond="self.member1 &lt; 3"  target="/state_1" />
-                <transition cond="self.member1 &gt;= 3" target="/state_3" />
+                <transition cond="SELF.member1 &lt; 3"  target="/state_1" />
+                <transition cond="SELF.member1 &gt;= 3" target="/state_3" />
             </state>
             <state id="state_3">
                 <onentry>

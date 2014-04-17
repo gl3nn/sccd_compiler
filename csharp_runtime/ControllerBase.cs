@@ -11,7 +11,7 @@ namespace sccdlib
         protected EventQueue input_queue = new EventQueue();
 
         protected List<string> output_ports = new List<string>();
-        protected List<OutputListener> output_listeners;
+        protected List<OutputListener> output_listeners = new List<OutputListener>();
 
         public ControllerBase ()
         {

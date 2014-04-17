@@ -464,6 +464,7 @@ class PythonGenerator(CodeGenerator):
                 elif i.isBasic():
                     self.fOut.write("self.enter_" + i.getFullName() + "()")
         self.fOut.dedent()
+        self.fOut.write()
          
     def visit_ExitAction(self, exit_method):
         exited_node = exit_method.parent_node
@@ -552,6 +553,7 @@ class PythonGenerator(CodeGenerator):
                     self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.dedent()
+        self.fOut.write()
 
     def visit_StateChart(self, statechart):
         self.fOut.write("# First statechart enter/exit action methods")

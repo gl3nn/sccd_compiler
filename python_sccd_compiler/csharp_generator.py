@@ -197,7 +197,7 @@ class CSharpGenerator(CodeGenerator):
 
             if class_node.statechart.historys:
                 for node in class_node.statechart.historyParents:
-                    self.fOut.write("this.history_tate[Node." + node.getFullName() + "] = new List<Node>();")
+                    self.fOut.write("this.history_state[Node." + node.getFullName() + "] = new List<Node>();")
                 self.fOut.write()
 
             for node in class_node.statechart.composites :
@@ -291,7 +291,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_Association(self, association):
-        self.fOut.write('associations.Add("' + association.name + '", "' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + ');')
+        self.fOut.write('associations.Add(new Association("' + association.name + '", "' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + '));')
         
     #helper method
     def writeTransitionsRecursively(self, current_node):
@@ -385,7 +385,7 @@ class CSharpGenerator(CodeGenerator):
             for index, parameter in enumerate(parameters):
                 self.fOut.write()
                 parameter.accept(self)
-                self.fOut.extendWrite(' = parameters[' + str(index) + '];')
+                self.fOut.extendWrite(' = (' + parameter.getType() + ')parameters[' + str(index) + '];')
         
     def writeTransitionAction(self, transition, index):
         if index > 1 :
@@ -417,7 +417,7 @@ class CSharpGenerator(CodeGenerator):
                 if entering_node.isComposite():
                     self.fOut.write("this.enterDefault_" + entering_node.getFullName() + "();")
                 elif entering_node.isHistory():
-                    self.fOut.write("this.enterHistory_" + entering_node.getParentNode().getFullName() + "(" + str(entering_node.isHistoryDeep()) + ");")
+                    self.fOut.write("this.enterHistory_" + entering_node.getParentNode().getFullName() + "(" + ("true" if entering_node.isHistoryDeep() else "false") + ");")
                 else:
                     self.fOut.write("this.enter_" + entering_node.getFullName() + "();")
             else :
@@ -563,7 +563,7 @@ class CSharpGenerator(CodeGenerator):
         else:
             for child in children:
                 if not child.isHistory() :
-                    self.fOut.write("if (self.historyState[Node." + entered_node.getFullName() + "].Contains(Node." + child.getFullName() + ")){")
+                    self.fOut.write("if (this.history_state[Node." + entered_node.getFullName() + "].Contains(Node." + child.getFullName() + ")){")
                     self.fOut.indent()
                     if child.isComposite():
                         self.fOut.write("if (deep){")
@@ -584,6 +584,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("}")
         self.fOut.dedent()
         self.fOut.write("}")
+        self.fOut.write()
 
     def visit_StateChart(self, statechart):
         self.fOut.write("//Statechart enter/exit action method(s) :")
@@ -673,7 +674,7 @@ class CSharpGenerator(CodeGenerator):
         elif raise_event.isOutput():
             self.fOut.write('this.controller.outputEvent(new Event("' + raise_event.getEventName() + '", "' + raise_event.getPort() + '", new object[] {')
         elif raise_event.isCD():
-            self.fOut.write('self.object_manager.addEvent(new Event("' + raise_event.getEventName() + '", "", new object[] { this, ')
+            self.fOut.write('this.object_manager.addEvent(new Event("' + raise_event.getEventName() + '", "", new object[] { this, ')
         first_param = True
         for param in raise_event.getParameters() :
             if first_param :
@@ -682,11 +683,11 @@ class CSharpGenerator(CodeGenerator):
                 self.fOut.extendWrite(',')
             param.accept(self)
         if raise_event.isNarrow():
-            self.fOut.extendWrite('})')
-            self.fOut.write('self.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "' + raise_event.getTarget() + '" ,send_event}))')
+            self.fOut.extendWrite('});')
+            self.fOut.write('this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "' + raise_event.getTarget() + '" ,send_event}));')
         elif raise_event.isBroad():
-            self.fOut.extendWrite('})')
-            self.fOut.write('self.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}))')
+            self.fOut.extendWrite('});')
+            self.fOut.write('this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));')
         else :
             self.fOut.extendWrite('}));')
             

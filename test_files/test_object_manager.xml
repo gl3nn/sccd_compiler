@@ -13,7 +13,7 @@
             <state id="start">
                 <transition port="test_input" event="create" target="../wait">
                     <raise scope="cd" event="create_instance">
-                        <parameter expr="'test2_association'"/>
+                        <parameter expr='"test2_association"'/>
                     </raise>
                     <raise port="test_output" event="request_send"/>
                     
@@ -22,10 +22,10 @@
 
             <state id="wait">
                 <transition event="instance_created" target="../start">
-                    <parameter name="association_name" />
+                    <parameter name="association_name" type="string"/>
                     <raise port="test_output" event="instance_created"/>
                     <raise scope="cd" event="start_instance">
-	                    <parameter expr="'test2_association'"/>
+	                    <parameter expr='"test2_association"'/>
 	                </raise> 
                     <raise target="test2_association" event="hello" />
                 </transition>

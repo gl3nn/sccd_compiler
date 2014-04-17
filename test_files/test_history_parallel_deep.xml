@@ -43,7 +43,7 @@
                         </transition>
                     </state>
                     <state id="step1">
-                        <transition cond="INSTATE('/parallel/orthogonal/wrapper/state_2/inner_4') and INSTATE('/parallel/orthogonal/wrapper/state_1/inner_2')" 
+                        <transition cond="INSTATE('/parallel/orthogonal/wrapper/(state_2/inner_4,state_1/inner_2)')" 
                                     target="../step2">
                             <raise port="test_output" event="check1" />
                             <raise event="to_outer" />
@@ -56,7 +56,7 @@
                         </transition>
                     </state>
                     <state id="step3">
-                        <transition cond="INSTATE('/parallel/orthogonal/wrapper/state_2/inner_4') and INSTATE('/parallel/orthogonal/wrapper/state_1/inner_2')" target="../end">
+                        <transition cond="INSTATE('/parallel/orthogonal/wrapper/(state_2/inner_4,state_1/inner_2)')" target="../end">
                             <raise port="test_output" event="check3" />
                         </transition>
                     </state>

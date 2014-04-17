@@ -196,7 +196,7 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("//Initialize statechart")
 
             if class_node.statechart.historys:
-                for node in class_node.statechart.historyParents:
+                for node in class_node.statechart.combined_history_parents:
                     self.fOut.write("this.history_state[Node." + node.getFullName() + "] = new List<Node>();")
                 self.fOut.write()
 
@@ -417,7 +417,10 @@ class CSharpGenerator(CodeGenerator):
                 if entering_node.isComposite():
                     self.fOut.write("this.enterDefault_" + entering_node.getFullName() + "();")
                 elif entering_node.isHistory():
-                    self.fOut.write("this.enterHistory_" + entering_node.getParentNode().getFullName() + "(" + ("true" if entering_node.isHistoryDeep() else "false") + ");")
+                    if (entering_node.isHistoryDeep()) :
+                        self.fOut.write("this.enterHistoryDeep_" + entering_node.getParentNode().getFullName() + "();")
+                    else :
+                        self.fOut.write("this.enterHistoryShallow_" + entering_node.getParentNode().getFullName() + "();")
                 else:
                     self.fOut.write("this.enter_" + entering_node.getFullName() + "();")
             else :
@@ -498,7 +501,7 @@ class CSharpGenerator(CodeGenerator):
         #If the exited node is composite take care of potential history and the leaving of descendants
         if exited_node.isComposite() :
             #handle history
-            if exited_node in exited_node.parent_statechart.historyParents:
+            if exited_node in exited_node.parent_statechart.combined_history_parents:
                 self.fOut.write("this.history_state[Node." + exited_node.getFullName() + "].AddRange(this.current_state[Node." + exited_node.getFullName() + "]);")
             
             #Take care of leaving children
@@ -536,10 +539,8 @@ class CSharpGenerator(CodeGenerator):
         
             
     #helper method
-    def writeEnterHistory(self, entered_node):
-        self.fOut.write("private void enterHistory_" + entered_node.getFullName() + "(")
-        self.writeFormalParameters([FormalParameter("deep","bool")])
-        self.fOut.extendWrite(")")
+    def writeEnterHistory(self, entered_node, is_deep):
+        self.fOut.write("private void enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + entered_node.getFullName() + "()")
         self.fOut.write("{")
         self.fOut.indent()
         self.fOut.write("if (this.history_state[Node." + entered_node.getFullName() + "].Count == 0){")
@@ -559,23 +560,18 @@ class CSharpGenerator(CodeGenerator):
         if entered_node.isParallel():
             for child in children:
                 if not child.isHistory() :
-                    self.fOut.write("this.enterHistory_" + child.getFullName() + "(deep);")
+                    self.fOut.write("this.enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + child.getFullName() + "();")
         else:
             for child in children:
                 if not child.isHistory() :
                     self.fOut.write("if (this.history_state[Node." + entered_node.getFullName() + "].Contains(Node." + child.getFullName() + ")){")
                     self.fOut.indent()
                     if child.isComposite():
-                        self.fOut.write("if (deep){")
-                        self.fOut.indent()
-                        self.fOut.write("this.enter_" + child.getFullName() + "();")
-                        self.fOut.write("this.enterHistory_" + child.getFullName() + "(deep);")
-                        self.fOut.dedent()
-                        self.fOut.write("} else {")
-                        self.fOut.indent()
-                        self.fOut.write("this.enterDefault_" + child.getFullName() + "();")
-                        self.fOut.dedent()
-                        self.fOut.write("}")
+                        if is_deep :
+                            self.fOut.write("this.enter_" + child.getFullName() + "();")
+                            self.fOut.write("this.enterHistoryDeep_" + child.getFullName() + "();")
+                        else :
+                            self.fOut.write("this.enterDefault_" + child.getFullName() + "();")
                     else:
                         self.fOut.write("this.enter_" + child.getFullName() + "();")
                     self.fOut.dedent()
@@ -608,10 +604,13 @@ class CSharpGenerator(CodeGenerator):
         if statechart.historys:
             self.fOut.write("//Statechart enter/exit history method(s) :")
             self.fOut.write()
-            for i in statechart.historyParents:
-                self.writeEnterHistory(i)     
+            for i in statechart.shallow_history_parents:
+                self.writeEnterHistory(i, False)
+            for i in statechart.deep_history_parents:
+                self.writeEnterHistory(i, True)   
                 
-
+        self.fOut.write("//Statechart transitions :")
+        self.fOut.write()
         self.writeTransitionsRecursively(statechart.root)            
                 
         # write out transition function

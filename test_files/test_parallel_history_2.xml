@@ -1,0 +1,93 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Parallel History 2">
+    <description>
+        Testing history where the history state is directly inside a parallel element.
+    </description>
+    <inport name="test_input" />
+    <outport name="test_output" />
+    <class name="TestClass" default="true">
+        <scxml initial="parallel">
+            <parallel id="parallel">
+                <state id="orthogonal_1" initial="orthogonal_inner_1">
+                    <state id="orthogonal_inner_1" initial="state_1">
+                        <state id="state_1">
+                            <onentry>
+                               <raise port="test_output" event="in_state_1" />
+                            </onentry>
+                            <transition port="test_input" event="to_state_2" target="../state_2"/>
+                        </state>
+                        <state id="state_2">
+                            <onentry>
+        	                   <raise port="test_output" event="in_state_2" />
+                            </onentry>
+                        </state>
+                        <transition port="test_input" event="to_outer_1" target="../outer_1"/>
+                    </state>
+                    <state id="outer_1">
+                        <onentry>
+                           <raise port="test_output" event="in_outer_1" />
+                        </onentry>
+                        
+                    </state>
+                </state>
+                <state id="orthogonal_2" initial="orthogonal_inner_2">
+                    <state id="orthogonal_inner_2" initial="state_3">
+                        <state id="state_3">
+                            <onentry>
+                               <raise port="test_output" event="in_state_3" />
+                            </onentry>
+                            <transition port="test_input" event="to_state_4" target="../state_4"/>
+                        </state>
+                        <state id="state_4">
+                            <onentry>
+        	                   <raise port="test_output" event="in_state_4" />
+                            </onentry>
+                        </state>
+                        <transition port="test_input" event="to_outer_2" target="../outer_2"/>
+                    </state>
+                    <state id="outer_2">
+                        <onentry>
+                           <raise port="test_output" event="in_outer_2" />
+                        </onentry>
+                    </state>
+                </state>
+                <history id="history_1" type="shallow">
+                </history>
+                <transition port="test_input" event="exit" target="../next_to_parallel"/>
+            </parallel>
+            <state id="next_to_parallel">
+                <onentry>
+                    <raise port="test_output" event="outside" />
+                </onentry>
+                <transition port="test_input" event="to_history_1" target="../parallel/history_1"/>
+            </state>
+        </scxml>
+    </class>
+    <test>
+        <input>
+            <event name="to_outer_1" port="test_input" time="0.0"/>
+            <event name="to_outer_2" port="test_input" time="0.0"/>
+            <event name="exit" port="test_input" time="0.0"/>
+            <event name="to_history_1" port="test_input" time="0.0"/>
+        </input>
+       <expected>
+           <slot>
+               <event name="in_state_1" port="test_output"/>
+               <event name="in_state_3" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="in_outer_1" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="in_outer_2" port="test_output"/>
+           </slot>
+          <slot>
+               <event name="outside" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="in_outer_1" port="test_output"/>
+               <event name="in_outer_2" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
+</diagram>

@@ -634,7 +634,9 @@ class StateChart(Visitable):
         self.addToHierarchy(self.root)  
             
         # Calculate the history that needs to be taken care of.
-        self.historyParents = []
+        self.shallow_history_parents = []
+        self.deep_history_parents = []
+        self.combined_history_parents = [] #All nodes that need state saved on leaving
         for node in self.historys:
             self.calculateHistory(node.getParentNode(), node.isHistoryDeep())
 
@@ -721,8 +723,14 @@ class StateChart(Visitable):
         """
         if parent == self.root:
             Logger.showWarning("Root component cannot contain history in class <" + self.className + ">. Not processed!")
-        if parent not in self.historyParents:
-            self.historyParents.append(parent)
+        if parent not in self.combined_history_parents:
+            self.combined_history_parents.append(parent)
+        if is_deep :
+            if parent not in self.deep_history_parents:
+                self.deep_history_parents.append(parent)
+        else :
+            if parent not in self.shallow_history_parents:
+                self.shallow_history_parents.append(parent)
         if parent.isParallel() or is_deep :
             for i in parent.children:
                 if i.isComposite() :

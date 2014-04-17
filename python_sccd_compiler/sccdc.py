@@ -33,9 +33,9 @@ def generateFromAST(class_diagram, output_file, target_language, protocol):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input', help='The path to the XML file to be compiled.')
-    parser.add_argument('-o', '--output', type=str, help='The path to the target python file. Defaults to the same name as the input file.')
+    parser.add_argument('-o', '--output', type=str, help='The path to the generated code. Defaults to the same name as the input file but with matching extension.')
     parser.add_argument('-v', '--verbose', type=int, help='0 = no output, 1 = only show warnings, 2 = show all output. Defaults to 2.', default = 2)
-    parser.add_argument('-p', '--protocol', type=str, help="Let the compiled code run on top of threads or gameloop. The default is threads.")
+    parser.add_argument('-p', '--platform', type=str, help="Let the compiled code run on top of threads or gameloop. The default is threads.")
     parser.add_argument('-l', '--language', type=str, help='Target language, either "csharp" or "python". Defaults to the latter.')
     
     args = vars(parser.parse_args())

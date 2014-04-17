@@ -1,1 +1,0 @@
-Let input events only be put in the queue of the objects that use it.

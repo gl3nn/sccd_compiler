@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from compiler_exceptions import CompilerException, TransitionException
 from code_generation import Protocols, Languages
 
-SHARED_TEST_FILES_FOLDER = "test_files"
+SHARED_TEST_FILES_FOLDER = "../test_files"
 
 class TestEvent(object):
     def __init__(self, name, port, parameters = []):

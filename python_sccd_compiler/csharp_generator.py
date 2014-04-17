@@ -57,7 +57,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("}")
         self.fOut.write()
         
-        self.fOut.write('protected InstanceWrapper instantiate(string class_name, List<object> construct_params)')
+        self.fOut.write('protected override InstanceWrapper instantiate(string class_name, object[] construct_params)')
         self.fOut.write('{')
         self.fOut.indent()
         self.fOut.write("RuntimeClassBase instance = null;")
@@ -69,7 +69,10 @@ class CSharpGenerator(CodeGenerator):
                 self.fOut.write('}else ')
             self.fOut.extendWrite('if (class_name == "' + c.name + '" ){')
             self.fOut.indent()
-            self.fOut.write('instance =  new' + c.name + '(self.controller, *construct_params)')
+            self.fOut.write('object[] new_parameters = new object[construct_params.Length + 1];')
+            self.fOut.write('new_parameters[0] = this.controller;')
+            self.fOut.write('Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);')
+            self.fOut.write('instance = (RuntimeClassBase) Activator.CreateInstance(typeof(' + c.name + '), new_parameters);')
             for a in c.associations :
                 a.accept(self)
             self.fOut.dedent()
@@ -129,8 +132,7 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write('this.addOutputPort("' + p + '");')
         self.fOut.write('this.object_manager = new ObjectManager(this);')
         actual_parameters = [p.getIdent() for p in parameters]
-        self.fOut.write('this.object_manager.createInstance("'+ class_diagram.default_class.name +'", [' +  ', '.join(actual_parameters)+ '])')
-        self.fOut.write()
+        self.fOut.write('this.object_manager.createInstance("'+ class_diagram.default_class.name +'", new object[]{' +  ', '.join(actual_parameters)+ '});')
         self.fOut.dedent()
         self.fOut.write('}')
 
@@ -156,18 +158,18 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("/// <summary>")
             self.fOut.write("/// Enum uniquely representing all statechart nodes.")
             self.fOut.write("/// </summary>")
-            self.fOut.write("enum Node {")
+            self.fOut.write("public enum Node {")
             self.fOut.indent()
             for node in class_node.statechart.composites + class_node.statechart.basics:
                 self.fOut.write(node.getFullName() + ",");
             self.fOut.dedent();
             self.fOut.write("};")
             self.fOut.write()
-            self.fOut.write("Dictionary<Node,Node> current_state = new Dictionary<Node,Node>();");
+            self.fOut.write("Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();");
             if len(class_node.statechart.historys) > 0 :
                 self.fOut.write("Dictionary<Node,List<Node>> history_state = new Dictionary<Node,List<Node>>();");
             if class_node.statechart.nr_of_after_transitions != 0:
-                self.fOut.write("Dictionary<int,double> timers = new Dictionary<int,double>();}")
+                self.fOut.write("Dictionary<int,double> timers = new Dictionary<int,double>();")
             self.fOut.write();
             
         #User defined attributes
@@ -379,7 +381,7 @@ class CSharpGenerator(CodeGenerator):
     def writeFormalEventParameters(self, transition):
         parameters = transition.getTrigger().getParameters()
         if(len(parameters) > 0) :
-            self.fOut.write('List<object> parameters = event.getParameters();')
+            self.fOut.write('object[] parameters = e.getParameters();')
             for index, parameter in enumerate(parameters):
                 self.fOut.write()
                 parameter.accept(self)
@@ -387,7 +389,7 @@ class CSharpGenerator(CodeGenerator):
         
     def writeTransitionAction(self, transition, index):
         if index > 1 :
-            self.fOut.write("} else ")
+            self.fOut.extendWrite(" else ")
         else :
             self.fOut.write()
         self.fOut.extendWrite("if (enabled == " + str(index) + "){")
@@ -429,7 +431,7 @@ class CSharpGenerator(CodeGenerator):
     def writeTransitionCondition(self, transition, index):
         trigger = transition.getTrigger()
         if not trigger.isUC():  
-            self.fOut.write('if (event.getName() == "' + trigger.getEvent() + '" && event.getPort() == "' + trigger.getPort() + '"){')
+            self.fOut.write('if (e.getName() == "' + trigger.getEvent() + '" && e.getPort() == "' + trigger.getPort() + '"){')
             self.fOut.indent()   
         # evaluate guard
         if transition.hasGuard() :   
@@ -612,7 +614,7 @@ class CSharpGenerator(CodeGenerator):
         self.writeTransitionsRecursively(statechart.root)            
                 
         # write out transition function
-        self.fOut.write("private void transition (Event e = null)")
+        self.fOut.write("protected override void transition (Event e = null)")
         self.fOut.write("{")
         self.fOut.indent()
         self.fOut.write("if (e == null) {");
@@ -665,13 +667,13 @@ class CSharpGenerator(CodeGenerator):
         
     def visit_RaiseEvent(self, raise_event):
         if raise_event.isNarrow() or raise_event.isBroad():
-            self.fOut.write('Event send_event = new Event("' + raise_event.getEventName() + '", "", new List<object>() {')
+            self.fOut.write('Event send_event = new Event("' + raise_event.getEventName() + '", "", new object[] {')
         elif raise_event.isLocal():
-            self.fOut.write('this.addEvent( new Event("' + raise_event.getEventName() +'", "", new List<object>() {')
+            self.fOut.write('this.addEvent( new Event("' + raise_event.getEventName() +'", "", new object[] {')
         elif raise_event.isOutput():
-            self.fOut.write('this.controller.outputEvent(new Event("' + raise_event.getEventName() + '", "' + raise_event.getPort() + '", new List<object>() {')
+            self.fOut.write('this.controller.outputEvent(new Event("' + raise_event.getEventName() + '", "' + raise_event.getPort() + '", new object[] {')
         elif raise_event.isCD():
-            self.fOut.write('self.object_manager.addEvent(new Event("' + raise_event.getEventName() + '", "", new List<object>() { this, ')
+            self.fOut.write('self.object_manager.addEvent(new Event("' + raise_event.getEventName() + '", "", new object[] { this, ')
         first_param = True
         for param in raise_event.getParameters() :
             if first_param :
@@ -681,12 +683,12 @@ class CSharpGenerator(CodeGenerator):
             param.accept(self)
         if raise_event.isNarrow():
             self.fOut.extendWrite('})')
-            self.fOut.write('self.object_manager.addEvent(new Event("narrow_cast", "", new List<object>() {this, "' + raise_event.getTarget() + '" ,send_event}))')
+            self.fOut.write('self.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "' + raise_event.getTarget() + '" ,send_event}))')
         elif raise_event.isBroad():
             self.fOut.extendWrite('})')
-            self.fOut.write('self.object_manager.addEvent(new Event("broad_cast", "", new List<object>() {send_event}))')
+            self.fOut.write('self.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}))')
         else :
-            self.fOut.extendWrite('}))')
+            self.fOut.extendWrite('}));')
             
     def visit_Script(self, script):
         StringUtils.writeCodeCorrectIndent(script.code, self.fOut)

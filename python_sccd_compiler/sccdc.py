@@ -85,14 +85,14 @@ def main():
             output += ".cs"
         
     #Set protocol    
-    if args['protocol'] :
-        args['protocol'] = args['protocol'].lower()
-        if args['protocol'] == "threads" :
+    if args['platform'] :
+        args['platform'] = args['platform'].lower()
+        if args['platform'] == "threads" :
             protocol = Protocols.Threads
-        elif args['protocol'] == "gameloop" :
+        elif args['platform'] == "gameloop" :
             protocol = Protocols.GameLoop
         else :
-            Logger.showError("Invalid protocol.")
+            Logger.showError("Invalid platform.")
             return          
     else :
         protocol = Protocols.Threads

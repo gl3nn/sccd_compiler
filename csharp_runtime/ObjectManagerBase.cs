@@ -148,9 +148,9 @@ namespace sccdlib
         /// [0] The instance the event originates from.
         /// [1] An association reference string targeting the instance to start.
         /// </param>
-        private void handleStartInstanceEvent (List<object> parameters)
+        private void handleStartInstanceEvent (object[] parameters)
         {
-            if (parameters.Count != 2) {
+            if (parameters.Length != 2) {
                 throw new ParameterException ("The start instance event needs 2 parameters.");    
             } else {
                 RuntimeClassBase source = (RuntimeClassBase) parameters[0];
@@ -168,40 +168,43 @@ namespace sccdlib
         /// <param name='parameters'>
         /// [0] The event to be broadcasted.
         /// </param>
-        private void handleBroadCastEvent(List<object> parameters)
+        private void handleBroadCastEvent(object[] parameters)
         {
-            if (parameters.Count != 1 ) 
+            if (parameters.Length != 1 ) 
                 throw new ParameterException ("The broadcast event needs 1 parameter.");   
             else
                 this.broadcast((Event)parameters[0]); 
         }
 
-        private void handleCreateEvent (List<object> parameters)
+        private void handleCreateEvent (object[] parameters)
         {
-            if (parameters.Count < 2) {
+            if (parameters.Length < 2) {
                 throw new ParameterException ("The create event needs at least 2 parameters.");   
             } else {
                 RuntimeClassBase source = (RuntimeClassBase)parameters [0];
                 string association_name = (string)parameters [1];
                 Association association = this.instances_map[source].getAssociation (association_name);
                 if (association.allowedToAdd ()){
-                    InstanceWrapper new_instance_wrapper = this.createInstance(association.getClassName (), parameters.GetRange (2, parameters.Count-2));
+                    int constructor_parameters_length = parameters.Length -2;
+                    object[] constructor_parameters = new object[constructor_parameters_length];
+                    Array.Copy(parameters, 2, constructor_parameters, 0, constructor_parameters_length);
+                    InstanceWrapper new_instance_wrapper = this.createInstance(association.getClassName (), constructor_parameters);
                     association.addInstance (new_instance_wrapper);
                     source.addEvent(
-                        new Event(name: "instance_created", parameters : new List<object> {association_name})
+                        new Event(name: "instance_created", parameters : new object[] {association_name})
                     );
                 }else{
                     source.addEvent (
-                        new Event(name: "instance_creation_error", parameters : new List<object> {association_name})    
+                        new Event(name: "instance_creation_error", parameters : new object[] {association_name})    
                     );
                 }    
             }
         }
         
                 
-        private void handleAssociateEvent (List<object> parameters)
+        private void handleAssociateEvent (object[] parameters)
         {
-            if (parameters.Count != 3) {
+            if (parameters.Length != 3) {
                 throw new ParameterException ("The associate_instance event needs 3 parameters.");
             } else {
                 RuntimeClassBase source = (RuntimeClassBase)parameters [0];
@@ -222,9 +225,9 @@ namespace sccdlib
             }
         }
             
-        private void handleNarrowCastEvent(List<object> parameters)
+        private void handleNarrowCastEvent(object[] parameters)
         {
-            if (parameters.Count != 3)
+            if (parameters.Length != 3)
             {
                 throw new ParameterException ("The associate_instance event needs 3 parameters.");
             }else{
@@ -237,10 +240,10 @@ namespace sccdlib
         }   
         
         
-        protected abstract InstanceWrapper instantiate(string class_name, List<object> construct_params);
+        protected abstract InstanceWrapper instantiate(string class_name, object[] construct_params);
 
             
-        public InstanceWrapper createInstance(string class_name, List<object> construct_params)
+        public InstanceWrapper createInstance(string class_name, object[] construct_params)
         {
             InstanceWrapper iw = this.instantiate(class_name, construct_params);
             if (iw != null)

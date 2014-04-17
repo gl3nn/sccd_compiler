@@ -7,14 +7,14 @@ namespace sccdlib
     {
         string name = "";
         string port = "";
-        List<object> parameters;
+        object[] parameters;
         
 
-        public Event (string name = "", string port = "", List<object> parameters = null)
+        public Event (string name = "", string port = "", object[] parameters = null)
         {
             this.name = name;
             this.port = port;
-            this.parameters = (parameters == null ? new List<object>() : parameters);
+            this.parameters = (parameters == null ? new object[] {} : parameters);
         }
 
         public string getName ()
@@ -27,7 +27,7 @@ namespace sccdlib
             return this.port;
         }
         
-        public List<object> getParameters ()
+        public object[] getParameters ()
         {
             return this.parameters;
         }

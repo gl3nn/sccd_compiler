@@ -7,10 +7,10 @@ namespace sccdlib
     {
         protected ObjectManagerBase object_manager;
         protected bool done = false;
-        protected List<string> input_ports;
+        protected List<string> input_ports = new List<string>();
         protected EventQueue input_queue = new EventQueue();
 
-        protected List<string> output_ports;
+        protected List<string> output_ports = new List<string>();
         protected List<OutputListener> output_listeners;
 
         public ControllerBase ()
@@ -41,7 +41,7 @@ namespace sccdlib
         {
         }
 
-        private void outputEvent(Event output_event)
+        public void outputEvent(Event output_event)
         {
             foreach (OutputListener listener in this.output_listeners)
             {

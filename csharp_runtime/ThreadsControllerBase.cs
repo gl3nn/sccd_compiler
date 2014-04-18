@@ -114,18 +114,23 @@ namespace sccdlib
             this.thread.Join ();
         }
     
-        public void addInput(Event input_event, double time_offset = 0.0)
+        public override void addInput(Event input_event, double time_offset = 0.0)
         {
             this.input_mutex.WaitOne (-1);
             base.addInput (input_event, time_offset);
             this.input_mutex.ReleaseMutex ();
         }
     
-        public void addEventList(List<Tuple<Event,double>> event_list)
+        public override void addEventList(List<Tuple<Event,double>> event_list)
         {
             this.input_mutex.WaitOne (-1);
             base.addEventList (event_list);
             this.input_mutex.ReleaseMutex ();
+        }
+        
+        protected override IOutputListener createOutputListener (string[] ports)
+        {
+            return new ConcurrentOutputListener(ports);   
         }
     }
 }

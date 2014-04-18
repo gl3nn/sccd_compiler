@@ -39,9 +39,8 @@ def main():
     parser.add_argument('-l', '--language', type=str, help='Target language, either "csharp" or "python". Defaults to the latter.')
     
     args = vars(parser.parse_args())
-    
     #Set verbose
-    if args['verbose'] :
+    if args['verbose'] is not None:
         if args['verbose'] in [0,1,2] :
             Logger.verbose = args['verbose']
         else :

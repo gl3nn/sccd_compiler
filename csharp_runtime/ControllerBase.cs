@@ -11,18 +11,18 @@ namespace sccdlib
         protected EventQueue input_queue = new EventQueue();
 
         protected List<string> output_ports = new List<string>();
-        protected List<OutputListener> output_listeners = new List<OutputListener>();
+        protected List<IOutputListener> output_listeners = new List<IOutputListener>();
 
         public ControllerBase ()
         {
         }
 
-        public void addInputPort(string port_name)
+        protected void addInputPort(string port_name)
         {
             this.input_ports.Add(port_name);
         }
         
-        public void addOutputPort(string port_name)
+        protected void addOutputPort(string port_name)
         {
             this.output_ports.Add(port_name);
         }
@@ -49,15 +49,26 @@ namespace sccdlib
             }
         }
         
-        public OutputListener addOutputListener(string[] ports)
+        public IOutputListener addOutputListener(string[] ports)
         {
-            OutputListener listener = new OutputListener(ports);
+            IOutputListener listener = this.createOutputListener(ports);
             this.output_listeners.Add(listener);
             return listener;
         }
         
-        public virtual void addInput(Event input_event, double time_offset = 0.0)
+        protected virtual IOutputListener createOutputListener (string[] ports)
         {
+            return new OutputListener(ports);   
+        }
+        
+        public virtual void addInput(Event input_event, double time_offset = 0.0)
+        {   
+            if ( input_event.getName() == "" )
+                throw new InputException("Input event can't have an empty name.");
+            
+            if ( !this.input_ports.Contains (input_event.getPort()) )
+                throw new InputException("Input port mismatch.");
+            
             this.input_queue.Add(input_event, time_offset);
         }
     
@@ -65,7 +76,7 @@ namespace sccdlib
         {
             foreach (Tuple<Event,double> event_tuple in event_list)
             {   
-                this.input_queue.Add(event_tuple.Item1, event_tuple.Item2);
+                this.addInput (event_tuple.Item1, event_tuple.Item2);
             }
         }
         

@@ -6,12 +6,15 @@ using System.Collections;
 using System.Xml.Linq;
 using Microsoft.CSharp.RuntimeBinder;
 using NUnit.Framework;
+using sccdlib;
 
 namespace csharp_tests
 {
     [TestFixture]
     public class Main
     {
+        string path_generated_code;
+        bool keep_after_test;
    
         [Test, TestCaseSource("GetTestCases")]
         public void testXMLModel(string file_path)
@@ -26,12 +29,19 @@ namespace csharp_tests
             bool exception_expected = test_xml.Attribute("exception") != null;
 
             //Calculate path to output file
-            string path_generated_code = Path.ChangeExtension(Path.GetFileName(file_path), ".cs");
+            this.path_generated_code = Path.ChangeExtension(Path.GetFileName(file_path), ".cs");
+
+            this.keep_after_test = false;
+            if (File.Exists(this.path_generated_code))
+            {
+                this.keep_after_test = true;
+                File.Delete(this.path_generated_code);
+            }
 
             //Call code generator
             ProcessStartInfo start_info = new ProcessStartInfo();
             start_info.FileName = "python";
-            start_info.Arguments = string.Format("../../../python_sccd_compiler/sccdc.py {0} -o {1} -p threads -l C#", file_path, path_generated_code);
+            start_info.Arguments = string.Format("../../../python_sccd_compiler/sccdc.py {0} -o {1} -p threads -l C# -v 0", file_path, this.path_generated_code);
             start_info.UseShellExecute = false;
             start_info.RedirectStandardOutput = true;
             //Print any output the compiler gave
@@ -45,12 +55,13 @@ namespace csharp_tests
             }
 
             //Check if file exists
-            bool target_file_exists = File.Exists(path_generated_code);
-            if (exception_expected){
+            bool target_file_exists = File.Exists(this.path_generated_code);
+            if (exception_expected)
+            {
                 Assert.AreEqual(false, target_file_exists, "An exception was expected to be thrown by the compiler but the SCCD compiler completed successfully.");
                 return; //No target file as expected, we can end the test.
-            } 
-            else{
+            } else
+            {
                 Assert.AreEqual(true, target_file_exists, "The SCCD Compiler did not complete compilation. No generated file has been found.");
             }
 
@@ -58,12 +69,36 @@ namespace csharp_tests
             CodeCompiler code_compiler = new CodeCompiler();
             code_compiler.AddReferencedAssembly("System.dll");
             code_compiler.AddReferencedAssembly("sccdlib.dll");
-            Assembly assembly = code_compiler.compileFile(path_generated_code);
+            Assembly assembly = code_compiler.compileFile(this.path_generated_code);
             Type class_type = assembly.GetType("Controller");
             //Execute model
-            dynamic controller = Activator.CreateInstance(class_type, new object [] {false});
+            ThreadsControllerBase controller = (ThreadsControllerBase)Activator.CreateInstance(class_type, new object [] {false});
+            controller.addOutputListener(new string[]{"test_output"});
+
+            XElement input_xml = test_xml.Element("input");
+            if (input_xml != null)
+            {
+                foreach (XElement event_xml in input_xml.Elements("event"))
+                {
+                    controller.addInput( new Event(event_xml.Attribute("name").ToString(),event_xml.Attribute("port").ToString()) );
+                }
+            }
+
+            XElement expected_xml = test_xml.Element("expected");
+            if (expected_xml == null)
+                return;
+
             controller.start();
             controller.join();
+        }
+
+        [TearDown]
+        public void cleanup()
+        {
+            if (!keep_after_test && File.Exists(this.path_generated_code))
+            {
+                File.Delete(this.path_generated_code);
+            }
         }
 
         private static IEnumerable GetTestCases()

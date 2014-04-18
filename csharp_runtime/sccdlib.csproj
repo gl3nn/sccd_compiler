@@ -49,6 +49,7 @@
     <Compile Include="ParameterException.cs" />
     <Compile Include="EventQueue.cs" />
     <Compile Include="ThreadsControllerBase.cs" />
+    <Compile Include="InputException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

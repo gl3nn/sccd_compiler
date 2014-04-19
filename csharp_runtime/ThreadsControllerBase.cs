@@ -23,7 +23,6 @@ namespace sccdlib
         
         private void handleInput(double delta)
         {
-
             this.input_mutex.WaitOne(-1);
             this.input_queue.decreaseTime(delta);
             foreach(Event e in this.input_queue.popDueEvents())
@@ -85,23 +84,23 @@ namespace sccdlib
     
         private void run()
         {
-            base.start();
+            base.start ();
             DateTime previous_recorded_time;
             double last_iteration_time = 0.0;
             this.last_recorded_time = DateTime.UtcNow;
+            
             while (true)
             {
                 this.handleInput(last_iteration_time);
                 //Compute the new state based on internal events
                 this.object_manager.stepAll(last_iteration_time);
-                this.handleWaiting();
                 
+                this.handleWaiting();
                 
                 this.stop_thread_mutex.WaitOne (-1);
                 if (this.stop_thread) 
                     break;
                 this.stop_thread_mutex.ReleaseMutex ();
-                
                 
                 previous_recorded_time = last_recorded_time;
                 this.last_recorded_time = DateTime.UtcNow;

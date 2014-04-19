@@ -15,6 +15,7 @@ namespace csharp_tests
         {
             this.compiler_parameters = new CompilerParameters
             {
+                WarningLevel = 0,
                 GenerateExecutable = false,
                 GenerateInMemory = true/*,
                 OutputAssembly = "Assembly.dll"*/

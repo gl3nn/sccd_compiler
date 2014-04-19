@@ -31,6 +31,11 @@ namespace sccdlib
         {
             return this.parameters;
         }
+        
+        public override string ToString()
+        {
+            return string.Format("(event name : {0}; port : {1}; parameters : [{2}])", this.name, this.port, string.Join(", ", this.parameters));
+        }
     }
 }
 

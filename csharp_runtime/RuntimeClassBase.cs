@@ -11,6 +11,7 @@ namespace sccdlib
         protected EventQueue events = new EventQueue();
         protected ControllerBase controller;
         protected ObjectManagerBase object_manager;
+        protected Dictionary<int,double> timers;
 
         public RuntimeClassBase ()
         {
@@ -33,11 +34,26 @@ namespace sccdlib
         /// <param name='delta'>
         /// Time passed since last step.
         /// </param>
-        public void step (double delta)
+        public void step(double delta)
         {
             if (!this.active)
                 return;
             
+            
+            if (this.timers != null && this.timers.Count > 0)
+            {
+                var next_timers = new Dictionary<int,double>();
+                foreach(KeyValuePair<int,double> pair in this.timers)
+                {
+                    double time = pair.Value - delta;
+                    if (time <= 0.0)
+                        this.addEvent ( new Event("_" + pair.Key + "after"));
+                    else
+                        next_timers[pair.Key] = time;
+                }
+                this.timers = next_timers;
+            }
+                    
             this.events.decreaseTime(delta);
 
             this.microstep();

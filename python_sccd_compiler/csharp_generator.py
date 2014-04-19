@@ -168,8 +168,6 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();");
             if len(class_node.statechart.historys) > 0 :
                 self.fOut.write("Dictionary<Node,List<Node>> history_state = new Dictionary<Node,List<Node>>();");
-            if class_node.statechart.nr_of_after_transitions != 0:
-                self.fOut.write("Dictionary<int,double> timers = new Dictionary<int,double>();")
             self.fOut.write();
             
         #User defined attributes
@@ -191,6 +189,8 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.indent() 
             self.fOut.write("this.controller = controller;")
             self.fOut.write("this.object_manager = controller.getObjectManager();")
+            if class_node.statechart.nr_of_after_transitions != 0:
+                self.fOut.write("this.timers = new Dictionary<int,double>();")
 
             self.fOut.write()
             self.fOut.write("//Initialize statechart")

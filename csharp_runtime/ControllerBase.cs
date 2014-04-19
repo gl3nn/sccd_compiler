@@ -43,7 +43,7 @@ namespace sccdlib
 
         public void outputEvent(Event output_event)
         {
-            foreach (OutputListener listener in this.output_listeners)
+            foreach (IOutputListener listener in this.output_listeners)
             {
                 listener.addOutput(output_event);
             }

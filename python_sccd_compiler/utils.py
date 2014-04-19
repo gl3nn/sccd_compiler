@@ -3,6 +3,11 @@ class Logger(object):
                 #1 = only warnings
                 #2 = all output
                 
+    @staticmethod   
+    def showError(error):
+        if(Logger.verbose > -1) :
+            print "ERROR : " + error
+                
     @staticmethod
     def showWarning(warning):
         if(Logger.verbose > 0) :
@@ -12,9 +17,6 @@ class Logger(object):
     def showInfo(info):
         if(Logger.verbose > 1) :
             print "INFO : " + info
-    @staticmethod   
-    def showError(error):
-        print "ERROR : " + error
 
 #######################
 

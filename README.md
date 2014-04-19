@@ -18,8 +18,8 @@ optional arguments:
                         The path to the generated code. Defaults to the same
                         name as the input file but with matching extension.
   -v VERBOSE, --verbose VERBOSE
-                        0 = no output, 1 = only show warnings, 2 = show all
-                        output. Defaults to 2.
+                        2 = all output; 1 = only warnings and errors; 0 = only
+                        errors; -1 = no output. Defaults to 2.
   -p PLATFORM, --platform PLATFORM
                         Let the compiled code run on top of threads or
                         gameloop. The default is threads.

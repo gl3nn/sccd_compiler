@@ -68,7 +68,7 @@ namespace sccdlib
             {
                 return this.instances[index];
             }
-            catch (ArgumentOutOfRangeException Exception)
+            catch (ArgumentOutOfRangeException)
             {
                 throw new AssociationException("Invalid index for fetching instance from association.");
             }

@@ -25,9 +25,18 @@ namespace sccdlib
         
         public double getEarliestEventTime ()
         {
-            return this.events.getEarliestTime();   
+            double smallest_timer_value = double.PositiveInfinity;
+            if (timers != null)
+            {
+                foreach (double timer_value in this.timers.Values)
+                {
+                    if (timer_value < smallest_timer_value)
+                        smallest_timer_value = timer_value;
+                }
+            }
+            return Math.Min(this.events.getEarliestTime(), smallest_timer_value);   
         }
-        
+
         /// <summary>
         /// Execute statechart
         /// </summary>
@@ -63,12 +72,15 @@ namespace sccdlib
         
         private void microstep ()
         {
-            var due = this.events.popDueEvents();
+            List<Event> due = this.events.popDueEvents();
             if (due.Count == 0) {
                 this.transition ();   
             } else {
-                foreach( Event e in due)
-                    this.transition (e);
+                foreach (Event e in due)
+                {
+                    Console.WriteLine(string.Format("Firing event {0}.", e.getName()));
+                    this.transition(e);
+                }
             }
         }
         

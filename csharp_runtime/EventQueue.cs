@@ -35,20 +35,25 @@ namespace sccdlib
             }
             
         }
-        
 
         List<EventQueueEntry> event_list = new List<EventQueueEntry>();
-        EventQueueEntry earliest = null;
                 
         public void Add (Event e, double time_offset)
         {
             EventQueueEntry entry = new EventQueueEntry(e,time_offset);
-            this.event_list.Add (entry);
-            ///If the newly added event is due earlier than any other, set it as earliest event
-            if (this.earliest == null || time_offset < this.earliest.getTime ())
-                this.earliest = entry;
+            //We maintain a sorted stable list
+            int insert_index = 0;
+            for (int index = this.event_list.Count-1; index >= 0; index--)
+            {
+                if (this.event_list[index].getTime() <= time_offset)
+                {
+                    insert_index = index + 1;
+                    break;
+                }
+            }
+            this.event_list.Insert(insert_index, entry);
         }
-        
+
         public void decreaseTime(double offset)
         {
             foreach (EventQueueEntry e in this.event_list)
@@ -69,36 +74,30 @@ namespace sccdlib
         /// </returns>
         public double getEarliestTime ()
         {
-            if(this.earliest == null)
+            if (this.isEmpty())
+            {
                 return double.PositiveInfinity;
+            }
             else
-                return this.earliest.getTime ();
+            {
+                return this.event_list[0].getTime();
+            }
         }
-        
+
         public List<Event> popDueEvents ()
         {
             List<Event> result = new List<Event> ();
-            if (this.earliest == null || this.earliest.getTime () > 0.0)
+            if (this.isEmpty() || this.event_list[0].getTime() > 0.0)
                 //There are no events, or the earliest event isn't due, so we can already return an emtpy result
                 return result;
-            
-            //We can be sure now that the earliest event will be removed, so we look for a new one
-            this.earliest = null;
-            double new_earliest_time = double.MaxValue;
-            
-            foreach (var entry in this.event_list) {
-                if (entry.getTime() <= 0.0)
-                {
-                    result.Add (entry.getEvent ()); //Add all events that are due (offset less than 0) to the result
-                }
-                else if(entry.getTime() < new_earliest_time)
-                {
-                    //We seek for a new earliest event, namely the event with lowest time offset above 0.0
-                    this.earliest = entry;
-                    new_earliest_time = entry.getTime();
-                }
+
+            int index = 0;
+            while (index < this.event_list.Count && this.event_list[index].getTime() <= 0.0)
+            {
+                result.Add(this.event_list[index].getEvent()); //Add all events that are due (offset less than 0) to the result
+                index++;
             }
-            this.event_list.RemoveAll ( e => e.getTime () <= 0.0 );
+            this.event_list.RemoveRange(0, result.Count);
             return result;
         }
     }

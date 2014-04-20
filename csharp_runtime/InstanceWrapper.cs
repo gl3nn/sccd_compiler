@@ -21,7 +21,7 @@ namespace sccdlib
         {
             try{
                 return this.associations[name];
-            }catch (Exception e) {
+            }catch (KeyNotFoundException) {
                 throw new AssociationReferenceException("Unknown association.");
             }
         }

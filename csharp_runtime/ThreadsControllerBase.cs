@@ -66,19 +66,24 @@ namespace sccdlib
             double wait_time = this.getWaitTime ();
             if (wait_time <= 0.0)
                 return;
-            if (double.IsPositiveInfinity(wait_time)) {
-                if (this.keep_running) {
-                    this.wait_handle.WaitOne (-1); //Wait until signal
-                } else {
+            if (double.IsPositiveInfinity(wait_time))
+            {
+                if (this.keep_running)
+                {
+                    this.wait_handle.WaitOne(-1); //Wait until signal
+                }
+                else
+                {
                     this.stop_thread_mutex.WaitOne(-1);
                     this.stop_thread = true;
-                    this.stop_thread_mutex.ReleaseMutex ();
+                    this.stop_thread_mutex.ReleaseMutex();
                 }
-            } else {
+            } else if (wait_time != 0.0) 
+            {
                 //Calculate how much wait time is left.
-                TimeSpan actual_wait_time = TimeSpan.FromMilliseconds(wait_time) - DateTime.UtcNow.Subtract(this.last_recorded_time);
-                if (actual_wait_time > TimeSpan.Zero)
-                    this.wait_handle.WaitOne (actual_wait_time);
+                double actual_wait_time = (wait_time - DateTime.UtcNow.Subtract(this.last_recorded_time).TotalSeconds); //In seconds and double
+                if (actual_wait_time > 0.0)
+                    this.wait_handle.WaitOne ((int) Math.Ceiling(actual_wait_time  * 1000)); //Convert to seconds and int round up
             }
         }
     
@@ -88,13 +93,13 @@ namespace sccdlib
             DateTime previous_recorded_time;
             double last_iteration_time = 0.0;
             this.last_recorded_time = DateTime.UtcNow;
-            
+
             while (true)
             {
                 this.handleInput(last_iteration_time);
                 //Compute the new state based on internal events
                 this.object_manager.stepAll(last_iteration_time);
-                
+
                 this.handleWaiting();
                 
                 this.stop_thread_mutex.WaitOne (-1);
@@ -104,7 +109,7 @@ namespace sccdlib
                 
                 previous_recorded_time = last_recorded_time;
                 this.last_recorded_time = DateTime.UtcNow;
-                last_iteration_time = this.last_recorded_time.Subtract(previous_recorded_time).TotalMilliseconds;
+                last_iteration_time = this.last_recorded_time.Subtract(previous_recorded_time).TotalSeconds;
             }
         }
     
@@ -116,7 +121,7 @@ namespace sccdlib
         public override void addInput(Event input_event, double time_offset = 0.0)
         {
             this.input_mutex.WaitOne (-1);
-            base.addInput (input_event, time_offset);
+            base.addInput (input_event, time_offset); //Add time to offset that has already passed, so that next subtraction evens it out?
             this.input_mutex.ReleaseMutex ();
         }
     

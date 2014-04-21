@@ -193,7 +193,8 @@ class CSharpGenerator(CodeGenerator):
                 self.fOut.write("this.timers = new Dictionary<int,double>();")
 
             self.fOut.write()
-            self.fOut.write("//Initialize statechart")
+            self.fOut.write("//Initialize statechart :")
+            self.fOut.write()
 
             if class_node.statechart.historys:
                 for node in class_node.statechart.combined_history_parents:
@@ -411,7 +412,6 @@ class CSharpGenerator(CodeGenerator):
         # write out trigger actions
         transition.getAction().accept(self)
         
-   
         for (entering_node, is_ending_node) in transition.getEnterNodes() : 
             if is_ending_node :
                 if entering_node.isComposite():
@@ -426,7 +426,6 @@ class CSharpGenerator(CodeGenerator):
             else :
                 if entering_node.isComposite():
                     self.fOut.write("this.enter_" + entering_node.getFullName() + "();")
-
 
         self.fOut.dedent()
         self.fOut.write('}')

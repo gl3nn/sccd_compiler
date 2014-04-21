@@ -16,14 +16,14 @@ namespace sccdlib
             }
         }
         
-        public void addOutput (Event output_event)
+        public void add (Event output_event)
         {
             if (this.ports.Count == 0 || this.ports.Contains (output_event.getPort ())) {
                 this.queue.Enqueue (output_event);
             }
         }
                 
-        public Event fetchOutput ()
+        public Event fetch ()
         {
             if (this.queue.Count > 0)
                 return this.queue.Dequeue ();

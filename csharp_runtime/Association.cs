@@ -60,8 +60,6 @@ namespace sccdlib
             return new List<InstanceWrapper>(this.instances);
         }*/
         
-        
-        
         public InstanceWrapper getInstance(int index)
         {
             try 

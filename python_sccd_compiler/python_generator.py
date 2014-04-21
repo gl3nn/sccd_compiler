@@ -30,7 +30,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         
         #Mandatory imports
-        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper')
+        self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper, RuntimeClassBase, Association')
         #User imports
         if class_diagram.top.strip():
             StringUtils.writeCodeCorrectIndent(class_diagram.top, self.fOut)
@@ -51,33 +51,30 @@ class PythonGenerator(CodeGenerator):
         
         self.fOut.write('def instantiate(self, class_name, construct_params):')
         self.fOut.indent()
-        self.fOut.write("wrapper = InstanceWrapper()")
-        first = True
-        for c in class_diagram.classes :
-            if first : 
+        self.fOut.write("associations = []")
+        for index, c in enumerate(class_diagram.classes) :
+            if index == 0 : 
                 self.fOut.write()
-                first = False
             else :
                 self.fOut.write('el')
             self.fOut.extendWrite('if class_name == "' + c.name + '" :')
             self.fOut.indent()
             if c.statechart :
-                self.fOut.write('wrapper.instance =  ' + c.name + '(self.controller, *construct_params)')
+                self.fOut.write('instance =  ' + c.name + '(self.controller, *construct_params)')
             else :
-                self.fOut.write('wrapper.instance =  ' + c.name + '(*construct_params)')
+                self.fOut.write('instance =  ' + c.name + '(*construct_params)')
             for a in c.associations :
                 a.accept(self)
             self.fOut.dedent()
-        self.fOut.write('if wrapper.instance:')
+        self.fOut.write('if instance:')
         self.fOut.indent()
-        self.fOut.write('return wrapper')
+        self.fOut.write('return InstanceWrapper(instance, associations)')
         self.fOut.dedent()
         self.fOut.write('else :')
         self.fOut.indent()
         self.fOut.write('return None')
         self.fOut.dedent()
         self.fOut.dedent()
-        
         self.fOut.dedent()
         
         self.fOut.write()
@@ -88,7 +85,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("from python_runtime.statecharts_core import " + controller_sub_class)
 
         # write out controller
-        self.fOut.write("# CONTROLLER BEGINS HERE")
         self.fOut.write("class Controller(" + controller_sub_class + "):")
         self.fOut.indent()
     
@@ -128,6 +124,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
 
     def visit_Class(self, class_node):
+        """
+        Generate code for Class construct
+        """
         self.fOut.write()
         # take care of inheritance
         if class_node.super_classes:
@@ -136,7 +135,7 @@ class PythonGenerator(CodeGenerator):
                 super_classes.append(super_class)
             self.fOut.write("class " + class_node.name + "(" + ", ".join(super_classes) +  "):")
         else:
-            self.fOut.write("class " + class_node.name + ":")
+            self.fOut.write("class " + class_node.name + "(RuntimeClassBase):")
 
         self.fOut.indent()
         self.fOut.write()
@@ -148,11 +147,12 @@ class PythonGenerator(CodeGenerator):
                 self.fOut.write(node.getFullName() + " = " + str(i))
     
             self.fOut.write()
-            self.writeStateChartInitMethod(class_node)
             self.writeMethodSignature("commonConstructor", [FormalParameter("controller", "", "None")])
         else :
             self.writeMethodSignature("commonConstructor")
         self.fOut.indent()
+        self.fOut.write('"""Constructor part that is common for all constructors."""')
+        self.fOut.write("super(" + class_node.name + ", self).__init__()")
 
         # write attributes
         if class_node.attributes:
@@ -166,34 +166,37 @@ class PythonGenerator(CodeGenerator):
 
         # if there is a statechart
         if class_node.statechart is not None:            
-            self.fOut.write("# Statechart variables")
             self.fOut.write("self.controller = controller")
-            self.fOut.write("self.object_manager = controller.object_manager")
-            self.fOut.write("# State of statechart")
-            self.fOut.write("self.currentState = {}")
-            self.fOut.write("self.historyState = {}")
-            self.fOut.write()
+            self.fOut.write("self.object_manager = controller.getObjectManager()")
+            self.fOut.write("self.current_state = {}")
+            self.fOut.write("self.history_state = {}")
             if class_node.statechart.nr_of_after_transitions:
-                self.fOut.write("# AFTER events of statechart")
                 self.fOut.write("self.timers = {}")
-                self.fOut.write()
-            self.fOut.write("# Initialize statechart")
-            self.fOut.write("self.initStateChart()")
             self.fOut.write()
+            self.fOut.write("#Initialize statechart :")
+            self.fOut.write()
+            
+            if class_node.statechart.historys:
+                for node in class_node.statechart.combined_history_parents:
+                    self.fOut.write("self.history_state[" + class_node.name + "." + node.getFullName() + "] = []")
+                self.fOut.write()
+
+            for c in class_node.statechart.composites :
+                self.fOut.write("self.current_state[self." + c.getFullName() + "] = []")
+        
         self.fOut.dedent()
+        self.fOut.write()
         
         self.writeMethodSignature("start")
         self.fOut.indent()
-        if class_node.statechart :
-            self.fOut.write("self.active = True")
-            for default_node in class_node.statechart.root.defaults:
-                if default_node.isComposite():
-                    self.fOut.write("self.enterDefault_" + default_node.getFullName() + "()")
-                elif default_node.isBasic():
-                    self.fOut.write("self.enter_" + default_node.getFullName() + "()")
-        else :
-            self.fOut.write("pass")
+        self.fOut.write("super(" + class_node.name + ", self).start()")
+        for default_node in class_node.statechart.root.defaults:
+            if default_node.isComposite():
+                self.fOut.write("self.enterDefault_" + default_node.getFullName() + "()")
+            elif default_node.isBasic():
+                self.fOut.write("self.enter_" + default_node.getFullName() + "()")
         self.fOut.dedent()
+        self.fOut.write()
         
         #visit children
         for i in class_node.constructors :
@@ -208,29 +211,6 @@ class PythonGenerator(CodeGenerator):
         # write out str method
         self.fOut.dedent()
 
-    #helper method
-    def writeStateChartInitMethod(self, parent_class):
-        # the following method isn't part of the actual constructor, but deals with statechart initialization, so let's leave it here :)
-        self.fOut.write("def initStateChart(self):")
-        self.fOut.indent()
-        self.fOut.write()
-        self.fOut.write("# Statechart variables")
-        self.fOut.write("self.active = False")
-        self.fOut.write("self.eventQueue = []")
-        self.fOut.write("self.stateChanged = False")
-        self.fOut.write()
-
-        if parent_class.statechart.historys:
-            self.fOut.write("# History states")
-            for node in parent_class.statechart.combined_history_parents:
-                self.fOut.write("self.historyState[" + parent_class.name + "." + node.getFullName() + "] = []")
-            self.fOut.write()
-
-        for c in parent_class.statechart.composites :
-            self.fOut.write("self.currentState[self." + c.getFullName() + "] = []")
-        self.fOut.write()
-        self.fOut.dedent()
-        
     #helper method
     def writeMethodSignature(self, name, parameters = []):
         self.fOut.write("def " + name + "(self")           
@@ -264,8 +244,8 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("self.commonConstructor(controller)")
         else :
             self.fOut.write("self.commonConstructor()")
-        self.fOut.write()
         if constructor.body :
+            self.fOut.write()
             self.fOut.write("#constructor body (user-defined)")
             StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
         self.fOut.dedent()
@@ -280,8 +260,7 @@ class PythonGenerator(CodeGenerator):
         self.writeMethod(method.name, method.parameters, method.return_type, method.body)
         
     def visit_Association(self, association):
-        self.fOut.write('wrapper.addAssociation("' + association.name + '", "' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + ')')
-        
+        self.fOut.write('associations.append(Association("' + association.name + '", "' + association.to_class + '", ' + str(association.min) + ', ' + str(association.max) + '))')
         
     #helper method
     def writeTransitionsRecursively(self, current_node):
@@ -311,7 +290,7 @@ class PythonGenerator(CodeGenerator):
                     self.fOut.write("el")
                 else :
                     self.fOut.write()
-                self.fOut.extendWrite("if self.currentState[self." + current_node.getFullName() + "][0] == self." + child.getFullName() + ":")
+                self.fOut.extendWrite("if self.current_state[self." + current_node.getFullName() + "][0] == self." + child.getFullName() + ":")
                 self.fOut.indent()
                 self.fOut.write("catched = self.transition_" + child.getFullName() + "(event)")
                 self.fOut.dedent()
@@ -396,7 +375,6 @@ class PythonGenerator(CodeGenerator):
         # write out trigger actions
         transition.getAction().accept(self)
         
-   
         for (entering_node, is_ending_node) in transition.getEnterNodes() : 
             if is_ending_node :
                 if entering_node.isComposite():
@@ -411,7 +389,6 @@ class PythonGenerator(CodeGenerator):
             else :
                 if entering_node.isComposite():
                     self.fOut.write("self.enter_" + entering_node.getFullName() + "()")
-
 
         self.fOut.dedent()
                         
@@ -450,7 +427,7 @@ class PythonGenerator(CodeGenerator):
                 trigger.after.accept(self)
         if enter_method.action:
             enter_method.action.accept(self)
-        self.fOut.write("self.currentState[self." + parent_node.getParentNode().getFullName() + "].append(self." + parent_node.getFullName() + ")")
+        self.fOut.write("self.current_state[self." + parent_node.getParentNode().getFullName() + "].append(self." + parent_node.getFullName() + ")")
         self.fOut.dedent()
         self.fOut.write()
         
@@ -478,8 +455,8 @@ class PythonGenerator(CodeGenerator):
         if exited_node.isComposite() :
             #handle history
             if exited_node in exited_node.parent_statechart.combined_history_parents:
-                self.fOut.write("self.historyState[self." + exited_node.getFullName() + "] = " \
-                  + "self.currentState[self." + exited_node.getFullName() + "]")
+                self.fOut.write("self.history_state[self." + exited_node.getFullName() + "] = " \
+                  + "self.current_state[self." + exited_node.getFullName() + "]")
             
             #Take care of leaving children
             children = exited_node.getChildren()
@@ -490,7 +467,7 @@ class PythonGenerator(CodeGenerator):
             else:
                 for child in children:
                     if not child.isHistory() :
-                        self.fOut.write("if self." + child.getFullName() +  " in self.currentState[self." + exited_node.getFullName() + "] :")
+                        self.fOut.write("if self." + child.getFullName() +  " in self.current_state[self." + exited_node.getFullName() + "] :")
                         self.fOut.indent()
                         self.fOut.write("self.exit_" + child.getFullName() + "()")
                         self.fOut.dedent()  
@@ -507,8 +484,7 @@ class PythonGenerator(CodeGenerator):
             exit_method.action.accept(self)
             
         #Adjust state
-        self.fOut.write("self.currentState[self." + exited_node.getParentNode().getFullName() + "] = []") # SPECIAL CASE FOR ORTHOGONAL??
-        
+        self.fOut.write("self.current_state[self." + exited_node.getParentNode().getFullName() + "] = []") # SPECIAL CASE FOR ORTHOGONAL??
         
         self.fOut.dedent()
         self.fOut.write()
@@ -518,7 +494,7 @@ class PythonGenerator(CodeGenerator):
     def writeEnterHistory(self, entered_node, is_deep):
         self.writeMethodSignature("enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + entered_node.getFullName(), [])
         self.fOut.indent()
-        self.fOut.write("if self.historyState[self." + entered_node.getFullName() + "] == []:")
+        self.fOut.write("if self.history_state[self." + entered_node.getFullName() + "] == []:")
         self.fOut.indent()
         defaults = entered_node.getDefaults()
 
@@ -539,7 +515,7 @@ class PythonGenerator(CodeGenerator):
         else:
             for child in children:
                 if not child.isHistory() :
-                    self.fOut.write("if self." + child.getFullName() + " in self.historyState[self." + entered_node.getFullName() + "] :")
+                    self.fOut.write("if self." + child.getFullName() + " in self.history_state[self." + entered_node.getFullName() + "] :")
                     self.fOut.indent()
                     if child.isComposite():
                         if is_deep :
@@ -555,7 +531,8 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
 
     def visit_StateChart(self, statechart):
-        self.fOut.write("# Statechart enter/exit action methods")
+        self.fOut.write("# Statechart enter/exit action method(s) :")
+        self.fOut.write()
         
         #visit children
         for i in statechart.composites + statechart.basics:
@@ -565,106 +542,38 @@ class PythonGenerator(CodeGenerator):
 
         # write out statecharts methods for enter/exit state
         if len(statechart.composites) > 1 :
-            self.fOut.write("# Statechart enter/exit default methods")
+            self.fOut.write("#Statechart enter/exit default method(s) :")
+            self.fOut.write()
             for i in statechart.composites :
                 if i is not statechart.root :
                     self.writeEnterDefault(i)
 
         # write out statecharts methods for enter/exit history
         if statechart.historys:
-            self.fOut.write("# Statechart enter/exit history methods")
+            self.fOut.write("#Statechart enter/exit history method(s) :")
+            self.fOut.write()
             for i in statechart.shallow_history_parents:
                 self.writeEnterHistory(i, False)
             for i in statechart.deep_history_parents:
                 self.writeEnterHistory(i, True) 
            
            
-        self.fOut.write("# Statechart transitions")     
+        self.fOut.write("#Statechart transitions :")     
+        self.fOut.write()
         self.writeTransitionsRecursively(statechart.root)            
                 
         # write out transition function
         self.fOut.write("# Execute transitions")
         self.fOut.write("def transition(self, event = Event(\"\")):")
         self.fOut.indent()
-        self.fOut.write("self.stateChanged = self.transition_" + statechart.root.getFullName() + "(event)")
+        self.fOut.write("self.state_changed = self.transition_" + statechart.root.getFullName() + "(event)")
         self.fOut.dedent()
-
-        # write out microstep function
-        self.fOut.write("# Execute microstep")
-        self.fOut.write("def microstep(self):")
-        self.fOut.indent()
-        self.fOut.write("made_transition = False") 
-        self.fOut.write("if self.eventQueue:")
-        self.fOut.indent()
-        self.fOut.write("later_events = []")
-        self.fOut.write("for e in self.eventQueue:")
-        self.fOut.indent()
-        self.fOut.write("if e.getTime() <= 0 :")
-        self.fOut.indent()
-        self.fOut.write("self.transition(e)")
-        self.fOut.write("made_transition = True")
-        self.fOut.dedent()
-        self.fOut.write("else:")
-        self.fOut.indent()
-        self.fOut.write("later_events.append(e)")
-        self.fOut.dedent()
-        self.fOut.dedent()
-        self.fOut.write("self.eventQueue = later_events")
-        self.fOut.dedent()
-        self.fOut.write("if not made_transition :")
-        self.fOut.indent()
-        self.fOut.write("self.transition()")
-        self.fOut.dedent()
-        self.fOut.dedent()
-        self.fOut.write()
-
-        # write out step function
-        self.fOut.write("# Execute statechart")
-        self.fOut.write("def step(self, delta):")
-        self.fOut.indent()
-        self.fOut.write("# Adjust all local times")
-        self.fOut.write("for event in self.eventQueue :")
-        self.fOut.indent()
-        self.fOut.write("event.decTime(delta)")
-        self.fOut.dedent()
-        self.fOut.write()
-        if statechart.nr_of_after_transitions != 0:
-            self.fOut.write("# Check AFTER timers")
-            self.fOut.write("if self.timers :")
-            self.fOut.indent()
-            self.fOut.write("next_timers = {}")
-            self.fOut.write("for (index, time) in self.timers.iteritems():")
-            self.fOut.indent()
-            self.fOut.write("time -= delta")
-            self.fOut.write("if time <= 0.0 :")
-            self.fOut.indent()
-            self.fOut.write('self.event(Event("_" + str(index) + "after"))')
-            self.fOut.dedent()
-            self.fOut.write('else :')
-            self.fOut.indent()
-            self.fOut.write('next_timers[index] = time')
-            self.fOut.dedent()
-            self.fOut.dedent()
-            self.fOut.write('self.timers = next_timers')
-            self.fOut.dedent()
-            self.fOut.write()
-        self.fOut.write("if not self.active :")
-        self.fOut.indent()
-        self.fOut.write("return")
-        self.fOut.dedent()
-        self.fOut.write("self.microstep()")
-        self.fOut.write("while self.stateChanged:")
-        self.fOut.indent()
-        self.fOut.write("self.microstep()")        
-        self.fOut.dedent()
-        self.fOut.dedent()
-        self.fOut.write()
 
         # write out inState function
         self.fOut.write("# inState method for statechart")
         self.fOut.write("def inState(self, nodes):")
         self.fOut.indent()
-        self.fOut.write("for actives in self.currentState.itervalues():")
+        self.fOut.write("for actives in self.current_state.itervalues():")
         self.fOut.indent()
         self.fOut.write("nodes = [node for node in nodes if node not in actives]")
         self.fOut.write("if not nodes :")
@@ -673,42 +582,6 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write("return False")
-        self.fOut.dedent()
-        self.fOut.write()
-        
-        
-
-        # write out event method
-        self.fOut.write("# Event method")
-        self.fOut.write("def event(self, new_event):")
-        self.fOut.indent()
-        self.fOut.write("self.eventQueue.append(new_event)")
-        self.fOut.dedent()
-        self.fOut.write()
-
-        # write out getEarliestEvent method
-        self.fOut.write("# Get earliest event method")
-        self.fOut.write("def getEarliestEvent(self):")
-        self.fOut.indent()
-        self.fOut.write("temp = []")
-        self.fOut.write("for j in self.eventQueue:")
-        self.fOut.indent()
-        self.fOut.write("temp.append(j.getTime())")
-        self.fOut.dedent()
-        if statechart.nr_of_after_transitions:
-            self.fOut.write("for j in self.timers.itervalues():")
-            self.fOut.indent()
-            self.fOut.write("temp.append(j)")
-            self.fOut.dedent()
-        self.fOut.write("if temp:")
-        self.fOut.indent()
-        self.fOut.write("temp.sort()")
-        self.fOut.write("return temp[0]")
-        self.fOut.dedent()
-        self.fOut.write("else:")
-        self.fOut.indent()
-        self.fOut.write("return None")
-        self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write()
         
@@ -728,13 +601,13 @@ class PythonGenerator(CodeGenerator):
         
     def visit_RaiseEvent(self, raise_event):
         if raise_event.isNarrow() or raise_event.isBroad():
-            self.fOut.write('the_event = Event("' + raise_event.getEventName() + '", time = 0.0, parameters = [')
+            self.fOut.write('send_event = Event("' + raise_event.getEventName() + '", parameters = [')
         elif raise_event.isLocal():
-            self.fOut.write('self.event(Event("' + raise_event.getEventName() +'", time = 0.0, parameters = [')
+            self.fOut.write('self.addEvent(Event("' + raise_event.getEventName() +'", parameters = [')
         elif raise_event.isOutput():
-            self.fOut.write('self.controller.outputEvent(Event("' + raise_event.getEventName() + '", time = 0.0, port="' + raise_event.getPort() + '", parameters = [')
+            self.fOut.write('self.controller.outputEvent(Event("' + raise_event.getEventName() + '", port="' + raise_event.getPort() + '", parameters = [')
         elif raise_event.isCD():
-            self.fOut.write('self.object_manager.event(Event("' + raise_event.getEventName() + '", time = 0.0, parameters = [self, ')
+            self.fOut.write('self.object_manager.addEvent(Event("' + raise_event.getEventName() + '", parameters = [self, ')
         first_param = True
         for param in raise_event.getParameters() :
             if first_param :
@@ -744,10 +617,10 @@ class PythonGenerator(CodeGenerator):
             param.accept(self)
         if raise_event.isNarrow():
             self.fOut.extendWrite('])')
-            self.fOut.write('self.object_manager.event(Event("narrow_cast", time = 0.0, parameters = [self, "' + raise_event.getTarget() + '" ,the_event]))')
+            self.fOut.write('self.object_manager.addEvent(Event("narrow_cast", parameters = [self, "' + raise_event.getTarget() + '" , send_event]))')
         elif raise_event.isBroad():
             self.fOut.extendWrite('])')
-            self.fOut.write('self.object_manager.event(Event("broad_cast", time = 0.0, parameters = [the_event]))')
+            self.fOut.write('self.object_manager.addEvent(Event("broad_cast", parameters = [send_event]))')
         else :
             self.fOut.extendWrite(']))')
             

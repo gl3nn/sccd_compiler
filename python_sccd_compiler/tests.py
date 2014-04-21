@@ -5,6 +5,7 @@ import os
 import xml.etree.ElementTree as ET
 from compiler_exceptions import CompilerException, TransitionException
 from code_generation import Protocols, Languages
+from python_runtime.statecharts_core import Event
 
 SHARED_TEST_FILES_FOLDER = "../test_files"
 
@@ -87,7 +88,7 @@ class XMLTestCase(unittest.TestCase):
         if input_xml is not None :
             for event_xml in input_xml :
                 if event_xml.tag == "event" :
-                    self.controller.addInput(event_xml.get("name"), event_xml.get("port"))
+                    self.controller.addInput(Event(event_xml.get("name"), event_xml.get("port")))
                     
         expected_xml = test_xml.find("expected")
         if expected_xml is None : 

@@ -3,6 +3,7 @@ import re
 import time
 import threading
 from infinity import INFINITY
+from event_queue import EventQueue
 from Queue import Queue, Empty
 
 
@@ -15,6 +16,15 @@ class RuntimeException(Exception):
 class AssociationException(RuntimeException):
     pass
 
+class AssociationReferenceException(RuntimeException):
+    pass
+
+class ParameterException(RuntimeException):
+    pass
+
+class InputException(RuntimeException):
+    pass
+
 class Association(object):
     #wrapper object for one association relation
     def __init__(self, name, class_name, min_card, max_card):
@@ -24,93 +34,80 @@ class Association(object):
         self.class_name = class_name
         self.instances = [] #list of all instance wrappers
         
+    def getName(self):
+        return self.name
+    
+    def getClassName(self):
+        return self.class_name
+        
     def allowedToAdd(self):
         return self.max_card == -1 or len(self.instances) < self.max_card
         
-    def add(self, instance):
+    def addInstance(self, instance):
         if self.allowedToAdd() :
             self.instances.append(instance)
         else :
-            raise AssociationException("")
+            raise AssociationException("Not allowed to add the instance to the association.")
         
-    def get(self, index):
+    def getInstance(self, index):
         try :
-            if index == -1 :
-                return self.instances[:]
-            else :
-                return [self.instances[index]]
+            return self.instances[index]
         except IndexError :
             raise AssociationException("Invalid index for fetching instance(s) from association.")
 
 class InstanceWrapper(object):
     #wrapper object for an instance and its relevant information needed in the object manager
-    def __init__(self):
-        self.instance = None
-        self.associations = {}#maps association_name to list of Association
+    def __init__(self, instance, associations):
+        self.instance = instance
+        self.associations = {}
+        for association in associations :
+            self.associations[association.getName()] = association  
         
-    def addAssociation(self, name, class_name, min_card, max_card):
-        self.associations[name] = Association(name, class_name, min_card, max_card)
-        
-    def getAssociation(self, association_name):
-        return self.associations.get(association_name, None)
+    def getAssociation(self, name):
+        try :
+            return self.associations[name]
+        except KeyError :
+            raise AssociationReferenceException("Unknown association.")
     
     def getInstance(self):
         return self.instance
-            
 
 class ObjectManagerBase(object):
     __metaclass__  = abc.ABCMeta
     
     def __init__(self, controller):
         self.controller = controller
-        self.event_queue = []
-        self.all_instances = {} #a dictionary that maps instance_reference to InstanceWrapper
+        self.events = EventQueue()
+        self.instances_map = {} #a dictionary that maps RuntimeClassBase to InstanceWrapper
         
-    def event(self, new_event):
-        self.event_queue.append(new_event)
+    def addEvent(self, event, time_offset = 0.0):
+        self.events.add(event, time_offset)
         
     # Broadcast an event to all instances
     def broadcast(self, new_event):
-        for i in self.all_instances:
-            i.event(new_event)
-
-    def getEarliestEvent(self):
-        if self.event_queue:
-            return self.event_queue[0].time
-        else:
-            return None
+        for i in self.instances_map:
+            i.addEvent(new_event)
         
-    def getWaitTimes(self):
-        wait_times = []
-        #first get waiting time of the object manager which acts as statechart too
-        t = self.getEarliestEvent()
-        if t is not None : wait_times.append(t)
+    def getWaitTime(self):  
+        #first get waiting time of the object manager's events
+        smallest_time = self.events.getEarliestTime();
         #check all the instances
-        for i in self.all_instances :
-            t = i.getEarliestEvent()
-            if t is not None and t not in wait_times:
-                wait_times.append(t)
-        return wait_times
+        for instance in self.instances_map.iterkeys() :
+            smallest_time = min(smallest_time, instance.getEarliestEventTime())
+        return smallest_time;
     
     def stepAll(self, delta):
         self.step(delta)
-        for i in self.all_instances:
+        for i in self.instances_map.iterkeys():
             i.step(delta)
-        
 
     def step(self, delta):
-        if self.event_queue :
-            next_queue = []
-            for e in self.event_queue :
-                e.decTime(delta)   
-                if e.getTime() <= 0.0 :
-                    self.handleEvent(e)
-                else :
-                    next_queue.append(e)
-            self.event_queue = next_queue
+        self.events.decreaseTime(delta);
+        for event in self.events.popDueEvents() :
+            self.handleEvent(event)
                
     def start(self):
-        for i in self.all_instances:
+        for i in self.instances_map:
             i.start()           
                
     def handleEvent(self, e):   
@@ -131,121 +128,107 @@ class ObjectManagerBase(object):
             
     def processAssociationReference(self, input_string):
         if len(input_string) == 0 :
-            return []
+            raise AssociationReferenceException("Empty association reference.")
+        regex_pattern = re.compile("^([a-zA-Z_]\w*)(?:\[(\d+)\])?$");
         path_string =  input_string.split("/")
-        path = []
+        result = []
         for piece in path_string :
-            match = re.match("^([a-zA-Z_]\w*)(?:\[(\d+)\])?$", piece)
+            match = regex_pattern.match(piece)
             if match :
                 name = match.group(1)
                 index = match.group(2)
                 if index is None :
                     index = -1
-                path.append((name,index))
+                result.append((name,index))
             else :
-                return [] #Throw exception?
-        return path
+                raise AssociationReferenceException("Invalid entry in association reference.")
+        return result
     
     def handleStartInstanceEvent(self, parameters):
         if len(parameters) != 2 :
-            print "Wrong number of parameters for the start_instance event."
+            raise ParameterException ("The start instance event needs 2 parameters.")  
         else :
             source = parameters[0]
             traversal_list = self.processAssociationReference(parameters[1])
-            if not traversal_list :
-                print "error in handle start instance event"
             for i in self.getInstances(source, traversal_list) :
                 i.instance.start()
         
     def handleBroadCastEvent(self, parameters):
         if len(parameters) != 1 :
-            print  "Wrong number of parameters for the broad_cast event."
+            raise ParameterException ("The broadcast event needs 1 parameter.")
         self.broadcast(parameters[0])
 
     def handleCreateEvent(self, parameters):
         if len(parameters) < 2 :
-            print "Wrong number of parameters for the create_instance event."
+            raise ParameterException ("The create event needs at least 2 parameters.")
         else :
             source = parameters[0]
             association_name = parameters[1]
-            construct_params = parameters[2:]
             
-            association = self.all_instances[source].getAssociation(association_name)
+            association = self.instances_map[source].getAssociation(association_name)
             if association.allowedToAdd() :
-                new_instance_wrapper = self.createInstance(association.class_name, construct_params)
-                association.add(new_instance_wrapper)
-                source.event(Event("instance_created", time = 0.0, parameters = [association_name]))
+                new_instance_wrapper = self.createInstance(association.class_name, parameters[2:])
+                association.addInstance(new_instance_wrapper)
+                source.addEvent(Event("instance_created", parameters = [association_name]))
             else :
-                source.event(Event("instance_creation_error", time = 0.0, parameters = [association_name]))
-                print "Not allowed to create"
+                source.addEvent(Event("instance_creation_error", parameters = [association_name]))
                 
     def handleAssociateEvent(self, parameters):
         if len(parameters) != 3 :
-            print "Wrong number of parameters for the associate_instance event."
+            raise ParameterException ("The associate_instance event needs 3 parameters.");
         else :
             source = parameters[0]
             to_copy_list = self.getInstances(source,self.processAssociationReference(parameters[1]))
             if len(to_copy_list) != 1 :
-                print "error"
-                return
+                raise AssociationReferenceException ("Invalid source association reference.")
             wrapped_to_copy_instance = to_copy_list[0]
             dest_list = self.processAssociationReference(parameters[2])
             if len(dest_list) == 0 :
-                print "error"
-                return
+                raise AssociationReferenceException ("Invalid destination association reference.")
             last = dest_list.pop()
+            if last[1] != -1 :
+                raise AssociationReferenceException ("Last association name in association reference should not be accompanied by an index.")
+                
             for i in self.getInstances(source, dest_list) :
-                association = i.getAssociation(last[0])
-                if not association :
-                    print "association " + last[0] +  " doesn't exist"
-                if association.allowedToAdd() :
-                    association.add(wrapped_to_copy_instance)
-                else :
-                    #event?
-                    print "Not allowed to add" 
+                i.getAssociation(last[0]).addInstance(wrapped_to_copy_instance)
         
     def handleNarrowCastEvent(self, parameters):
         if len(parameters) != 3 :
-            print  "Wrong number of parameters for the narrow_cast event."
+            raise ParameterException ("The associate_instance event needs 3 parameters.")
         source = parameters[0]
         traversal_list = self.processAssociationReference(parameters[1])
-        if not traversal_list :
-            print "error"
         cast_event = parameters[2]
         for i in self.getInstances(source, traversal_list) :
-            i.instance.event(cast_event)
+            i.instance.addEvent(cast_event)
         
     def getInstances(self, source, traversal_list):
-        if not traversal_list :
-            raise
-        currents = [self.all_instances[source]]
+        currents = [self.instances_map[source]]
         for (name, index) in traversal_list :
             nexts = []
             for current in currents :
                 association = current.getAssociation(name)
-                if association is None :
-                    print "Runtime warning : unknown association in traversal list " + \
-                    str(traversal_list) +" from " + str(source)
-                nexts.extend(association.get(index))
+                if (index >= 0 ) :
+                    nexts.append ( association.getInstance(index) );
+                elif (index == -1) :
+                    nexts.extend ( association.instances );
+                else :
+                    raise AssociationReferenceException("Incorrect index in association reference.")
             currents = nexts
         return currents
             
-    
     @abc.abstractmethod
     def instantiate(self, class_name, construct_params):
         pass
-
         
     def createInstance(self, class_name, construct_params = []):
-        instance = self.instantiate(class_name, construct_params)
-        if instance :
-            self.all_instances[instance.instance] = instance
-        return instance
+        instance_wrapper = self.instantiate(class_name, construct_params)
+        if instance_wrapper:
+            self.instances_map[instance_wrapper.getInstance()] = instance_wrapper
+        return instance_wrapper
     
 class Event(object):
-    def __init__(self, event_name, time = 0.0, port = "", parameters = []):
+    def __init__(self, event_name, port = "", parameters = []):
         self.name = event_name
-        self.time = time
         self.parameters = parameters
         self.port = port
 
@@ -254,12 +237,6 @@ class Event(object):
 
     def getPort(self):
         return self.port
-
-    def getTime(self):
-        return self.time
-    
-    def decTime(self, delta):
-        self.time -= delta
 
     def getParameters(self):
         return self.parameters
@@ -277,7 +254,7 @@ class OutputListener(object):
         self.queue = Queue()
 
     def add(self, event):
-        if event.getPort() in self.port_names :
+        if len(self.port_names) == 0 or event.getPort() in self.port_names :
             self.queue.put_nowait(event)
             
     """ Tries for timeout seconds to fetch an event, returns None if failed.
@@ -302,7 +279,7 @@ class ControllerBase(object):
 
         # Keep track of input ports
         self.input_ports = []
-        self.input_queue = []
+        self.input_queue = EventQueue();
 
         # Keep track of output ports
         self.output_ports = []
@@ -326,8 +303,14 @@ class ControllerBase(object):
     def stop(self):
         pass
     
-    def addInput(self, event_name, port, time = 0.0, parameters = []):
-        self.input_queue.append(Event(event_name, time, port, parameters))
+    def addInput(self, input_event, time_offset = 0.0):
+        if input_event.getName() == ""  :
+            raise InputException("Input event can't have an empty name.")
+        
+        if input_event.getPort() not in self.input_ports :
+            raise InputException("Input port mismatch.")
+        
+        self.input_queue.add(input_event, time_offset)
 
     def outputEvent(self, event):
         for listener in self.output_listeners :
@@ -339,23 +322,20 @@ class ControllerBase(object):
         return listener
     
     def addEventList(self, event_list):
-        for event in event_list :
-            self.input_queue.append(event)
+        for (event, time_offset) in event_list :
+            self.addInput(event, time_offset)
+            
+    def getObjectManager(self):
+        return self.object_manager;
         
 class GameLoopControllerBase(ControllerBase):
     def __init__(self, object_manager, keep_running):
         super(GameLoopControllerBase, self).__init__(object_manager, keep_running)
         
     def update(self, delta):
-        if self.input_queue :
-            next_input_queue = []
-            for event in self.input_queue :
-                event.decTime(delta)
-                if event.getTime() <= 0 :
-                    self.broadcast(event)
-                else :
-                    next_input_queue.append(event)
-            self.input_queue = next_input_queue
+        self.input_queue.decreaseTime(delta)
+        for event in this.input_queue.popDueEvents() :
+            self.broadcast(event)
         self.object_manager.stepAll(delta)
         
 class ThreadsControllerBase(ControllerBase):
@@ -367,93 +347,137 @@ class ThreadsControllerBase(ControllerBase):
         
     def handleInput(self, delta):
         self.input_condition.acquire()
-        if self.input_queue :
-            next_input_queue = []
-            for event in self.input_queue :
-                event.decTime(delta)
-                if event.getTime() <= 0 :
-                    self.broadcast(event)
-                else :
-                    next_input_queue.append(event)
-                    
-            self.input_queue = next_input_queue
+        self.input_queue.decreaseTime(delta)
+        for event in self.input_queue.popDueEvents():
+            self.broadcast(event)
         self.input_condition.release()   
         
-    # Compute time untill earliest next event
-    def getNextTime(self):
-        #fetch the statecharts waiting times
-        wait_times = self.object_manager.getWaitTimes()             
-        #fetch input waiting time
-        self.input_condition.acquire()
-        if len(self.input_queue) > 0 :
-            for event in self.input_queue :
-                wait_times.append(event.getTime())
-        self.input_condition.release()
-
-        if wait_times:
-            wait_times.sort()
-            return wait_times[0]
-        elif not self.done:
-            self.done = True
-            return 0
-        elif self.done:
-            self.done = False
-            return INFINITY
-
-    def handleWaiting(self):
-        timeout = self.getNextTime()
-        if(timeout <= 0.0):
-            return 0
-        self.input_condition.acquire()
-        begin_time = time.time()
-        if timeout == INFINITY :
-            if self.keep_running :
-                self.input_condition.wait()
-            else :
-                self.input_condition.release()
-                self.stop()
-                return 0
-        else :
-            self.input_condition.wait(timeout)    
-        timeout = min(timeout, time.time() - begin_time)
-        self.input_condition.release()
-        return timeout
-
-    def run(self):
-        last_iteration_time = 0.0
-        while True:
-            self.handleInput(last_iteration_time)
-            # Compute the new state based on internal events
-            self.object_manager.stepAll(last_iteration_time)
-            last_iteration_time = self.handleWaiting()
-            
-            self.input_condition.acquire()
-            if self.stop_thread : 
-                break
-            self.input_condition.release()
-
     def start(self):
-        super(ThreadsControllerBase, self).start()
         self.thread.start()
-
+        
     def stop(self):
         self.input_condition.acquire()
         self.stop_thread = True
         self.input_condition.notifyAll()
         self.input_condition.release()
         
-    def join(self, timeout = None):
-        self.thread.join(timeout)
-
-    def addInput(self, event_name, port, time = 0.0, parameters = []):
+    def getWaitTime(self):
+        """Compute time untill earliest next event"""
         self.input_condition.acquire()
-        self.input_queue.append(Event(event_name, time, port, parameters))
+        wait_time = min(self.object_manager.getWaitTime(), self.input_queue.getEarliestTime())
+        self.input_condition.release()
+
+        if wait_time == INFINITY :
+            if self.done :
+                self.done = False
+            else :
+                self.done = True
+                return 0.0
+        return wait_time
+
+    def handleWaiting(self):
+        wait_time = self.getWaitTime()
+        if(wait_time <= 0.0):
+            return
+        
+        self.input_condition.acquire()
+        if wait_time == INFINITY :
+            if self.keep_running :
+                self.input_condition.wait() #Wait for a signals
+            else :
+                self.stop_thread = True
+        
+        elif wait_time != 0.0 :
+            actual_wait_time = wait_time - (time.time() - self.last_recorded_time)
+            if actual_wait_time > 0.0 :
+                self.input_condition.wait(actual_wait_time)    
+        self.input_condition.release()
+
+    def run(self):
+        self.last_recorded_time  = time.time()
+        super(ThreadsControllerBase, self).start()
+        last_iteration_time = 0.0
+        
+        while True:
+            self.handleInput(last_iteration_time)
+            #Compute the new state based on internal events
+            self.object_manager.stepAll(last_iteration_time)
+            
+            self.handleWaiting()
+            
+            self.input_condition.acquire()
+            if self.stop_thread : 
+                break
+            self.input_condition.release()
+            
+            previous_recorded_time = self.last_recorded_time
+            self.last_recorded_time = time.time()
+            last_iteration_time = self.last_recorded_time - previous_recorded_time
+        
+    def join(self):
+        self.thread.join()
+
+    def addInput(self, input_event, time_offset = 0.0):
+        self.input_condition.acquire()
+        super(ThreadsControllerBase, self).addInput(input_event, time_offset)
         self.input_condition.notifyAll()
         self.input_condition.release()
 
     def addEventList(self, event_list):
         self.input_condition.acquire()
-        for event in event_list :
-            self.input_queue.append(event)
+        super(ThreadsControllerBase, self).addEventList(event_list)
         self.input_condition.release()
+
+class RuntimeClassBase(object):
+    __metaclass__  = abc.ABCMeta
+    
+    def __init__(self):
+        self.active = False
+        self.state_changed = False
+        self.events = EventQueue();
+        self.timers = None;
+        
+    def addEvent(self, event, time_offset = 0.0):
+        self.events.add(event, time_offset);
+        
+    def getEarliestEventTime(self) :
+        if self.timers :
+            return min(self.events.getEarliestTime(), min(self.timers.itervalues()))
+        return self.events.getEarliestTime();
+
+    def step(self, delta):
+        if not self.active :
+            return
+        
+        if self.timers :
+            next_timers = {}
+            for (key,value) in self.timers.iteritems() :
+                time = value - delta
+                if time <= 0.0 :
+                    self.addEvent( Event("_" + str(key) + "after"));
+                else :
+                    next_timers[key] = time
+            self.timers = next_timers;
+
+        self.events.decreaseTime(delta);
+
+        self.microstep()
+        while (self.state_changed) :
+            self.microstep()
+            
+    def microstep(self):
+        due = self.events.popDueEvents()
+        if (len(due) == 0) :
+            self.transition()
+        else :
+            for event in due :
+                self.transition(event);
+    
+    @abc.abstractmethod
+    def transition(self, event = None):
+        pass
+    
+    def start(self):
+        self.active = True
+        
         

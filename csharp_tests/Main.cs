@@ -128,7 +128,7 @@ namespace csharp_tests
                 List<Event> received_output = new List<Event>();
                 while (remaining_options.Count > 0)
                 {
-                    Event output_event = output_listener.fetchOutput();
+                    Event output_event = output_listener.fetch();
                     Assert.AreNotEqual(null, output_event,
                         string.Format("Expected results slot {0} mismatch. Expected [{1}], but got [{2}] followed by null instead.", slot_index, string.Join(", ", slot), string.Join(", ", received_output))
                     );
@@ -148,7 +148,7 @@ namespace csharp_tests
                 }
             }
             //check if there are no extra events          
-            Assert.AreEqual(null, output_listener.fetchOutput(), "More output events than expected on selected ports.");
+            Assert.AreEqual(null, output_listener.fetch(), "More output events than expected on selected ports.");
         }
 
         [TearDown]

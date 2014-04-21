@@ -172,8 +172,7 @@ namespace sccdlib
         {
             if (parameters.Length != 1 ) 
                 throw new ParameterException ("The broadcast event needs 1 parameter.");   
-            else
-                this.broadcast((Event)parameters[0]); 
+            this.broadcast((Event)parameters[0]); 
         }
 
         private void handleCreateEvent (object[] parameters)
@@ -210,7 +209,7 @@ namespace sccdlib
                 RuntimeClassBase source = (RuntimeClassBase)parameters [0];
                 List<InstanceWrapper> to_copy_list = this.getInstances (source, this.processAssociationReference ((string)parameters [1]));
                 if (to_copy_list.Count != 1)
-                    throw new Exception ();
+                    throw new AssociationReferenceException ("Invalid source association reference.");
                 InstanceWrapper wrapped_to_copy_instance = to_copy_list [0];
                 List<Tuple<string,int>> dest_list = this.processAssociationReference ((string)parameters [2]);
                 if (dest_list.Count == 0)
@@ -227,8 +226,7 @@ namespace sccdlib
             
         private void handleNarrowCastEvent(object[] parameters)
         {
-            if (parameters.Length != 3)
-            {
+            if (parameters.Length != 3){
                 throw new ParameterException ("The associate_instance event needs 3 parameters.");
             }else{
                 RuntimeClassBase source = (RuntimeClassBase)parameters [0];

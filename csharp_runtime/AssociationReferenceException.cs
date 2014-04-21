@@ -2,7 +2,7 @@ using System;
 
 namespace sccdlib
 {
-    public class AssociationReferenceException : AssociationException
+    public class AssociationReferenceException : RunTimeException
     {
         public AssociationReferenceException ()
         {

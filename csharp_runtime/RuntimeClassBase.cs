@@ -5,13 +5,13 @@ namespace sccdlib
 {
     public abstract class RuntimeClassBase
     {
-        
+
         protected bool active = false;
         protected bool state_changed = false;
         protected EventQueue events = new EventQueue();
         protected ControllerBase controller;
         protected ObjectManagerBase object_manager;
-        protected Dictionary<int,double> timers;
+        protected Dictionary<int,double> timers = null;
 
         public RuntimeClassBase ()
         {
@@ -25,16 +25,17 @@ namespace sccdlib
         
         public double getEarliestEventTime ()
         {
-            double smallest_timer_value = double.PositiveInfinity;
-            if (timers != null)
+            if (this.timers != null)
             {
+                double smallest_timer_value = double.PositiveInfinity;
                 foreach (double timer_value in this.timers.Values)
                 {
                     if (timer_value < smallest_timer_value)
                         smallest_timer_value = timer_value;
                 }
+                return Math.Min(this.events.getEarliestTime(), smallest_timer_value); 
             }
-            return Math.Min(this.events.getEarliestTime(), smallest_timer_value);   
+            return this.events.getEarliestTime();   
         }
 
         /// <summary>
@@ -47,8 +48,7 @@ namespace sccdlib
         {
             if (!this.active)
                 return;
-            
-            
+
             if (this.timers != null && this.timers.Count > 0)
             {
                 var next_timers = new Dictionary<int,double>();
@@ -78,7 +78,6 @@ namespace sccdlib
             } else {
                 foreach (Event e in due)
                 {
-                    Console.WriteLine(string.Format("Firing event {0}.", e.getName()));
                     this.transition(e);
                 }
             }

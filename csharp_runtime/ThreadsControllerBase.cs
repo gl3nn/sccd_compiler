@@ -11,7 +11,7 @@ namespace sccdlib
         Thread thread = null;
         Mutex input_mutex = new Mutex(false);
         Mutex stop_thread_mutex = new Mutex(false);
-        EventWaitHandle wait_handle = new AutoResetEvent(false);
+        AutoResetEvent wait_handle = new AutoResetEvent(false);
         DateTime last_recorded_time = DateTime.UtcNow;
         
         public ThreadsControllerBase (bool keep_running = true)
@@ -78,21 +78,25 @@ namespace sccdlib
                     this.stop_thread = true;
                     this.stop_thread_mutex.ReleaseMutex();
                 }
-            } else if (wait_time != 0.0) 
+            }
+            else if (wait_time != 0.0)
             {
                 //Calculate how much wait time is left.
                 double actual_wait_time = (wait_time - DateTime.UtcNow.Subtract(this.last_recorded_time).TotalSeconds); //In seconds and double
                 if (actual_wait_time > 0.0)
-                    this.wait_handle.WaitOne ((int) Math.Ceiling(actual_wait_time  * 1000)); //Convert to seconds and int round up
+                {
+                    this.wait_handle.Reset();
+                    this.wait_handle.WaitOne((int)Math.Ceiling(actual_wait_time * 1000)); //Convert to seconds and int round up
+                }
             }
         }
     
         private void run()
         {
+            this.last_recorded_time = DateTime.UtcNow;
             base.start ();
             DateTime previous_recorded_time;
             double last_iteration_time = 0.0;
-            this.last_recorded_time = DateTime.UtcNow;
 
             while (true)
             {
@@ -107,7 +111,7 @@ namespace sccdlib
                     break;
                 this.stop_thread_mutex.ReleaseMutex ();
                 
-                previous_recorded_time = last_recorded_time;
+                previous_recorded_time = this.last_recorded_time;
                 this.last_recorded_time = DateTime.UtcNow;
                 last_iteration_time = this.last_recorded_time.Subtract(previous_recorded_time).TotalSeconds;
             }
@@ -123,6 +127,7 @@ namespace sccdlib
             this.input_mutex.WaitOne (-1);
             base.addInput (input_event, time_offset); //Add time to offset that has already passed, so that next subtraction evens it out?
             this.input_mutex.ReleaseMutex ();
+            this.wait_handle.Set();
         }
     
         public override void addEventList(List<Tuple<Event,double>> event_list)

@@ -45,7 +45,7 @@ namespace sccdlib
         {
             foreach (IOutputListener listener in this.output_listeners)
             {
-                listener.addOutput(output_event);
+                listener.add(output_event);
             }
         }
         

@@ -4,8 +4,8 @@ namespace sccdlib
 {
     public interface IOutputListener
     {
-        void addOutput (Event output_event);
-        Event fetchOutput ();
+        void add (Event output_event);
+        Event fetch ();
     }
 }
 

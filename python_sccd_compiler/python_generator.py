@@ -454,9 +454,8 @@ class PythonGenerator(CodeGenerator):
         #If the exited node is composite take care of potential history and the leaving of descendants
         if exited_node.isComposite() :
             #handle history
-            if exited_node in exited_node.parent_statechart.combined_history_parents:
-                self.fOut.write("self.history_state[self." + exited_node.getFullName() + "] = " \
-                  + "self.current_state[self." + exited_node.getFullName() + "]")
+            if exited_node.save_state_on_exit :
+                self.fOut.write("self.history_state[self." + exited_node.getFullName() + "] = self.current_state[self." + exited_node.getFullName() + "]")
             
             #Take care of leaving children
             children = exited_node.getChildren()

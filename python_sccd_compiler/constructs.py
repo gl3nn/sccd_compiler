@@ -8,9 +8,9 @@ from compiler_exceptions import CompilerException, TransitionException, Unproces
 # http://docs.python.org/2/library/xml.etree.elementtree.html
 
 # list of reserved words
-reserved = ["__init__", "__del__", "init", "transition", "microstep", "step", "instate", "event", 
-            "broadcast", "getEarliestEvent", "__str__", "controller", "currentTime", 
-            "currentState", "timers", "eventQueue", "controller", "stateChanged", "historyState",
+reserved = ["__init__", "__del__", "init", "transition", "microstep", "step", "inState", "event", "addEvent", 
+            "broadcast", "getEarliestEvent", "__str__", "controller", 
+            "current_state", "timers", "eventQueue", "Controller", "state_changed", "history_state",
             "root", "narrowcast", "object_manager", "update"]
 
 SELF_REFERENCE_SEQ = 'SELF'
@@ -358,7 +358,6 @@ class StateChartTransition(Visitable):
     def __init__(self,xml_element,parent):
         self.xml = xml_element
         self.parent_node = parent
-        self.parent_statechart = self.parent_node.getParentStateChart()
         self.trigger = TriggerEvent(self.xml, self)
         guard_string = self.xml.get("cond","").strip()
         if guard_string != "" : 
@@ -439,6 +438,7 @@ class StateChartNode(Visitable):
         self.is_history = False
         self.is_history_deep = False;
         self.is_root = False
+        self.save_state_on_exit = False;
         if state_type == "Basic" :
             self.is_basic = True
         elif state_type == "Composite" :
@@ -461,13 +461,10 @@ class StateChartNode(Visitable):
         if self.is_root :
             self.name = "Root"
             self.full_id = "Root"
-            self.parent_statechart = parent
-            self.parent_node = None
             self.is_composite = True
         else :
             self.name = xml_element.get("id","")
             self.full_id = parent.getFullID() + "/" + self.name
-            self.parent_statechart = parent.getParentStateChart()
             
         self.is_parallel = False
         if xml_element.tag == "parallel" :
@@ -614,23 +611,19 @@ class StateChartNode(Visitable):
 
 class StateChart(Visitable):
 
-    def __init__(self, statechart_xml, className):
+    def __init__(self, statechart_xml):
         """ Gives the module information on the statechart by listing its basic, orthogonal,
             composite and history states as well as mapping triggers to names making the
             appropriate conversion from AFTER() triggers to event names
         """
         
         self.root = StateChartNode(statechart_xml,"Root", False, self);
-        self.className = className
-        self.initTimers = []
-        self.succeeded = True
 
         self.basics = []
-        self.composites = []
+        self.composites = [self.root]
         self.historys = []
-
         self.nr_of_after_transitions = 0
-        self.composites.append(self.root)
+
         self.addToHierarchy(self.root)  
             
         # Calculate the history that needs to be taken care of.
@@ -685,7 +678,7 @@ class StateChart(Visitable):
         if parent.isParallel() :
             parent.defaults = [x for x in children if not x.isHistory()]
             if parent.getInitial() != "" : 
-                Logger.showWarning("Component <" + parent.getFullID() + "> in class <" + self.className + ">. contains an initial state while being parallel. Ignoring.")    
+                raise CompilerException("Component <" + parent.getFullID() + ">  contains an initial state while being parallel.")    
         elif parent.getInitial() == "" :
             if parent.isBasic() or parent.isHistory():
                 pass
@@ -722,9 +715,10 @@ class StateChart(Visitable):
         """ Figures out which components need to be kept track of for history.
         """
         if parent == self.root:
-            Logger.showWarning("Root component cannot contain history in class <" + self.className + ">. Not processed!")
+            raise CompilerException("Root component cannot contain a history state.")
         if parent not in self.combined_history_parents:
             self.combined_history_parents.append(parent)
+            parent.save_state_on_exit = True
         if is_deep :
             if parent not in self.deep_history_parents:
                 self.deep_history_parents.append(parent)
@@ -739,10 +733,9 @@ class StateChart(Visitable):
 ###################################
 
 class Association(Visitable):
-    def __init__(self, from_class, to_class, min_card, max_card, name):
+    def __init__(self, to_class, min_card, max_card, name):
         self.min = min_card
         self.max = max_card #N is represented as -1
-        self.from_class = from_class
         self.to_class = to_class
         self.name = name
         
@@ -921,7 +914,7 @@ class Class(Visitable):
             if association_name in reserved : 
                 raise CompilerException("Reserved word \"" + association_name + "\" used as association name in class <" + self.name + ">.")
             self.associations.append(
-                Association(self.name, class_name, card_min, card_max, association_name)
+                Association(class_name, card_min, card_max, association_name)
             )
             
 
@@ -937,8 +930,6 @@ class Class(Visitable):
         if len(self.destructors) > 1 :
             raise CompilerException("Multiple destructors defined for class <" + self.name + ">.")
         
-        #TODO default destructor?
-            
         if len(self.constructors) < 1 :
             #add a default constructor
             self.constructors.append(Constructor(None,self))
@@ -957,7 +948,7 @@ class Class(Visitable):
         if len(statecharts) > 1 :
             raise CompilerException("Multiple statecharts found in class <" + self.name + ">.")
         if len(statecharts) == 1 :
-            self.statechart = StateChart(statecharts[0], self.name)
+            self.statechart = StateChart(statecharts[0])
             
 ###################################
 class ClassDiagram(Visitable):
@@ -971,7 +962,7 @@ class ClassDiagram(Visitable):
         if descriptions : 
             self.description = descriptions[0].text
         else :
-            self.description = "No description provided"
+            self.description = ""
     
         xml_classes = self.root.findall("class")
         # make sure at least one class is given

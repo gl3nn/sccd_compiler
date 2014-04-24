@@ -1,6 +1,7 @@
 class Logger(object):
-    verbose = 0 #0 = no output
-                #1 = only warnings
+    verbose = 0 #-1= no output
+                #0 = only errors
+                #1 = only warnings and errors
                 #2 = all output
                 
     @staticmethod   

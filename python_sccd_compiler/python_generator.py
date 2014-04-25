@@ -144,7 +144,7 @@ class PythonGenerator(CodeGenerator):
             # assign each node a unique ID
             self.fOut.write("# Unique IDs for all statechart nodes")
             for (i,node) in enumerate(class_node.statechart.composites + class_node.statechart.basics):
-                self.fOut.write(node.getFullName() + " = " + str(i))
+                self.fOut.write(node.full_name + " = " + str(i))
     
             self.fOut.write()
             self.writeMethodSignature("commonConstructor", [FormalParameter("controller", "", "None")])
@@ -176,13 +176,13 @@ class PythonGenerator(CodeGenerator):
             self.fOut.write("#Initialize statechart :")
             self.fOut.write()
             
-            if class_node.statechart.historys:
+            if class_node.statechart.histories:
                 for node in class_node.statechart.combined_history_parents:
-                    self.fOut.write("self.history_state[" + class_node.name + "." + node.getFullName() + "] = []")
+                    self.fOut.write("self.history_state[" + class_node.name + "." + node.full_name + "] = []")
                 self.fOut.write()
 
             for c in class_node.statechart.composites :
-                self.fOut.write("self.current_state[self." + c.getFullName() + "] = []")
+                self.fOut.write("self.current_state[self." + c.full_name + "] = []")
         
         self.fOut.dedent()
         self.fOut.write()
@@ -191,10 +191,10 @@ class PythonGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("super(" + class_node.name + ", self).start()")
         for default_node in class_node.statechart.root.defaults:
-            if default_node.isComposite():
-                self.fOut.write("self.enterDefault_" + default_node.getFullName() + "()")
-            elif default_node.isBasic():
-                self.fOut.write("self.enter_" + default_node.getFullName() + "()")
+            if default_node.is_composite:
+                self.fOut.write("self.enterDefault_" + default_node.full_name + "()")
+            elif default_node.is_basic:
+                self.fOut.write("self.enter_" + default_node.full_name + "()")
         self.fOut.dedent()
         self.fOut.write()
         
@@ -264,41 +264,41 @@ class PythonGenerator(CodeGenerator):
         
     #helper method
     def writeTransitionsRecursively(self, current_node):
-        self.fOut.write("def transition_" + current_node.getFullName() + "(self, event) :")
+        self.fOut.write("def transition_" + current_node.full_name + "(self, event) :")
         self.fOut.indent()
         
         valid_children = []
         for child in current_node.children :
-            if child.isComposite() or child.isBasic() :
+            if child.is_composite or child.is_basic :
                 valid_children.append(child)  
          
         self.fOut.write("catched = False")
         do_dedent = False
-        if current_node.solvesConflictsOuter() :
+        if current_node.solves_conflict_outer :
             self.writeFromTransitions(current_node)
-            if current_node.isParallel() or current_node.isComposite() :
+            if current_node.is_parallel_state or current_node.is_composite :
                 self.fOut.write("if not catched :")
                 self.fOut.indent()
                 do_dedent = True
             
-        if current_node.isParallel():
+        if current_node.is_parallel_state:
             for child in valid_children :     
-                self.fOut.write("catched = self.transition_" + child.getFullName() + "(event) or catched")
-        elif current_node.isComposite():
+                self.fOut.write("catched = self.transition_" + child.full_name + "(event) or catched")
+        elif current_node.is_composite:
             for i, child in enumerate(valid_children) :
                 if i > 0 :
                     self.fOut.write("el")
                 else :
                     self.fOut.write()
-                self.fOut.extendWrite("if self.current_state[self." + current_node.getFullName() + "][0] == self." + child.getFullName() + ":")
+                self.fOut.extendWrite("if self.current_state[self." + current_node.full_name + "][0] == self." + child.full_name + ":")
                 self.fOut.indent()
-                self.fOut.write("catched = self.transition_" + child.getFullName() + "(event)")
+                self.fOut.write("catched = self.transition_" + child.full_name + "(event)")
                 self.fOut.dedent()
                 
-        if current_node.solvesConflictsOuter() :
+        if current_node.solves_conflict_outer :
             if do_dedent :
                 self.fOut.dedent()
-        elif len(current_node.getTransitions()) > 0 :
+        elif len(current_node.transitions) > 0 :
                 self.fOut.write("if not catched :")
                 self.fOut.indent()
                 self.writeFromTransitions(current_node)
@@ -314,7 +314,7 @@ class PythonGenerator(CodeGenerator):
     #helper method
     def writeFromTransitions(self, current_node): 
         # get all transition out of this state
-        out_transitions = current_node.getTransitions()
+        out_transitions = current_node.transitions
         if len(out_transitions) == 0 :
             return
         
@@ -324,7 +324,7 @@ class PythonGenerator(CodeGenerator):
             
         self.fOut.write("if len(enableds) > 1 :")
         self.fOut.indent()
-        self.fOut.write('print "Runtime warning : indeterminism detected in a transition from node ' +  current_node.getFullID()+ '. Only the first in document order enabled transition is executed."')
+        self.fOut.write('print "Runtime warning : indeterminism detected in a transition from node ' +  current_node.full_name+ '. Only the first in document order enabled transition is executed."')
         self.fOut.dedent()
         self.fOut.write()
         self.fOut.write("if len(enableds) > 0 :")
@@ -339,7 +339,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_FormalEventParameter(self, formal_event_parameter):
-        self.fOut.extendWrite(formal_event_parameter.getName())
+        self.fOut.extendWrite(formal_event_parameter.name)
         
     def writeFormalEventParameters(self, transition):
         parameters = transition.getTrigger().getParameters()
@@ -365,37 +365,37 @@ class PythonGenerator(CodeGenerator):
         exits = transition.getExitNodes()
         
         # write out exit actions
-        if not exits[-1].isBasic():
-            self.fOut.write("self.exit_" + exits[-1].getFullName() + "()")
+        if not exits[-1].is_basic:
+            self.fOut.write("self.exit_" + exits[-1].full_name + "()")
         else:
             for node in exits:
-                if node.isBasic():
-                    self.fOut.write("self.exit_" + node.getFullName() + "()")
+                if node.is_basic:
+                    self.fOut.write("self.exit_" + node.full_name + "()")
                     
         # write out trigger actions
         transition.getAction().accept(self)
         
         for (entering_node, is_ending_node) in transition.getEnterNodes() : 
             if is_ending_node :
-                if entering_node.isComposite():
-                    self.fOut.write("self.enterDefault_" + entering_node.getFullName() + "()")
-                elif entering_node.isHistory():
-                    if (entering_node.isHistoryDeep()) :
-                        self.fOut.write("self.enterHistoryDeep_" + entering_node.getParentNode().getFullName() + "()")
+                if entering_node.is_composite:
+                    self.fOut.write("self.enterDefault_" + entering_node.full_name + "()")
+                elif entering_node.is_history:
+                    if (entering_node.is_history_deep) :
+                        self.fOut.write("self.enterHistoryDeep_" + entering_node.parent.full_name + "()")
                     else :
-                        self.fOut.write("self.enterHistoryShallow_" + entering_node.getParentNode().getFullName() + "()")
+                        self.fOut.write("self.enterHistoryShallow_" + entering_node.parent.full_name + "()")
                 else:
-                    self.fOut.write("self.enter_" + entering_node.getFullName() + "()")
+                    self.fOut.write("self.enter_" + entering_node.full_name + "()")
             else :
-                if entering_node.isComposite():
-                    self.fOut.write("self.enter_" + entering_node.getFullName() + "()")
+                if entering_node.is_composite:
+                    self.fOut.write("self.enter_" + entering_node.full_name + "()")
 
         self.fOut.dedent()
                         
     def writeTransitionCondition(self, transition, index):
         trigger = transition.getTrigger()
         if not trigger.isUC():  
-            self.fOut.write('if event.getName() == "' + trigger.getEvent() + '" and event.getPort() == "' + trigger.getPort() + '" :')
+            self.fOut.write('if event.name == "' + trigger.getEvent() + '" and event.getPort() == "' + trigger.getPort() + '" :')
             self.fOut.indent()   
         # evaluate guard
         if transition.hasGuard() :   
@@ -417,7 +417,7 @@ class PythonGenerator(CodeGenerator):
     
     def visit_EnterAction(self, enter_method):
         parent_node = enter_method.parent_node
-        self.writeMethodSignature("enter_" + parent_node.getFullName(), [])
+        self.writeMethodSignature("enter_" + parent_node.full_name, [])
         self.fOut.indent()
         # take care of any AFTER events
         for transition in parent_node.transitions :
@@ -427,48 +427,48 @@ class PythonGenerator(CodeGenerator):
                 trigger.after.accept(self)
         if enter_method.action:
             enter_method.action.accept(self)
-        self.fOut.write("self.current_state[self." + parent_node.getParentNode().getFullName() + "].append(self." + parent_node.getFullName() + ")")
+        self.fOut.write("self.current_state[self." + parent_node.parent.full_name + "].append(self." + parent_node.full_name + ")")
         self.fOut.dedent()
         self.fOut.write()
         
     #helper method
     def writeEnterDefault(self, entered_node):
-        self.writeMethodSignature("enterDefault_" + entered_node.getFullName(), [])
+        self.writeMethodSignature("enterDefault_" + entered_node.full_name, [])
         self.fOut.indent()
-        self.fOut.write("self.enter_" + entered_node.getFullName() + "()")
-        if entered_node.isComposite():
-            l = entered_node.getDefaults()
+        self.fOut.write("self.enter_" + entered_node.full_name + "()")
+        if entered_node.is_composite:
+            l = entered_node.defaults
             for i in l:
-                if i.isComposite():
-                    self.fOut.write("self.enterDefault_" + i.getFullName() + "()")
-                elif i.isBasic():
-                    self.fOut.write("self.enter_" + i.getFullName() + "()")
+                if i.is_composite:
+                    self.fOut.write("self.enterDefault_" + i.full_name + "()")
+                elif i.is_basic:
+                    self.fOut.write("self.enter_" + i.full_name + "()")
         self.fOut.dedent()
         self.fOut.write()
          
     def visit_ExitAction(self, exit_method):
         exited_node = exit_method.parent_node
-        self.writeMethodSignature("exit_" + exited_node.getFullName(), [])
+        self.writeMethodSignature("exit_" + exited_node.full_name, [])
         self.fOut.indent()
         
         #If the exited node is composite take care of potential history and the leaving of descendants
-        if exited_node.isComposite() :
+        if exited_node.is_composite :
             #handle history
             if exited_node.save_state_on_exit :
-                self.fOut.write("self.history_state[self." + exited_node.getFullName() + "] = self.current_state[self." + exited_node.getFullName() + "]")
+                self.fOut.write("self.history_state[self." + exited_node.full_name + "] = self.current_state[self." + exited_node.full_name + "]")
             
             #Take care of leaving children
-            children = exited_node.getChildren()
-            if exited_node.isParallel():
+            children = exited_node.children
+            if exited_node.is_parallel_state:
                 for child in children:
-                    if not child.isHistory() :
-                        self.fOut.write("self.exit_" + child.getFullName() + "()")
+                    if not child.is_history :
+                        self.fOut.write("self.exit_" + child.full_name + "()")
             else:
                 for child in children:
-                    if not child.isHistory() :
-                        self.fOut.write("if self." + child.getFullName() +  " in self.current_state[self." + exited_node.getFullName() + "] :")
+                    if not child.is_history :
+                        self.fOut.write("if self." + child.full_name +  " in self.current_state[self." + exited_node.full_name + "] :")
                         self.fOut.indent()
-                        self.fOut.write("self.exit_" + child.getFullName() + "()")
+                        self.fOut.write("self.exit_" + child.full_name + "()")
                         self.fOut.dedent()  
         
         
@@ -483,7 +483,7 @@ class PythonGenerator(CodeGenerator):
             exit_method.action.accept(self)
             
         #Adjust state
-        self.fOut.write("self.current_state[self." + exited_node.getParentNode().getFullName() + "] = []") # SPECIAL CASE FOR ORTHOGONAL??
+        self.fOut.write("self.current_state[self." + exited_node.parent.full_name + "] = []") # SPECIAL CASE FOR ORTHOGONAL??
         
         self.fOut.dedent()
         self.fOut.write()
@@ -491,39 +491,39 @@ class PythonGenerator(CodeGenerator):
             
     #helper method
     def writeEnterHistory(self, entered_node, is_deep):
-        self.writeMethodSignature("enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + entered_node.getFullName(), [])
+        self.writeMethodSignature("enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + entered_node.full_name, [])
         self.fOut.indent()
-        self.fOut.write("if self.history_state[self." + entered_node.getFullName() + "] == []:")
+        self.fOut.write("if self.history_state[self." + entered_node.full_name + "] == []:")
         self.fOut.indent()
-        defaults = entered_node.getDefaults()
+        defaults = entered_node.defaults
 
         for node in defaults:
-            if node.isBasic() :
-                self.fOut.write("self.enter_" + node.getFullName() + "()")
-            elif node.isComposite() :
-                self.fOut.write("self.enterDefault_" + node.getFullName() + "()")
+            if node.is_basic :
+                self.fOut.write("self.enter_" + node.full_name + "()")
+            elif node.is_composite :
+                self.fOut.write("self.enterDefault_" + node.full_name + "()")
 
         self.fOut.dedent()
         self.fOut.write("else:")
         self.fOut.indent()
-        children = entered_node.getChildren()
-        if entered_node.isParallel():
+        children = entered_node.children
+        if entered_node.is_parallel_state:
             for child in children:
-                if not child.isHistory() :
-                    self.fOut.write("self.enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + child.getFullName() + "()")
+                if not child.is_history :
+                    self.fOut.write("self.enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + child.full_name + "()")
         else:
             for child in children:
-                if not child.isHistory() :
-                    self.fOut.write("if self." + child.getFullName() + " in self.history_state[self." + entered_node.getFullName() + "] :")
+                if not child.is_history :
+                    self.fOut.write("if self." + child.full_name + " in self.history_state[self." + entered_node.full_name + "] :")
                     self.fOut.indent()
-                    if child.isComposite():
+                    if child.is_composite:
                         if is_deep :
-                            self.fOut.write("self.enter_" + child.getFullName() + "()")
-                            self.fOut.write("self.enterHistoryDeep_" + child.getFullName() + "()")
+                            self.fOut.write("self.enter_" + child.full_name + "()")
+                            self.fOut.write("self.enterHistoryDeep_" + child.full_name + "()")
                         else :
-                            self.fOut.write("self.enterDefault_" + child.getFullName() + "()")
+                            self.fOut.write("self.enterDefault_" + child.full_name + "()")
                     else:
-                        self.fOut.write("self.enter_" + child.getFullName() + "()")
+                        self.fOut.write("self.enter_" + child.full_name + "()")
                     self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.dedent()
@@ -536,8 +536,8 @@ class PythonGenerator(CodeGenerator):
         #visit children
         for i in statechart.composites + statechart.basics:
             if i is not statechart.root :
-                i.getEnterAction().accept(self)
-                i.getExitAction().accept(self)
+                i.enter_action.accept(self)
+                i.exit_action.accept(self)
 
         # write out statecharts methods for enter/exit state
         if len(statechart.composites) > 1 :
@@ -548,7 +548,7 @@ class PythonGenerator(CodeGenerator):
                     self.writeEnterDefault(i)
 
         # write out statecharts methods for enter/exit history
-        if statechart.historys:
+        if statechart.histories:
             self.fOut.write("#Statechart enter/exit history method(s) :")
             self.fOut.write()
             for i in statechart.shallow_history_parents:
@@ -565,7 +565,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("# Execute transitions")
         self.fOut.write("def transition(self, event = Event(\"\")):")
         self.fOut.indent()
-        self.fOut.write("self.state_changed = self.transition_" + statechart.root.getFullName() + "(event)")
+        self.fOut.write("self.state_changed = self.transition_" + statechart.root.full_name + "(event)")
         self.fOut.dedent()
 
         # write out inState function
@@ -591,7 +591,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.extendWrite("self")
         
     def visit_StateReference(self, state_ref):
-        self.fOut.extendWrite("[" + ",".join(["self." + node.getFullName() for node in state_ref.getNodes()]) + "]")
+        self.fOut.extendWrite("[" + ",".join(["self." + node.full_name for node in state_ref.getNodes()]) + "]")
         
     def visit_InStateCall(self, in_state_call):
         self.fOut.extendWrite("self.inState(")

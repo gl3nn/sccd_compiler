@@ -27,7 +27,7 @@ class StateLinker(Visitor):
                      
     def visit_StateChartNode(self, node):
         self.visiting_node = node
-        node.entry_action.accept(self)
+        node.enter_action.accept(self)
         node.exit_action.accept(self)
         for transition in node.transitions :
             transition.accept(self)
@@ -74,7 +74,7 @@ class StateLinker(Visitor):
                     
             
             if token.type == TokenType.PARENT :
-                current_node = current_node.getParentNode()
+                current_node = current_node.parent
                 if current_node == None :
                     raise StateReferenceException("Illegal use of parent operator at position " + str(token.pos) + " in state reference. Root of statechart reached.")
             elif token.type == TokenType.CURRENT :
@@ -86,7 +86,7 @@ class StateLinker(Visitor):
                 cname = token.val
                 found = False
                 for child in current_node.children :
-                    if child.getName() == cname : 
+                    if child.name == cname : 
                         found = True
                         current_node = child
                         break

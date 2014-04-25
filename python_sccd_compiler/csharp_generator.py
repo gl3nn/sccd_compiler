@@ -161,12 +161,12 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("public enum Node {")
             self.fOut.indent()
             for node in class_node.statechart.composites + class_node.statechart.basics:
-                self.fOut.write(node.getFullName() + ",");
+                self.fOut.write(node.full_name + ",");
             self.fOut.dedent();
             self.fOut.write("};")
             self.fOut.write()
             self.fOut.write("Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();");
-            if len(class_node.statechart.historys) > 0 :
+            if len(class_node.statechart.histories) > 0 :
                 self.fOut.write("Dictionary<Node,List<Node>> history_state = new Dictionary<Node,List<Node>>();");
             self.fOut.write();
             
@@ -196,13 +196,13 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.write("//Initialize statechart :")
             self.fOut.write()
 
-            if class_node.statechart.historys:
+            if class_node.statechart.histories:
                 for node in class_node.statechart.combined_history_parents:
-                    self.fOut.write("this.history_state[Node." + node.getFullName() + "] = new List<Node>();")
+                    self.fOut.write("this.history_state[Node." + node.full_name + "] = new List<Node>();")
                 self.fOut.write()
 
             for node in class_node.statechart.composites :
-                self.fOut.write("this.current_state[Node." + node.getFullName() + "] = new List<Node>();")
+                self.fOut.write("this.current_state[Node." + node.full_name + "] = new List<Node>();")
                 
         self.fOut.dedent()
         self.fOut.write("}")
@@ -214,10 +214,10 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("base.start();")
         for default_node in class_node.statechart.root.defaults:
-            if default_node.isComposite():
-                self.fOut.write("this.enterDefault_" + default_node.getFullName() + "();")
-            elif default_node.isBasic():
-                self.fOut.write("this.enter_" + default_node.getFullName() + "();")
+            if default_node.is_composite:
+                self.fOut.write("this.enterDefault_" + default_node.full_name + "();")
+            elif default_node.is_basic:
+                self.fOut.write("this.enter_" + default_node.full_name + "();")
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
@@ -254,7 +254,7 @@ class CSharpGenerator(CodeGenerator):
                     
     def visit_Constructor(self, constructor):
 
-        self.fOut.write(constructor.access + " " + constructor.parent_class.getName() + "(")
+        self.fOut.write(constructor.access + " " + constructor.parent_class.name + "(")
         self.writeFormalParameters([FormalParameter("controller", "ControllerBase", None)] + constructor.getParams())
         self.fOut.extendWrite(")")
         self.fOut.write("{")
@@ -269,7 +269,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_Destructor(self, destructor):
-        self.fOut.write("~" + destructor.parent_class.getName() + "()")
+        self.fOut.write("~" + destructor.parent_class.name + "()")
         self.fOut.write("{")
         if destructor.body :
             self.fOut.indent()
@@ -279,7 +279,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_Method(self, method):
-        self.fOut.write(method.access + " " + method.return_type + "_" + method.parent_class.getName() + "(")
+        self.fOut.write(method.access + " " + method.return_type + "_" + method.parent_class.name + "(")
         self.writeFormalParameters(method.getParams())
         self.fOut.extendWrite(")\n{")
         self.fOut.indent()
@@ -296,43 +296,43 @@ class CSharpGenerator(CodeGenerator):
         
     #helper method
     def writeTransitionsRecursively(self, current_node):
-        self.fOut.write("private bool transition_" + current_node.getFullName() + "(Event e)")
+        self.fOut.write("private bool transition_" + current_node.full_name + "(Event e)")
         self.fOut.write("{")
         self.fOut.indent()
         
         valid_children = []
         for child in current_node.children :
-            if child.isComposite() or child.isBasic() :
+            if child.is_composite or child.is_basic :
                 valid_children.append(child)  
          
         self.fOut.write("bool catched = false;")
         do_dedent = False
-        if current_node.solvesConflictsOuter() :
+        if current_node.solves_conflict_outer :
             self.writeFromTransitions(current_node)
-            if current_node.isParallel() or current_node.isComposite() :
+            if current_node.is_parallel_state or current_node.is_composite :
                 self.fOut.write("if (!catched){")
                 self.fOut.indent()
                 do_dedent = True
             
-        if current_node.isParallel():
+        if current_node.is_parallel_state:
             for child in valid_children :     
-                self.fOut.write("catched = this.transition_" + child.getFullName() + "(e) || catched;")
-        elif current_node.isComposite():
+                self.fOut.write("catched = this.transition_" + child.full_name + "(e) || catched;")
+        elif current_node.is_composite:
             self.fOut.write()
             for i, child in enumerate(valid_children) :
                 if i > 0 :
                     self.fOut.extendWrite(" else ")
-                self.fOut.extendWrite("if (this.current_state[Node." + current_node.getFullName() + "][0] == Node." + child.getFullName() + "){")
+                self.fOut.extendWrite("if (this.current_state[Node." + current_node.full_name + "][0] == Node." + child.full_name + "){")
                 self.fOut.indent()
-                self.fOut.write("catched = this.transition_" + child.getFullName() + "(e);")
+                self.fOut.write("catched = this.transition_" + child.full_name + "(e);")
                 self.fOut.dedent()
                 self.fOut.write("}")
                 
-        if current_node.solvesConflictsOuter() :
+        if current_node.solves_conflict_outer :
             if do_dedent :
                 self.fOut.dedent()
                 self.fOut.write("}")
-        elif len(current_node.getTransitions()) > 0 :
+        elif len(current_node.transitions) > 0 :
                 self.fOut.write("if (!catched) {")
                 self.fOut.indent()
                 self.writeFromTransitions(current_node)
@@ -350,7 +350,7 @@ class CSharpGenerator(CodeGenerator):
     #helper method
     def writeFromTransitions(self, current_node): 
         # get all transition out of this state
-        out_transitions = current_node.getTransitions()
+        out_transitions = current_node.transitions
         if len(out_transitions) == 0 :
             return
         
@@ -360,7 +360,7 @@ class CSharpGenerator(CodeGenerator):
             
         self.fOut.write("if (enableds.Count > 1){")
         self.fOut.indent()
-        self.fOut.write('Console.WriteLine("Runtime warning : indeterminism detected in a transition from node ' +  current_node.getFullID()+ '. Only the first in document order enabled transition is executed.");')
+        self.fOut.write('Console.WriteLine("Runtime warning : indeterminism detected in a transition from node ' +  current_node.full_name+ '. Only the first in document order enabled transition is executed.");')
         self.fOut.dedent()
         self.fOut.write('}')
         self.fOut.write("if (enableds.Count > 0){")
@@ -377,7 +377,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_FormalEventParameter(self, formal_event_parameter):
-        self.fOut.extendWrite(formal_event_parameter.getType() + " " + formal_event_parameter.getName())
+        self.fOut.extendWrite(formal_event_parameter.getType() + " " + formal_event_parameter.name)
         
     def writeFormalEventParameters(self, transition):
         parameters = transition.getTrigger().getParameters()
@@ -402,30 +402,30 @@ class CSharpGenerator(CodeGenerator):
         exits = transition.getExitNodes()
         
         # write out exit actions
-        if not exits[-1].isBasic():
-            self.fOut.write("this.exit_" + exits[-1].getFullName() + "();")
+        if not exits[-1].is_basic:
+            self.fOut.write("this.exit_" + exits[-1].full_name + "();")
         else:
             for node in exits:
-                if node.isBasic():
-                    self.fOut.write("this.exit_" + node.getFullName() + "();")
+                if node.is_basic:
+                    self.fOut.write("this.exit_" + node.full_name + "();")
                     
         # write out trigger actions
         transition.getAction().accept(self)
         
         for (entering_node, is_ending_node) in transition.getEnterNodes() : 
             if is_ending_node :
-                if entering_node.isComposite():
-                    self.fOut.write("this.enterDefault_" + entering_node.getFullName() + "();")
-                elif entering_node.isHistory():
-                    if (entering_node.isHistoryDeep()) :
-                        self.fOut.write("this.enterHistoryDeep_" + entering_node.getParentNode().getFullName() + "();")
+                if entering_node.is_composite:
+                    self.fOut.write("this.enterDefault_" + entering_node.full_name + "();")
+                elif entering_node.is_history:
+                    if (entering_node.is_history_deep) :
+                        self.fOut.write("this.enterHistoryDeep_" + entering_node.parent.full_name + "();")
                     else :
-                        self.fOut.write("this.enterHistoryShallow_" + entering_node.getParentNode().getFullName() + "();")
+                        self.fOut.write("this.enterHistoryShallow_" + entering_node.parent.full_name + "();")
                 else:
-                    self.fOut.write("this.enter_" + entering_node.getFullName() + "();")
+                    self.fOut.write("this.enter_" + entering_node.full_name + "();")
             else :
-                if entering_node.isComposite():
-                    self.fOut.write("this.enter_" + entering_node.getFullName() + "();")
+                if entering_node.is_composite:
+                    self.fOut.write("this.enter_" + entering_node.full_name + "();")
 
         self.fOut.dedent()
         self.fOut.write('}')
@@ -457,7 +457,7 @@ class CSharpGenerator(CodeGenerator):
     
     def visit_EnterAction(self, enter_method):
         parent_node = enter_method.parent_node
-        self.fOut.write("private void enter_" + parent_node.getFullName() + "()")
+        self.fOut.write("private void enter_" + parent_node.full_name + "()")
         self.fOut.write("{")
         self.fOut.indent()
         
@@ -470,51 +470,51 @@ class CSharpGenerator(CodeGenerator):
                 self.fOut.extendWrite(";")
         if enter_method.action:
             enter_method.action.accept(self)
-        self.fOut.write("this.current_state[Node." + parent_node.getParentNode().getFullName() + "].Add(Node." + parent_node.getFullName() + ");")
+        self.fOut.write("this.current_state[Node." + parent_node.parent.full_name + "].Add(Node." + parent_node.full_name + ");")
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
         
     #helper method
     def writeEnterDefault(self, entered_node):
-        self.fOut.write("private void enterDefault_" + entered_node.getFullName() + "()")
+        self.fOut.write("private void enterDefault_" + entered_node.full_name + "()")
         self.fOut.write("{")
         self.fOut.indent()
-        self.fOut.write("this.enter_" + entered_node.getFullName() + "();")
-        if entered_node.isComposite():
-            l = entered_node.getDefaults()
+        self.fOut.write("this.enter_" + entered_node.full_name + "();")
+        if entered_node.is_composite:
+            l = entered_node.defaults
             for i in l:
-                if i.isComposite():
-                    self.fOut.write("this.enterDefault_" + i.getFullName() + "();")
-                elif i.isBasic():
-                    self.fOut.write("this.enter_" + i.getFullName() + "();")
+                if i.is_composite:
+                    self.fOut.write("this.enterDefault_" + i.full_name + "();")
+                elif i.is_basic:
+                    self.fOut.write("this.enter_" + i.full_name + "();")
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
          
     def visit_ExitAction(self, exit_method):
         exited_node = exit_method.parent_node
-        self.fOut.write("private void exit_" + exited_node.getFullName() + "()")
+        self.fOut.write("private void exit_" + exited_node.full_name + "()")
         self.fOut.write("{")
         self.fOut.indent()
         #If the exited node is composite take care of potential history and the leaving of descendants
-        if exited_node.isComposite() :
+        if exited_node.is_composite :
             #handle history
-            if exited_node in exited_node.parent_statechart.combined_history_parents:
-                self.fOut.write("this.history_state[Node." + exited_node.getFullName() + "].AddRange(this.current_state[Node." + exited_node.getFullName() + "]);")
+            if exited_node.save_state_on_exit:
+                self.fOut.write("this.history_state[Node." + exited_node.full_name + "].AddRange(this.current_state[Node." + exited_node.full_name + "]);")
             
             #Take care of leaving children
-            children = exited_node.getChildren()
-            if exited_node.isParallel():
+            children = exited_node.children
+            if exited_node.is_parallel_state:
                 for child in children:
-                    if not child.isHistory() :
-                        self.fOut.write("this.exit_" + child.getFullName() + "();")
+                    if not child.is_history :
+                        self.fOut.write("this.exit_" + child.full_name + "();")
             else:
                 for child in children:
-                    if not child.isHistory() :
-                        self.fOut.write("if (this.current_state[Node." + exited_node.getFullName() + "].Contains(Node." + child.getFullName() +  ")){")
+                    if not child.is_history :
+                        self.fOut.write("if (this.current_state[Node." + exited_node.full_name + "].Contains(Node." + child.full_name +  ")){")
                         self.fOut.indent()
-                        self.fOut.write("this.exit_" + child.getFullName() + "();")
+                        self.fOut.write("this.exit_" + child.full_name + "();")
                         self.fOut.dedent()  
                         self.fOut.write("}")
         
@@ -530,7 +530,7 @@ class CSharpGenerator(CodeGenerator):
             exit_method.action.accept(self)
             
         #Adjust state
-        self.fOut.write("this.current_state[Node." + exited_node.getParentNode().getFullName() + "].Remove(Node." + exited_node.getFullName() + ");")
+        self.fOut.write("this.current_state[Node." + exited_node.parent.full_name + "].Remove(Node." + exited_node.full_name + ");")
 
         self.fOut.dedent()
         self.fOut.write("}")
@@ -539,40 +539,40 @@ class CSharpGenerator(CodeGenerator):
             
     #helper method
     def writeEnterHistory(self, entered_node, is_deep):
-        self.fOut.write("private void enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + entered_node.getFullName() + "()")
+        self.fOut.write("private void enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + entered_node.full_name + "()")
         self.fOut.write("{")
         self.fOut.indent()
-        self.fOut.write("if (this.history_state[Node." + entered_node.getFullName() + "].Count == 0){")
+        self.fOut.write("if (this.history_state[Node." + entered_node.full_name + "].Count == 0){")
         self.fOut.indent()
-        defaults = entered_node.getDefaults()
+        defaults = entered_node.defaults
 
         for node in defaults:
-            if node.isBasic() :
-                self.fOut.write("this.enter_" + node.getFullName() + "();")
-            elif node.isComposite() :
-                self.fOut.write("this.enterDefault_" + node.getFullName() + "();")
+            if node.is_basic :
+                self.fOut.write("this.enter_" + node.full_name + "();")
+            elif node.is_composite :
+                self.fOut.write("this.enterDefault_" + node.full_name + "();")
 
         self.fOut.dedent()
         self.fOut.write("} else {")
         self.fOut.indent()
-        children = entered_node.getChildren()
-        if entered_node.isParallel():
+        children = entered_node.children
+        if entered_node.is_parallel_state:
             for child in children:
-                if not child.isHistory() :
-                    self.fOut.write("this.enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + child.getFullName() + "();")
+                if not child.is_history :
+                    self.fOut.write("this.enterHistory" + ("Deep" if is_deep else "Shallow") + "_" + child.full_name + "();")
         else:
             for child in children:
-                if not child.isHistory() :
-                    self.fOut.write("if (this.history_state[Node." + entered_node.getFullName() + "].Contains(Node." + child.getFullName() + ")){")
+                if not child.is_history :
+                    self.fOut.write("if (this.history_state[Node." + entered_node.full_name + "].Contains(Node." + child.full_name + ")){")
                     self.fOut.indent()
-                    if child.isComposite():
+                    if child.is_composite:
                         if is_deep :
-                            self.fOut.write("this.enter_" + child.getFullName() + "();")
-                            self.fOut.write("this.enterHistoryDeep_" + child.getFullName() + "();")
+                            self.fOut.write("this.enter_" + child.full_name + "();")
+                            self.fOut.write("this.enterHistoryDeep_" + child.full_name + "();")
                         else :
-                            self.fOut.write("this.enterDefault_" + child.getFullName() + "();")
+                            self.fOut.write("this.enterDefault_" + child.full_name + "();")
                     else:
-                        self.fOut.write("this.enter_" + child.getFullName() + "();")
+                        self.fOut.write("this.enter_" + child.full_name + "();")
                     self.fOut.dedent()
                     self.fOut.write("}")
         self.fOut.dedent()
@@ -588,8 +588,8 @@ class CSharpGenerator(CodeGenerator):
         #visit children
         for i in statechart.composites + statechart.basics:
             if i is not statechart.root :
-                i.getEnterAction().accept(self)
-                i.getExitAction().accept(self)
+                i.enter_action.accept(self)
+                i.exit_action.accept(self)
 
         # write out statecharts methods for enter/exit state
         if len(statechart.composites) > 1 :
@@ -600,7 +600,7 @@ class CSharpGenerator(CodeGenerator):
                     self.writeEnterDefault(i)
 
         # write out statecharts methods for enter/exit history
-        if statechart.historys:
+        if statechart.histories:
             self.fOut.write("//Statechart enter/exit history method(s) :")
             self.fOut.write()
             for i in statechart.shallow_history_parents:
@@ -621,7 +621,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("e = new Event();")
         self.fOut.dedent()
         self.fOut.write("}")
-        self.fOut.write("this.state_changed = this.transition_" + statechart.root.getFullName() + "(e);")
+        self.fOut.write("this.state_changed = this.transition_" + statechart.root.full_name + "(e);")
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
@@ -656,7 +656,7 @@ class CSharpGenerator(CodeGenerator):
         
     def visit_StateReference(self, state_ref):
         self.fOut.extendWrite("new List<Node>() {")
-        self.fOut.extendWrite(", ".join(["Node." + node.getFullName() for node in state_ref.getNodes()]))
+        self.fOut.extendWrite(", ".join(["Node." + node.full_name for node in state_ref.getNodes()]))
         self.fOut.extendWrite("}")
         
     def visit_InStateCall(self, in_state_call):

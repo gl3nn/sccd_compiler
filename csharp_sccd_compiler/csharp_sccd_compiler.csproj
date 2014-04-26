@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DFB7F649-CA2A-40CD-925B-7D975252A8C3}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>csharp_sccd_compiler</RootNamespace>
+    <AssemblyName>csharp_sccd_compiler</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Externalconsole>true</Externalconsole>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Externalconsole>true</Externalconsole>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Core" />
+    <Reference Include="MonoDevelop.Core, Version=2.6.0.0, Culture=neutral">
+      <Private>False</Private>
+      <Package>monodevelop</Package>
+    </Reference>
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ClassDiagram.cs" />
+    <Compile Include="Visitor.cs" />
+    <Compile Include="Class.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="Constructor.cs" />
+    <Compile Include="Method.cs" />
+    <Compile Include="Destructor.cs" />
+    <Compile Include="Attribute.cs" />
+    <Compile Include="Association.cs" />
+    <Compile Include="StateChart.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="FormalParameter.cs" />
+    <Compile Include="StateChartNode.cs" />
+    <Compile Include="StateChartTransition.cs" />
+    <Compile Include="TriggerEvent.cs" />
+    <Compile Include="FormalEventParameter.cs" />
+    <Compile Include="Expression.cs" />
+    <Compile Include="EnterExitAction.cs" />
+    <Compile Include="Action.cs" />
+    <Compile Include="SubAction\SubAction.cs" />
+    <Compile Include="SubAction\RaiseEvent.cs" />
+    <Compile Include="SubAction\Script.cs" />
+    <Compile Include="SubAction\Log.cs" />
+    <Compile Include="SubAction\Assign.cs" />
+    <Compile Include="Exceptions\CompilerException.cs" />
+    <Compile Include="Exceptions\TransitionException.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Folder Include="SubAction\" />
+    <Folder Include="Exceptions\" />
+  </ItemGroup>
+</Project>

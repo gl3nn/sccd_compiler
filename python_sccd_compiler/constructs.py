@@ -129,8 +129,7 @@ class FormalEventParameter(Visitable):
     
 ##################################
 class TriggerEvent:
-    def __init__(self, xml_element, parent_transition):
-        self.parent_transition = parent_transition
+    def __init__(self, xml_element):
         self.is_uc = False;
         self.is_after = False
         self.after_index = -1
@@ -155,7 +154,6 @@ class TriggerEvent:
             self.is_uc = True
             return
             
-     
         self.params = []
         parameters = xml_element.findall('parameter')    
         for p in parameters :
@@ -358,7 +356,7 @@ class StateChartTransition(Visitable):
     def __init__(self,xml_element,parent):
         self.xml = xml_element
         self.parent_node = parent
-        self.trigger = TriggerEvent(self.xml, self)
+        self.trigger = TriggerEvent(self.xml)
         guard_string = self.xml.get("cond","").strip()
         if guard_string != "" : 
             self.guard = Expression(guard_string)
@@ -473,8 +471,7 @@ class StateChartNode(Visitable):
         #transitions
         self.transitions = []
         for transition_xml in xml_element.findall("transition"):
-            transition = StateChartTransition(transition_xml,self)
-            self.transitions.append(transition)
+            self.transitions.append(StateChartTransition(transition_xml,self))
             
         self.optimizeTransitions()
         self.generateChildren(xml_element)    

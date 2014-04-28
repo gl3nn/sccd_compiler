@@ -6,7 +6,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class FormalParameter : Visitor.Visitable
+    public class FormalParameter : Visitable
     {
         public string name { get; protected set; }
         public string type { get; protected set; }

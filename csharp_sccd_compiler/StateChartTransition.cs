@@ -1,17 +1,32 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class StateChartTransition : Visitor.Visitable
+    public class StateChartTransition : Visitable
     {
         public TriggerEvent trigger { get; private set; }
 
         public StateChartNode parent { get; private set; }
 
         public Expression guard { get; private set; }
+
+        public StateReference target { get; private set; }
+
+        public Action action { get; private set; }
+
+        /// <summary>
+        /// Ordered list of nodes to be entered upon taking the transition.
+        /// </summary>
+        /// <value>Set by the Path Calculator visitor.</value>
+        public List<StateChartNode> enter_nodes { get; set; }
+
+        /// <summary>
+        /// Ordered list of nodes to be exited upon taking the transition.
+        /// </summary>
+        /// <value>Set by the Path Calculator visitor.</value>
+        public List<StateChartNode> exit_nodes { get; set; }
 
         public StateChartTransition(XElement xml, StateChartNode parent)
         {
@@ -23,26 +38,12 @@ namespace csharp_sccd_compiler
             else
                 this.guard = null;
 
+            XAttribute target_attribute = xml.Attribute("target");
+            if (target_attribute == null)
+                throw new CompilerException(string.Format("Transition from <{0}> is missing a target attribute.", this.parent.full_name));
+            this.target = new StateReference(target_attribute.Value.Trim());
 
-            /*
-        self.xml = xml_element
-        self.parent_node = parent
-        self.trigger = TriggerEvent(self.xml)
-        guard_string = self.xml.get("cond","").strip()
-        if guard_string != "" : 
-            self.guard = Expression(guard_string)
-        else :
-            self.guard = None
-        target_string = self.xml.get("target","").strip()
-        if target_string == "" :
-            raise CompilerException("Transition from <" + self.parent_node.full_name + "> has empty target.")
-        self.target = StateReference(target_string)
-        
-        self.action = Action(self.xml)
-        
-        self.enter_nodes = None #Ordered list of nodes to be entered upon taking the transition, set by the path calculator
-        self.exit_nodes = None #Ordered list of nodes to be exited upon taking the transition, set by the path calculator
-             */
+            this.action = new Action(xml);
         }
     }
 }

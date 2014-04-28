@@ -5,17 +5,25 @@ using System.Collections.Generic;
 
 namespace csharp_sccd_compiler
 {
-	public class ClassDiagram : Visitor.Visitable
+	public class ClassDiagram : Visitable
 	{
-		string model_name;
-		string model_author;
-		string model_description;
-		List<string> class_names;
-        List<string> inports;
-        List<string> outports;
-        string top_section;
-        List<Class> classes;
-        Class default_class;
+        public string model_name { get; private set; }
+
+        public string model_author { get; private set; }
+
+        public string model_description { get; private set; }
+
+        public List<string> class_names { get; private set; }
+
+        public List<string> inports { get; private set; }
+
+        public List<string> outports { get; private set; }
+
+        public string top_section { get; private set; }
+
+        public List<Class> classes { get; private set; }
+
+        public Class default_class { get; private set; }
 
 		public ClassDiagram (string input_file_path)
         {

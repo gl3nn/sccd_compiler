@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class Method : Visitor.Visitable
+    public class Method : Visitable
     {
         public string name { get; protected set; }
         public string return_type { get; protected set; }

@@ -6,7 +6,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class Association : Visitor.Visitable
+    public class Association : Visitable
     {
         /// <summary>
         /// Minimum cardinality of the association.

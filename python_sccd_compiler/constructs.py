@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from utils import Logger
 from visitor import Visitable
 from compiler_exceptions import CompilerException, TransitionException, UnprocessedException
+from lexer import Lexer, Token, TokenType
 
 # http://docs.python.org/2/library/xml.etree.elementtree.html
 
@@ -21,7 +22,6 @@ INSTATE_SEQ = 'INSTATE'
 class StateReference(Visitable):
     def __init__(self, input_string):
         self.path_string = input_string
-        
         self.target_nodes = None #calculated in state linker
         
     def getNodes(self):
@@ -43,75 +43,73 @@ class SelfReference(ExpressionPart):
     
 class InStateCall(ExpressionPart):
     def __init__(self, state_string):
-        if state_string == "" :
-            raise CompilerException(INSTATE_SEQ + " call expects a non-empty state reference.")
         self.target = StateReference(state_string)
 
 ##################################
+
     
 class Expression(Visitable):
-    def __init__(self, string):
-        if not string :
+    lexer = Lexer(False, True)
+    
+    def __init__(self, input):
+        if not input :
             raise CompilerException("Empty Expression.")
-        self.processString(string)
+        self.parse(input)
         
-    def processString(self, string):
-        """
-            produces a list of parts where macro's are replaced by objects.
-        """            
+    def parse(self, input, dont_parse = []):
+        self.expression_parts = []
+        self.lexer.input(input)
+        processed_bare_expression = ""
         
-        self.pieces = []             
-        stack = []
-        pointer = 0
-        last_end = -1
-        skip = False
-        for match in re.finditer(r"\b[a-zA-Z_]\w*\b", string) :
-            while pointer < match.start() :
-                if skip :
-                    skip = False
-                    continue
-                i = string[pointer]
-                if i == "'" or i == '"' :
-                    if stack and stack[-1] == i :
-                        stack.pop()
-                    else :
-                        stack.append(i)
-                elif i == "/" : #Escape character! Ignore next char
-                    skip = True
-                pointer += 1
-            if not stack :
-                processed_string = string[last_end+1:pointer]
-                matched_string = string[match.start():match.end()]
-                created_object = None
-                if matched_string == SELF_REFERENCE_SEQ :
+        for token in self.lexer.tokens() :
+            created_object = None
+            
+            if token.type == TokenType.WORD :
+                if token.val in dont_parse :
+                    raise CompilerException("Macro \"" + token.val + "\" not allowed here.")
+                elif token.val == SELF_REFERENCE_SEQ :
                     created_object = SelfReference()
-                    last_end = match.end()-1
-                elif matched_string == INSTATE_SEQ :
-                    pattern = re.compile("\\s*\((?P<quoting>[\"\'])([^\"\']+)(?P=quoting)\)")
-                    result = pattern.search(string, match.end())
-                    if result :
-                        created_object = InStateCall(result.group(2))
-                        last_end = result.end() - 1
-                
-                if created_object :    
-                    if processed_string != "" :
-                        self.pieces.append(ExpressionPartString(processed_string))
-                    self.pieces.append(created_object)
+                elif token.val == INSTATE_SEQ :
+                    created_object = self.parseInStateCall()
+                    if created_object is None :
+                        raise CompilerException("Illegal use of \"" + INSTATE_SEQ + "\" macro.")
                     
-            pointer = match.end()
-        processed_string = string[last_end+1:]
-        if processed_string != "" :
-            self.pieces.append(ExpressionPartString(processed_string))
+            if created_object is None:
+                processed_bare_expression += token.val
+            else :    
+                if processed_bare_expression != "" :
+                    self.expression_parts.append(ExpressionPartString(processed_bare_expression))
+                    processed_bare_expression = ""
+                self.expression_parts.append(created_object)  
+        
+        #Process part of input after the last created macro object
+        if processed_bare_expression != "" :
+            self.expression_parts.append(ExpressionPartString(processed_bare_expression))
+            
+    def parseInStateCall(self):
+        token = self.lexer.nextToken()
+        if token is None or token.type != TokenType.LBRACKET :
+            return None
+        token = self.lexer.nextToken()
+        if token is None or token.type != TokenType.QUOTED :
+            return None
+        else :
+            created_object = InStateCall(token.val[1:-1])
+        token = self.lexer.nextToken()
+        if token is None or token.type != TokenType.RBRACKET :
+            return None
+        else :
+            return created_object
           
     def accept(self, visitor):
-        for piece in self.pieces :
-            piece.accept(visitor)
+        for expression_part in self.expression_parts :
+            expression_part.accept(visitor)
 
 class LValue(Expression):
-    def __init__(self, string):
-        if not string :
+    def __init__(self, input):
+        if not input :
             raise CompilerException("Empty LValue.")
-        self.processString(string)
+        self.parse(input, [INSTATE_SEQ])
         #do some validation, provide parameters to processString to make the function more efficient
      
 ##################################     
@@ -211,7 +209,6 @@ class SubAction(Visitable):
 
 class RaiseEvent(SubAction):
     tag = "raise"
-    UNKNOWN_SCOPE = 0
     LOCAL_SCOPE = 1
     BROAD_SCOPE = 2
     OUTPUT_SCOPE = 3
@@ -222,6 +219,9 @@ class RaiseEvent(SubAction):
     def __init__(self, xml_element):
         self.event = xml_element.get("event","").strip()
         scope_string = xml_element.get("scope","").strip().lower()
+        self.target = xml_element.get("target","").strip()
+        self.port = xml_element.get("port","").strip()
+        
         if scope_string == "local" :
             self.scope = self.LOCAL_SCOPE
         elif scope_string == "broad" :
@@ -233,14 +233,7 @@ class RaiseEvent(SubAction):
         elif scope_string == "cd" :
             self.scope = self.CD_SCOPE
         elif scope_string == "" :
-            self.scope = self.UNKNOWN_SCOPE
-        else :
-            raise CompilerException("Illegal scope attribute; needs to be one of the following : local, broad, narrow, output or nothing.");
-
-        self.target = xml_element.get("target","").strip()
-        
-        self.port = xml_element.get("port","").strip()
-        if self.scope == self.UNKNOWN_SCOPE :
+            #Calculate scope depending on present attributes
             if self.target and self.port :
                 raise CompilerException("Both target and port attribute detected without a scope defined.")
             elif self.port :
@@ -248,7 +241,10 @@ class RaiseEvent(SubAction):
             elif self.target :
                 self.scope = self.NARROW_SCOPE
             else :
-                self.scope = self.LOCAL_SCOPE    
+                self.scope = self.LOCAL_SCOPE  
+            
+        else :
+            raise CompilerException("Illegal scope attribute; needs to be one of the following : local, broad, narrow, output, cd or nothing.");  
                 
         if self.scope == self.LOCAL_SCOPE or self.scope == self.BROAD_SCOPE or self.scope == self.CD_SCOPE:
             if self.target :
@@ -374,14 +370,13 @@ class StateChartTransition(Visitable):
         
     def getEnterNodes(self):
         if self.enter_nodes is None :
-            raise UnprocessedException("State reference not resolved yet.")
+            raise UnprocessedException("Enter path not calculated yet.")
         return self.enter_nodes
     
     def getExitNodes(self):
         if self.exit_nodes is None :
-            raise UnprocessedException("State reference not resolved yet.")
+            raise UnprocessedException("Exit path not calculated yet.")
         return self.exit_nodes
-
         
     def isUCTransition(self):
         """ Returns true iff is an unconditional transition (i.e. no trigger)

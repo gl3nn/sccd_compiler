@@ -8,7 +8,6 @@ from state_linker import StateLinker
 from path_calculator import PathCalculator
 from constructs import ClassDiagram
 from compiler_exceptions import CompilerException
-
    
 def generate(input_file, output_file, target_language, protocol):
     class_diagram = createAST(input_file)

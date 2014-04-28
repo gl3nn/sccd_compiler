@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class Attribute : Visitor.Visitable
+    public class Attribute : Visitable
     {
         public string name { get; private set; }
         public string type { get; private set; }

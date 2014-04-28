@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class Class : Visitor.Visitable
+    public class Class : Visitable
     {
         public string name { get; private set; }
         public bool is_default { get; private set; }

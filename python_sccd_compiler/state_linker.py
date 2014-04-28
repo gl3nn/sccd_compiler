@@ -1,7 +1,7 @@
 from visitor import Visitor
 from constructs import INSTATE_SEQ
 from compiler_exceptions import CompilerException
-from lexer import Lexer, TokenType
+from lexer import Lexer, Token, TokenType
 
 class StateReferenceException(CompilerException):
     pass
@@ -36,16 +36,16 @@ class StateLinker(Visitor):
         try :
             transition.target.accept(self)
         except StateReferenceException as exception :
-            raise StateReferenceException("Transition from <" + self.visiting_node.getFullID() + "> has invalid target. " + exception.message)
+            raise StateReferenceException("Transition from <" + self.visiting_node.full_name + "> has invalid target. " + exception.message)
         try :
             transition.action.accept(self)
         except StateReferenceException as exception :
-            raise StateReferenceException("Transition from <" + self.visiting_node.getFullID() + "> has invalid action. " + exception.message)
+            raise StateReferenceException("Transition from <" + self.visiting_node.full_name + "> has invalid action. " + exception.message)
         try :
             if transition.guard :
                 transition.guard.accept(self)
         except StateReferenceException as exception :
-            raise StateReferenceException("Transition from <" + self.visiting_node.getFullID() + "> has invalid guard. " + exception.message)
+            raise StateReferenceException("Transition from <" + self.visiting_node.full_name  + "> has invalid guard. " + exception.message)
         
     def visit_StateReference(self, state_reference):
         state_reference.target_nodes = []
@@ -54,14 +54,8 @@ class StateLinker(Visitor):
         split_stack = [] #used for branching
 
         self.lexer.input(state_reference.path_string)
-        token = None
-        last_token = None
 
-        while True :
-            last_token = token
-            token = self.lexer.nextToken() #get next token
-            if token == None : #if that next token is None, then we ran out of tokens and break
-                break
+        for token in self.lexer.tokens() :
             
             if current_node == None : #current_node is not set yet or has been reset, the CHILD token can now have a special meaning
                 if token.type == TokenType.SLASH :
@@ -72,15 +66,30 @@ class StateLinker(Visitor):
                 else :
                     current_node = self.visiting_node
                     
-            
-            if token.type == TokenType.PARENT :
-                current_node = current_node.parent
-                if current_node == None :
-                    raise StateReferenceException("Illegal use of parent operator at position " + str(token.pos) + " in state reference. Root of statechart reached.")
-            elif token.type == TokenType.CURRENT :
-                continue
+            if token.type == TokenType.DOT :
+                #Advance to next token
+                token = self.lexer.nextToken()
+                
+                if token is None or token.type == TokenType.SLASH :
+                    #CURRENT operator "." detected
+                    continue
+                elif token.type == TokenType.DOT :
+                    #Advance to next token
+                    token = self.lexer.nextToken()
+                    if token is None or token.type == TokenType.SLASH :
+                        #PARENT operator ".." detected
+                        current_node = current_node.parent
+                        if current_node is None :
+                            raise StateReferenceException("Illegal use of PARENT \"..\" operator at position " + str(token.pos) + " in state reference. Root of statechart reached.")
+                    
+                    else :
+                        raise StateReferenceException("Illegal use of PARENT \"..\" operator at position " + str(token.pos) + " in state reference.")
+    
+                else :
+                    raise StateReferenceException("Illegal use of CURRENT \".\" operator at position " + str(token.pos) + " in state reference.")
+                    
             elif token.type == TokenType.SLASH :
-                pass
+                continue
             elif token.type == TokenType.WORD :
                 #try to advance to next child state
                 cname = token.val
@@ -92,10 +101,13 @@ class StateLinker(Visitor):
                         break
                 if not found :
                     raise StateReferenceException("Refering to non exiting node at posisition " + str(token.pos) + " in state reference.")
-            elif token.type == TokenType.LB :
+            elif token.type == TokenType.LBRACKET :
                 split_stack.append(current_node)
-            elif token.type == TokenType.RB :
-                split_stack.pop()
+            elif token.type == TokenType.RBRACKET :
+                if len(split_stack) > 0 :
+                    split_stack.pop()
+                else :
+                    raise StateReferenceException("Invalid token at position " + str(token.pos) + " in state reference.")
             elif token.type == TokenType.COMMA :
                 state_reference.target_nodes.append(current_node)
                 if len(split_stack) > 0 :
@@ -104,20 +116,18 @@ class StateLinker(Visitor):
                     current_node = None
             
             else :
-                raise StateReferenceException("Invalid token at position " + str(token.pos) + ".")
-
-            
+                raise StateReferenceException("Invalid token at position " + str(token.pos) + " in state reference.")
+          
         #TODO : better validation of the target! When is it a valid state configuration?
         
         if (len(split_stack) != 0) or (current_node is None) : #RB missing or extra COMMA
-            raise StateReferenceException("Missing token at position " + str(last_token.pos) + ".")
+            raise StateReferenceException("State reference ends unexpectedly.")
         
         state_reference.target_nodes.append(current_node)
             
         if len(state_reference.target_nodes) == 0 :
             raise StateReferenceException("Meaningless state reference.")
-        
-    #edit this class out
+                
     def visit_EnterExitAction(self, action):
         if action.action :
             action.action.accept(self)

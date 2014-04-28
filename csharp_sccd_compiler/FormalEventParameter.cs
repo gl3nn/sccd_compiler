@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class FormalEventParameter : Visitor.Visitable
+    public class FormalEventParameter : Visitable
     {
         public string name { get; private set; }
         public string type { get; private set; }

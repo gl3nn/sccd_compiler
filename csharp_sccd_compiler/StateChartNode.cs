@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class StateChartNode
+    public class StateChartNode : Visitable
     {
 
         public bool is_basic { get; private set; }
@@ -294,6 +294,35 @@ namespace csharp_sccd_compiler
                 else if (this.defaults.Count > 1)
                     throw new CompilerException(string.Format("Multiple states with the name '{0}' found in {1} which is referred to as initial state.", initial_state, this.full_name));
             }
+        }
+
+        /// <summary>
+        /// Returns a list representing the containment hierarchy of this node.
+        /// </summary>
+        /// <returns>The ancestors with node being the first element and its outermost parent (root) being the last.</returns>
+        public List<StateChartNode> getAncestors()
+        {
+            List<StateChartNode> ancestors = new List<StateChartNode>();
+            StateChartNode current = this;
+            while ( !current.is_root)
+            {
+                ancestors.Add(current);
+                current = current.parent;
+            }
+            ancestors.Add(current);
+            return ancestors;
+        }
+    
+        public bool isDescendantOf(StateChartNode anc)
+        {
+            StateChartNode current = this;
+            while(! current.is_root)
+            {
+                current = current.parent;
+                if (object.ReferenceEquals(current,anc))
+                    return true;
+            }
+            return false;
         }
     }
 }

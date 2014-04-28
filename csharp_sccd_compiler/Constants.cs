@@ -9,9 +9,9 @@ namespace csharp_sccd_compiler
         /// </summary>
         public static string[] Reserved = new string[]{};
 
-        private Constants()
-        {
-        }
+        public static string INSTATE_SEQ = "INSTATE";
+
+        public static string SELF_REFERENCE_SEQ = "SELF";
     }
 }
 

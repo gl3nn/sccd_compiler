@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class EnterExitAction : Visitor.Visitable
+    public class EnterExitAction : Visitable
     {
         public StateChartNode parent { get; private set; }
 

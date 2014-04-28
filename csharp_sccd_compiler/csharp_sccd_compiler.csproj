@@ -44,7 +44,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ClassDiagram.cs" />
-    <Compile Include="Visitor.cs" />
     <Compile Include="Class.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Constructor.cs" />
@@ -59,7 +58,6 @@
     <Compile Include="StateChartTransition.cs" />
     <Compile Include="TriggerEvent.cs" />
     <Compile Include="FormalEventParameter.cs" />
-    <Compile Include="Expression.cs" />
     <Compile Include="EnterExitAction.cs" />
     <Compile Include="Action.cs" />
     <Compile Include="SubAction\SubAction.cs" />
@@ -69,10 +67,29 @@
     <Compile Include="SubAction\Assign.cs" />
     <Compile Include="Exceptions\CompilerException.cs" />
     <Compile Include="Exceptions\TransitionException.cs" />
+    <Compile Include="StateReference.cs" />
+    <Compile Include="Exceptions\UnprocessedException.cs" />
+    <Compile Include="Exceptions\ActionException.cs" />
+    <Compile Include="Visitors\Visitor.cs" />
+    <Compile Include="Visitors\Visitable.cs" />
+    <Compile Include="Visitors\StateLinker.cs" />
+    <Compile Include="Exceptions\StateReferenceException.cs" />
+    <Compile Include="Lexing\Lexer.cs" />
+    <Compile Include="Exceptions\LexerException.cs" />
+    <Compile Include="Lexing\Token.cs" />
+    <Compile Include="Expression\Expression.cs" />
+    <Compile Include="Expression\LValue.cs" />
+    <Compile Include="Expression\ExpressionPart.cs" />
+    <Compile Include="Expression\ExpressionPartString.cs" />
+    <Compile Include="Expression\SelfReference.cs" />
+    <Compile Include="Expression\InStateCall.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="SubAction\" />
     <Folder Include="Exceptions\" />
+    <Folder Include="Visitors\" />
+    <Folder Include="Lexing\" />
+    <Folder Include="Expression\" />
   </ItemGroup>
 </Project>

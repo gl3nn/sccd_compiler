@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class StateChart : Visitor.Visitable
+    public class StateChart : Visitable
     {
         /// <summary>
         /// The total number of transitions present in this statechart that are trigger by time (AFTER).

@@ -5,8 +5,11 @@ namespace csharp_sccd_compiler
 {
     public class Script : SubAction
     {
+        public string code { get; private set; }
+
         public Script(XElement xml)
         {
+            this.code = xml.Value.Trim();
         }
     }
 }

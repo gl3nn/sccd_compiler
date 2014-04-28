@@ -5,7 +5,7 @@ using System.Xml.Linq;
 
 namespace csharp_sccd_compiler
 {
-    public class Action : Visitor.Visitable
+    public class Action : Visitable
     {
         public List<SubAction> sub_actions { get; private set; }
 

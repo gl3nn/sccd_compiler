@@ -83,6 +83,9 @@
     <Compile Include="Expression\ExpressionPartString.cs" />
     <Compile Include="Expression\SelfReference.cs" />
     <Compile Include="Expression\InStateCall.cs" />
+    <Compile Include="Code Generation\FileOutputer.cs" />
+    <Compile Include="Code Generation\CodeGenerator.cs" />
+    <Compile Include="Exceptions\CodeBlockException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -91,5 +94,6 @@
     <Folder Include="Visitors\" />
     <Folder Include="Lexing\" />
     <Folder Include="Expression\" />
+    <Folder Include="Code Generation\" />
   </ItemGroup>
 </Project>

@@ -2,24 +2,59 @@ from visitor import Visitor
 from utils import FileOutputer
 from utils import Enum
 from utils import Logger
+from compiler_exceptions import CodeBlockException
+
+NOT_SET = 0
+SPACES_USED = 1
+TABS_USED = 2
 
 Languages = Enum("Python","CSharp") 
-Protocols = Enum("Threads","GameLoop") 
+Platforms = Enum("Threads","GameLoop") 
 
 class CodeGenerator(Visitor):
-    def __init__(self, class_diagram, output_file, protocol):
-        self.output_file = output_file
-        self.class_diagram = class_diagram
-        self.protocol = protocol
-        self.supported_protocols = []
+    def __init__(self):
+        self.supported_platforms = []
         
-    def generate(self):
-        if self.protocol not in self.supported_protocols :
-            Logger.showError("Unsupported protocol.")
+    def generate(self, class_diagram, output_file, platform):
+        self.platform = platform
+        if self.platform not in self.supported_platforms :
+            Logger.showError("Unsupported platform.")
             return False
         try :
-            self.fOut = FileOutputer(self.output_file)
-            self.class_diagram.accept(self)
+            self.fOut = FileOutputer(output_file)
+            class_diagram.accept(self)
         finally :
             self.fOut.close()
         return True
+    
+    def writeCodeCorrectIndent(self, body):
+        lines = body.split('\n')
+        while( len(lines) > 0 and lines[-1].strip() == "") :
+            del(lines[-1])
+    
+        index = 0;
+        while( len(lines) > index and lines[index].strip() == "") :       
+            index += 1
+            
+        if index >= len(lines) :
+            return
+        #first index where valid code is present
+        to_strip_index = len(lines[index].rstrip()) - len(lines[index].strip()) 
+        indent_type = NOT_SET;
+            
+        for line in lines:
+            strip_part = line[:to_strip_index]
+            
+            if( ('\t' in strip_part and ' ' in strip_part) or
+                (indent_type == SPACES_USED and '\t' in strip_part) or
+                (indent_type == TABS_USED and ' ' in strip_part)
+            ) :
+                raise CodeBlockException("Mixed tab and space indentation!")
+            
+            if indent_type == NOT_SET :
+                if ' ' in strip_part :
+                    indent_type = SPACES_USED
+                elif '\t' in strip_part :
+                    indent_type = TABS_USED
+                    
+            self.fOut.write(line[to_strip_index:])

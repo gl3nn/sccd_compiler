@@ -4,7 +4,7 @@ import importlib
 import os
 import xml.etree.ElementTree as ET
 from compiler_exceptions import CompilerException, TransitionException
-from code_generation import Protocols, Languages
+from code_generation import Platforms, Languages
 from python_runtime.statecharts_core import Event
 
 SHARED_TEST_FILES_FOLDER = "../test_files"
@@ -66,14 +66,14 @@ class XMLTestCase(unittest.TestCase):
         #Check if the exception attribute is set and act accordingly
         exception_attribute = test_xml.get("exception","")
         if exception_attribute == "" :
-            sccdc.generate(self.source_path, self.target_path, Languages.Python, Protocols.Threads)
+            sccdc.generate(self.source_path, self.target_path, Languages.Python, Platforms.Threads)
         else :
             if exception_attribute == "CompilerException" :
                 with self.assertRaises(CompilerException):
-                    sccdc.generate(self.source_path, self.target_path, Languages.Python, Protocols.Threads)
+                    sccdc.generate(self.source_path, self.target_path, Languages.Python, Platforms.Threads)
             elif exception_attribute == "TransitionException" :
                 with self.assertRaises(TransitionException):
-                    sccdc.generate(self.source_path, self.target_path, Languages.Python, Protocols.Threads)
+                    sccdc.generate(self.source_path, self.target_path, Languages.Python, Platforms.Threads)
             else :
                 raise AssertionError("Invalid value for the exception attribute.")
             return

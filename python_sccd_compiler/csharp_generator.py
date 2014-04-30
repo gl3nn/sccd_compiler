@@ -1,15 +1,13 @@
 """Generates C#"""
 
-import utils as StringUtils
 import time
 from constructs import FormalParameter
-from code_generation import CodeGenerator, Protocols
+from code_generation import CodeGenerator, Platforms
 
 class CSharpGenerator(CodeGenerator):
     
-    def __init__(self, class_diagram, output_file, protocol):
-        super(CSharpGenerator,self).__init__(class_diagram, output_file, protocol)
-        self.supported_protocols = [Protocols.Threads, Protocols.GameLoop]
+    def __init__(self):
+        self.supported_platforms = [Platforms.Threads, Platforms.GameLoop]
                 
     def visit_ClassDiagram(self, class_diagram):
         self.fOut.write("/*")
@@ -41,7 +39,7 @@ class CSharpGenerator(CodeGenerator):
 
         #User imports
         if class_diagram.top.strip():
-            StringUtils.writeCodeCorrectIndent(class_diagram.top, self.fOut)
+            self.writeCodeCorrectIndent(class_diagram.top)
         self.fOut.write()
         
         #visit children
@@ -92,9 +90,9 @@ class CSharpGenerator(CodeGenerator):
         
         # write out controller
         self.fOut.write()
-        if self.protocol == Protocols.Threads :
+        if self.platform == Platforms.Threads :
             controller_sub_class = "ThreadsControllerBase"
-        elif self.protocol == Protocols.GameLoop :
+        elif self.platform == Platforms.GameLoop :
             controller_sub_class = "GameLoopControllerBase"
         self.fOut.write("public class Controller : " + controller_sub_class)
         self.fOut.write("{")
@@ -263,7 +261,7 @@ class CSharpGenerator(CodeGenerator):
         if constructor.body :
             self.fOut.write()
             self.fOut.write("//constructor body (user-defined)")
-            StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
+            self.writeCodeCorrectIndent(constructor.body)
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
@@ -273,7 +271,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("{")
         if destructor.body :
             self.fOut.indent()
-            StringUtils.writeCodeCorrectIndent(destructor.body, self.fOut)
+            self.writeCodeCorrectIndent(destructor.body)
             self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
@@ -285,7 +283,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.indent()
         if method.body :
             self.fOut.indent()
-            StringUtils.writeCodeCorrectIndent(method.body, self.fOut)
+            self.writeCodeCorrectIndent(method.body)
             self.fOut.dedent()
         self.fOut.dedent()
         self.fOut.write("}")
@@ -690,7 +688,7 @@ class CSharpGenerator(CodeGenerator):
             self.fOut.extendWrite('}));')
             
     def visit_Script(self, script):
-        StringUtils.writeCodeCorrectIndent(script.code, self.fOut)
+        self.writeCodeCorrectIndent(script.code)
         
     def visit_Log(self, log):
         self.fOut.write('Console.WriteLine("' + log.message + '");')

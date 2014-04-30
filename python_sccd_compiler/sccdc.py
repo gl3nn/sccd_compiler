@@ -3,15 +3,15 @@ import os
 from python_generator import PythonGenerator
 from csharp_generator import CSharpGenerator
 from utils import Logger
-from code_generation import Languages, Protocols
+from code_generation import Languages, Platforms
 from state_linker import StateLinker
 from path_calculator import PathCalculator
 from constructs import ClassDiagram
 from compiler_exceptions import CompilerException
    
-def generate(input_file, output_file, target_language, protocol):
+def generate(input_file, output_file, target_language, platform):
     class_diagram = createAST(input_file)
-    generateFromAST(class_diagram, output_file, target_language, protocol)
+    generateFromAST(class_diagram, output_file, target_language, platform)
       
 def createAST(input_file):
     cd = ClassDiagram(input_file) #create AST
@@ -19,12 +19,12 @@ def createAST(input_file):
     PathCalculator().visit(cd) #visitor calculating paths
     return cd
     
-def generateFromAST(class_diagram, output_file, target_language, protocol):
+def generateFromAST(class_diagram, output_file, target_language, platform):
     succesfull_generation = False
     if target_language == Languages.Python :
-        succesfull_generation = PythonGenerator(class_diagram, output_file, protocol).generate()
+        succesfull_generation = PythonGenerator().generate(class_diagram, output_file, platform)
     elif target_language == Languages.CSharp:
-        succesfull_generation = CSharpGenerator(class_diagram, output_file, protocol).generate()
+        succesfull_generation = CSharpGenerator().generate(class_diagram, output_file, platform)
     # let user know ALL classes have been processed and loaded
     if succesfull_generation :
         Logger.showInfo("The following classes <" + ", ".join(class_diagram.class_names) + "> have been exported to the following file: " + output_file)
@@ -82,22 +82,22 @@ def main():
         elif target_language == Languages.CSharp :
             output += ".cs"
         
-    #Set protocol    
+    #Set platform    
     if args['platform'] :
         args['platform'] = args['platform'].lower()
         if args['platform'] == "threads" :
-            protocol = Protocols.Threads
+            platform = Protocols.Threads
         elif args['platform'] == "gameloop" :
-            protocol = Protocols.GameLoop
+            platform = Protocols.GameLoop
         else :
             Logger.showError("Invalid platform.")
             return          
     else :
-        protocol = Protocols.Threads
+        platform = Protocols.Threads
         
     #Compile    
     try :
-        generate(source, output, target_language, protocol)
+        generate(source, output, target_language, platform)
     except CompilerException as exception :
         Logger.showError(str(exception));
 

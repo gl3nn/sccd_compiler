@@ -1,13 +1,11 @@
-import utils as StringUtils
 import time
 from constructs import FormalParameter
-from code_generation import CodeGenerator, Protocols
+from code_generation import CodeGenerator, Platforms
 
 class PythonGenerator(CodeGenerator):
     
-    def __init__(self, class_diagram, output_file, protocol):
-        super(PythonGenerator,self).__init__(class_diagram, output_file, protocol)
-        self.supported_protocols = [Protocols.Threads, Protocols.GameLoop]
+    def __init__(self):
+        self.supported_platforms = [Platforms.Threads, Platforms.GameLoop]
                 
     def visit_ClassDiagram(self, class_diagram):
         self.fOut.write("# Statechart compiler by Glenn De Jonghe")
@@ -33,7 +31,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write('from python_runtime.statecharts_core import ObjectManagerBase, Event, InstanceWrapper, RuntimeClassBase, Association')
         #User imports
         if class_diagram.top.strip():
-            StringUtils.writeCodeCorrectIndent(class_diagram.top, self.fOut)
+            self.writeCodeCorrectIndent(class_diagram.top)
         self.fOut.write()
         
         #visit children
@@ -78,9 +76,9 @@ class PythonGenerator(CodeGenerator):
         self.fOut.dedent()
         
         self.fOut.write()
-        if self.protocol == Protocols.Threads :
+        if self.platform == Platforms.Threads :
             controller_sub_class = "ThreadsControllerBase"
-        elif self.protocol == Protocols.GameLoop :
+        elif self.platform == Platforms.GameLoop :
             controller_sub_class = "GameLoopControllerBase"
         self.fOut.write("from python_runtime.statecharts_core import " + controller_sub_class)
 
@@ -224,7 +222,7 @@ class PythonGenerator(CodeGenerator):
         self.writeMethodSignature(name, parameters)
         self.fOut.indent()
         if body.strip():
-            StringUtils.writeCodeCorrectIndent(body, self.fOut)
+            self.writeCodeCorrectIndent(body)
         else:
             self.fOut.write("return")
         self.fOut.write()
@@ -247,7 +245,7 @@ class PythonGenerator(CodeGenerator):
         if constructor.body :
             self.fOut.write()
             self.fOut.write("#constructor body (user-defined)")
-            StringUtils.writeCodeCorrectIndent(constructor.body, self.fOut)
+            self.writeCodeCorrectIndent(constructor.body)
         self.fOut.dedent()
         self.fOut.write()
         
@@ -624,7 +622,7 @@ class PythonGenerator(CodeGenerator):
             self.fOut.extendWrite(']))')
             
     def visit_Script(self, script):
-        StringUtils.writeCodeCorrectIndent(script.code, self.fOut)
+        self.writeCodeCorrectIndent(script.code)
         
     def visit_Log(self, log):
         self.fOut.write('print "' + log.message + '"')

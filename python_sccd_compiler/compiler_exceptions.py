@@ -9,3 +9,6 @@ class TransitionException(CompilerException):
 
 class UnprocessedException(CompilerException):
     pass
+
+class CodeBlockException(CompilerException):
+    pass

@@ -15,25 +15,25 @@ namespace csharp_sccd_compiler
             this.lexer = new Lexer();
         }
 
-        public void visit(ClassDiagram class_diagram)
+        public override void visit(ClassDiagram class_diagram)
         {
             foreach (Class c in class_diagram.classes)
                 c.accept(this);
         }
 
-        public void visit(Class c)
+        public override void visit(Class c)
         {
             c.statechart.accept(this);
         }
 
-        public void visit(StateChart statechart)
+        public override void visit(StateChart statechart)
         {
             this.visiting_statechart = statechart;
             foreach (StateChartNode node in statechart.basics.Concat(statechart.composites))
                 node.accept(this);
         }
         
-        public void visit(StateChartNode node)
+        public override void visit(StateChartNode node)
         {
             this.visiting_node = node;
             node.enter_action.accept(this);
@@ -43,7 +43,7 @@ namespace csharp_sccd_compiler
         }
                
 
-        public void visit(StateChartTransition transition)
+        public override void visit(StateChartTransition transition)
         {
             try
             {
@@ -64,7 +64,7 @@ namespace csharp_sccd_compiler
             try
             {
                 if (transition.guard != null)
-                    transition.guard.accept(null);
+                    transition.guard.accept(this);
             }
             catch (StateReferenceException exception)
             {
@@ -72,7 +72,7 @@ namespace csharp_sccd_compiler
             }
         }
 
-        public void visit(StateReference state_reference)
+        public override void visit(StateReference state_reference)
         {
             state_reference.target_nodes = new List<StateChartNode>();
             StateChartNode current_node = null; //Will be used to find the target state(s)
@@ -162,19 +162,13 @@ namespace csharp_sccd_compiler
                 throw new StateReferenceException("Meaningless state reference.");
         }
 
-        public void visit(EnterExitAction enter_exit_action)
+        public override void visit(EnterExitAction enter_exit_action)
         {
             if (enter_exit_action.action != null)
                 enter_exit_action.action.accept(this);
         }
 
-        public void visit(Action action)
-        {
-            foreach (SubAction sub_action in action.sub_actions)
-                sub_action.accept(this);
-        }
-
-        public void visit(InStateCall in_state_call)
+        public override void visit(InStateCall in_state_call)
         {
             try
             {
@@ -186,7 +180,7 @@ namespace csharp_sccd_compiler
             }
         }
 
-        public void visit(Assign assign)
+        public override void visit(Assign assign)
         {
             assign.expression.accept(this);
         }

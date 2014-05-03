@@ -19,6 +19,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>false</ConsolePause>
+    <UnitTestInformation>
+      <UnitTestInformation />
+    </UnitTestInformation>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -40,12 +43,17 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml" />
+    <Reference Include="csharp_sccd_compiler">
+      <HintPath>..\csharp_sccd_compiler\bin\Debug\csharp_sccd_compiler.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Main.cs" />
     <Compile Include="CodeCompiler.cs" />
     <Compile Include="TestEvent.cs" />
+    <Compile Include="TestsBase.cs" />
+    <Compile Include="PythonTests.cs" />
+    <Compile Include="CSharpTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

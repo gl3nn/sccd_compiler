@@ -56,7 +56,7 @@ namespace csharp_sccd_compiler
             var inheritances = new List<XElement>();
             foreach (XElement relationships_xml in xml.Elements("relationships"))
             {
-                associations.AddRange(relationships_xml.Elements("assocation"));
+                associations.AddRange(relationships_xml.Elements("association"));
                 inheritances.AddRange(relationships_xml.Elements("inheritance"));
             }
 
@@ -94,6 +94,11 @@ namespace csharp_sccd_compiler
                 this.destructors.Add(new Destructor(method_xml));
             else
                 this.methods.Add(new Method(method_xml));
+        }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
         }
     }
 }

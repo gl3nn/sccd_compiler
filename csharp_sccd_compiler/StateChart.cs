@@ -46,7 +46,7 @@ namespace csharp_sccd_compiler
 
             this.nr_of_after_transitions = 0;
             this.basics = new List<StateChartNode>();
-            this.composites = new List<StateChartNode>{this.root};
+            this.composites = new List<StateChartNode>();
             this.histories = new List<StateChartNode>();
 
             this.extractFromHierarchy(this.root);
@@ -106,18 +106,23 @@ namespace csharp_sccd_compiler
                     string event_name = string.Format("_{0}after", trigger.after_index);
                     trigger.event_name = event_name;
                     this.nr_of_after_transitions += 1;
-
-                    if (node.is_basic)
-                        this.basics.Add(node);
-                    else if (node.is_composite) 
-                        this.composites.Add(node);
-                    else if (node.is_history) 
-                        this.histories.Add(node);
-
-                    foreach (StateChartNode child in node.children)
-                        this.extractFromHierarchy(child);
                 }
             }
+
+            if (node.is_basic)
+                this.basics.Add(node);
+            else if (node.is_composite) 
+                this.composites.Add(node);
+            else if (node.is_history) 
+                this.histories.Add(node);
+
+            foreach (StateChartNode child in node.children)
+                this.extractFromHierarchy(child);
+        }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
         }
     }
 }

@@ -42,8 +42,8 @@ class CodeGenerator(Visitor):
         to_strip_index = len(lines[index].rstrip()) - len(lines[index].strip()) 
         indent_type = NOT_SET;
             
-        for line in lines:
-            strip_part = line[:to_strip_index]
+        while index < len(lines):
+            strip_part = lines[index][:to_strip_index]
             
             if( ('\t' in strip_part and ' ' in strip_part) or
                 (indent_type == SPACES_USED and '\t' in strip_part) or
@@ -57,4 +57,4 @@ class CodeGenerator(Visitor):
                 elif '\t' in strip_part :
                     indent_type = TABS_USED
                     
-            self.fOut.write(line[to_strip_index:])
+            self.fOut.write(lines[index][to_strip_index:])

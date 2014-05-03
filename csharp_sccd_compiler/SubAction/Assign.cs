@@ -21,5 +21,10 @@ namespace csharp_sccd_compiler
                 throw new ActionException("Missing \"expr\" attribute for assignment.");
             this.expression = new Expression(expression_attribute.Value.Trim());
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }

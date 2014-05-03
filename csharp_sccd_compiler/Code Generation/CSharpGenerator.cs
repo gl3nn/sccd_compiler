@@ -12,7 +12,7 @@ namespace csharp_sccd_compiler
         {
         }
 
-        public void visit(ClassDiagram class_diagram)
+        public override void visit(ClassDiagram class_diagram)
         {
             this.output_file.write("/*");
             this.output_file.indent();
@@ -151,7 +151,7 @@ namespace csharp_sccd_compiler
         /// <summary>
         /// Generate code for Class construct
         /// </summary>
-        public void visit(Class class_node)
+        public override void visit(Class class_node)
         {
             this.output_file.write();
             this.output_file.write("public class " + class_node.name);
@@ -191,7 +191,7 @@ namespace csharp_sccd_compiler
                 {
                     this.output_file.write(attribute.type + " " + attribute.name);
                     if (attribute.init_value != null)
-                        this.output_file.write(" = " + attribute.init_value);
+                        this.output_file.extendWrite(" = " + attribute.init_value);
                     this.output_file.extendWrite(";");     
                 }
                 this.output_file.write();
@@ -279,14 +279,14 @@ namespace csharp_sccd_compiler
             }
         }
             
-        public void visit(FormalParameter formal_parameter)
+        public override void visit(FormalParameter formal_parameter)
         {
             this.output_file.extendWrite(formal_parameter.type + " " + formal_parameter.name);
             if (formal_parameter.default_value != null)
                 this.output_file.extendWrite(" = " + formal_parameter.default_value);
         }
                         
-        public void visit(Constructor constructor)
+        public override void visit(Constructor constructor)
         {
             this.output_file.write(constructor.access + " " + constructor.name + "(");
             this.writeFormalParameters(new FormalParameter[]{new FormalParameter("controller", "ControllerBase", null)}.Concat(constructor.parameters));
@@ -294,7 +294,7 @@ namespace csharp_sccd_compiler
             this.output_file.write("{");
             this.output_file.indent();
             this.output_file.write("this.commonConstructor(controller);");
-            if (constructor.body != null)
+            if (constructor.body != null && constructor.body.Trim() != "")
             {
                 this.output_file.write();
                 this.output_file.write("//constructor body (user-defined)");
@@ -305,7 +305,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
             
-        public void visit(Destructor destructor)
+        public override void visit(Destructor destructor)
         {
             this.output_file.write(destructor.name + "()");
             this.output_file.write("{");
@@ -319,7 +319,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
             
-        public void visit(Method method)
+        public override void visit(Method method)
         {
             this.output_file.write(method.access + " " + method.return_type + " " + method.name + "(");
             this.writeFormalParameters(method.parameters);
@@ -337,7 +337,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
 
-        public void visit(Association association)
+        public override void visit(Association association)
         {
             this.output_file.write("associations.Add(new Association(\"" + association.name + "\", \"" + association.to_class + "\", " + association.min.ToString() + ", " + association.max.ToString() + "));");
         }
@@ -447,7 +447,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
             
-        public void visit( FormalEventParameter formal_event_parameter)
+        public override void visit( FormalEventParameter formal_event_parameter)
         {
             this.output_file.extendWrite(formal_event_parameter.type + " " + formal_event_parameter.name);
         }
@@ -464,7 +464,7 @@ namespace csharp_sccd_compiler
                 {
                     this.output_file.write();
                     transition.trigger.parameters[index].accept(this);
-                    this.output_file.extendWrite(" = (" + transition.trigger.parameters[index].ToString() + ")parameters[" + index.ToString() + "];");
+                    this.output_file.extendWrite(" = (" + transition.trigger.parameters[index].type + ")parameters[" + index.ToString() + "];");
                 }
             }
         }
@@ -558,7 +558,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
         
-        public void visit(EnterAction enter_method)
+        public override void visit(EnterAction enter_method)
         {
             this.output_file.write("private void enter_" + enter_method.parent.full_name + "()");
             this.output_file.write("{");
@@ -603,7 +603,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
              
-        public void visit(ExitAction exit_method)
+        public override void visit(ExitAction exit_method)
         {
             this.output_file.write("private void exit_" + exit_method.parent.full_name + "()");
             this.output_file.write("{");
@@ -731,7 +731,7 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
 
-        public void visit(StateChart statechart)
+        public override void visit(StateChart statechart)
         {
             this.output_file.write("//Statechart enter/exit action method(s) :");
             this.output_file.write();
@@ -758,7 +758,7 @@ namespace csharp_sccd_compiler
             }
 
             //Write out statecharts methods for enter/exit history
-            if (statechart.histories != null)
+            if (statechart.histories.Count > 0)
             {
                 this.output_file.write("//Statechart enter/exit history method(s) :");
                 this.output_file.write();
@@ -808,31 +808,31 @@ namespace csharp_sccd_compiler
             this.output_file.write();
         }
 
-        public void visit(ExpressionPartString expression_part_string)
+        public override void visit(ExpressionPartString expression_part_string)
         {
             this.output_file.extendWrite(expression_part_string.value);
         }
             
-        public void visit(SelfReference self_reference)
+        public override void visit(SelfReference self_reference)
         {
             this.output_file.extendWrite("this");
         }
             
-        public void visit(StateReference state_ref)
+        public override void visit(StateReference state_ref)
         {
             this.output_file.extendWrite("new List<Node>() {");
             this.output_file.extendWrite(string.Join(", ", (from node in state_ref.target_nodes select "Node." + node.full_name)));
             this.output_file.extendWrite("}");
         }
             
-        public void visit(InStateCall in_state_call)
+        public override void visit(InStateCall in_state_call)
         {
             this.output_file.extendWrite("this.inState(");
             in_state_call.state_reference.accept(this);
             this.output_file.extendWrite(")");
         }
             
-        public void visit(RaiseEvent raise_event)
+        public override void visit(RaiseEvent raise_event)
         {
             if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE || raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
                 this.output_file.write("Event send_event = new Event(\"" + raise_event.event_name + "\", \"\", new object[] {");
@@ -867,17 +867,17 @@ namespace csharp_sccd_compiler
                 this.output_file.extendWrite("}));");
         }
                 
-        public void visit(Script script)
+        public override void visit(Script script)
         {
             this.writeCorrectIndent(script.code);
         }
             
-        public void visit(Log log)
+        public override void visit(Log log)
         {
             this.output_file.write("Console.WriteLine(\"" + log.message + "\");");
         }
             
-        public void visit(Assign assign)
+        public override void visit(Assign assign)
         {
             this.output_file.write();
             assign.lvalue.accept(this);

@@ -15,10 +15,13 @@ namespace csharp_sccd_compiler
         public Constructor(string class_name)
         {
             this.name = class_name;
-            this.return_type = "";
-            this.body = "";
             this.access = "public";
             this.parameters = new List<FormalParameter>();
+        }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
         }
     }
 }

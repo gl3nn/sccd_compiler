@@ -39,8 +39,7 @@ namespace csharp_sccd_compiler
                 model_description = description_element.Value;
 
             this.class_names = new List<string>();
-
-            foreach (XElement class_xml in root.Elements("class"))
+			foreach (XElement class_xml in root.Elements("class"))
             {
                 XAttribute class_name_attribute = class_xml.Attribute("name");
                 if (class_name_attribute == null)
@@ -56,6 +55,7 @@ namespace csharp_sccd_compiler
             if (this.class_names.Count == 0)
                 throw new CompilerException("Found no classes to compile.");
 
+			this.inports = new List<string> ();
             foreach (XElement inport_xml in root.Elements("inport"))
             {
                 XAttribute inport_name_attribute = inport_xml.Attribute("name");
@@ -69,6 +69,7 @@ namespace csharp_sccd_compiler
                 this.inports.Add(inport_name);
             }
 
+			this.outports = new List<string> ();
             foreach (XElement outport_xml in root.Elements("outport"))
             {
                 XAttribute outport_name_attribute = outport_xml.Attribute("name");
@@ -123,5 +124,9 @@ namespace csharp_sccd_compiler
                 this.default_class = default_classes[0];
         }
 
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
 	}
 }

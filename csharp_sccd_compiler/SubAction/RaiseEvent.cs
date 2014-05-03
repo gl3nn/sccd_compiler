@@ -99,6 +99,11 @@ namespace csharp_sccd_compiler
                 this.parameters.Add( new Expression(expr_attribute.Value.Trim()));
             }
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

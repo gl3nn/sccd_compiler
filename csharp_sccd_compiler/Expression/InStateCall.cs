@@ -10,6 +10,11 @@ namespace csharp_sccd_compiler
         {
             this.state_reference = new StateReference(state_reference_string);
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

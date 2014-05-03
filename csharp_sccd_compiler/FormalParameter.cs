@@ -46,6 +46,11 @@ namespace csharp_sccd_compiler
             else
                 this.default_value = default_attribute.Value.Trim();
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

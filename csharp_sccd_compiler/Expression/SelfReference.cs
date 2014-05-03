@@ -7,6 +7,11 @@ namespace csharp_sccd_compiler
         public SelfReference()
         {
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

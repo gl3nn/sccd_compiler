@@ -97,6 +97,8 @@ namespace csharp_sccd_compiler
             }
             else if (xml.Name == "history")
             {
+				this.is_history = true;
+
                 XAttribute type_attribute = xml.Attribute("type");
 
                 if (type_attribute != null)
@@ -147,7 +149,7 @@ namespace csharp_sccd_compiler
 
         private void parseConflictAttribute(XElement xml)
         {
-            XAttribute conflict_attribute = xml.Attribute("id");
+            XAttribute conflict_attribute = xml.Attribute("conflict");
 
             if(conflict_attribute != null)
             {
@@ -323,6 +325,11 @@ namespace csharp_sccd_compiler
                     return true;
             }
             return false;
+        }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
         }
     }
 }

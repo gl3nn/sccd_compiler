@@ -49,35 +49,40 @@ namespace csharp_sccd_compiler
         {
             string[] lines = code.Split('\n');
 
-            int index = 0;
-            while (lines.Length > index && lines[index].Trim() == "")
-                index += 1;
+            int begin_index = 0;
+            while (begin_index < lines.Length && lines[begin_index].Trim() == "")
+                begin_index += 1;
 
-            if (index >= lines.Length)
+            if (begin_index >= lines.Length)
                 return;
 
+            int end_index = lines.Length - 1;
+            while (end_index > begin_index && lines[end_index].Trim() == "")
+            {
+                end_index -= 1;
+            }
+
             //first index where valid code is present
-            int to_strip_length = lines[index].TrimEnd().Length - lines[index].Trim().Length;
+            int to_strip_length = lines[begin_index].TrimEnd().Length - lines[begin_index].Trim().Length;
             IndentType indent_type = IndentType.NOT_SET;
 
-            foreach (string line in lines)
+            for(int index = begin_index; index <= end_index; ++index)
             {
-                string strip_part = line.Substring(0, to_strip_length);
+				string strip_part = lines[index].Substring (0, to_strip_length);
 
-                if( (strip_part.Contains('\t') && strip_part.Contains(' '))         ||
-                    (indent_type == IndentType.SPACES && strip_part.Contains('\t')) ||
-                    (indent_type == IndentType.TABS && strip_part.Contains(' '))   
+				if ((strip_part.Contains ('\t') && strip_part.Contains (' ')) ||
+					(indent_type == IndentType.SPACES && strip_part.Contains ('\t')) ||
+					(indent_type == IndentType.TABS && strip_part.Contains (' '))   
                 )
-                   throw new CodeBlockException("Mixed tab and space indentation!");
+					throw new CodeBlockException ("Mixed tab and space indentation!");
 
-                if (indent_type == IndentType.NOT_SET)
-                {
-                    if (strip_part.Contains(' '))
-                        indent_type = IndentType.SPACES;
-                    else if (strip_part.Contains('\t'))
-                        indent_type = IndentType.TABS;
-                }
-                this.output_file.write(line.Substring(to_strip_length));
+				if (indent_type == IndentType.NOT_SET) {
+					if (strip_part.Contains (' '))
+						indent_type = IndentType.SPACES;
+					else if (strip_part.Contains ('\t'))
+						indent_type = IndentType.TABS;
+				}
+				this.output_file.write (lines[index].Substring (to_strip_length));
             }
         }
     }

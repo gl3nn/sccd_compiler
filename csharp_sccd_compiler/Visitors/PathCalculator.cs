@@ -15,30 +15,30 @@ namespace csharp_sccd_compiler
         {
         }
 
-        public void visit(ClassDiagram class_diagram)
+        public override void visit(ClassDiagram class_diagram)
         {
             foreach(Class c in class_diagram.classes)
                 c.accept(this);
         }
 
-        public void visit(Class c)
+        public override void visit(Class c)
         {
             c.statechart.accept(this);
         }
 
-        public void visit(StateChart statechart)
+        public override void visit(StateChart statechart)
         {
             foreach (StateChartNode node in statechart.basics.Concat(statechart.composites))
                 node.accept(this);
         }
 
-        public void visit(StateChartNode node)
+        public override void visit(StateChartNode node)
         {
             foreach (StateChartTransition transition in node.transitions)
                 transition.accept(this);
         }
 
-        public void visit(StateChartTransition transition)
+        public override void visit(StateChartTransition transition)
         {
             StateChartNode source_node = transition.parent;
             List<StateChartNode> target_nodes = transition.target.target_nodes;
@@ -70,7 +70,7 @@ namespace csharp_sccd_compiler
                 var ancestors = target_node.getAncestors();
                 for (int ancestor_index = 0; ancestor_index < ancestors.Count; ++ancestor_index)
                 {
-                    bool to_add = object.ReferenceEquals(LCA, ancestors[ancestor_index]); //If we reach the LCA in the ancestor hierarchy we don't add and break
+                    bool to_add = !object.ReferenceEquals(LCA, ancestors[ancestor_index]); //If we reach the LCA in the ancestor hierarchy we don't add and break
                     foreach (Tuple<StateChartNode, bool> enter_node_entry in transition.enter_nodes)
                     {
                         if (object.ReferenceEquals(enter_node_entry.Item1, ancestors[ancestor_index]))

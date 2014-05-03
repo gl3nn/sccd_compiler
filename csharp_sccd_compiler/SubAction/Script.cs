@@ -11,5 +11,10 @@ namespace csharp_sccd_compiler
         {
             this.code = xml.Value.Trim();
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }

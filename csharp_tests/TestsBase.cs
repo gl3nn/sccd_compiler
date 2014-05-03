@@ -12,23 +12,18 @@ using sccdlib;
 
 namespace csharp_tests
 {
-    [TestFixture]
-    public class Main
+    public abstract class TestsBase
     {
-        string path_generated_code;
-        bool keep_after_test;
-   
-        [Test, TestCaseSource("GetTestCases")]
-        public void testXMLModel(string file_path)
+        protected string path_generated_code;
+        protected bool keep_after_test;
+
+        protected abstract bool generate(string file_path, string expected_exception);
+
+        [Test, TestCaseSource(typeof(TestsBase),"GetTestCases")]
+        public void testXML(string file_path)
         {
             XElement test_xml = XDocument.Load(file_path).Root.Element("test");
             Assert.AreNotEqual(null, test_xml, "No test data found. (A test that should just compile correctly, still needs an empthy test tag.)");
-
-            //If the test file expects an exception to be thrown by the compiler,
-            //we just try to compile the model and see if a file got generated.
-            //If the result file got generated, this means that no exception was thrown 
-            //and thus the test should fail.
-            bool exception_expected = test_xml.Attribute("exception") != null;
 
             //Calculate path to output file
             this.path_generated_code = Path.ChangeExtension(Path.GetFileName(file_path), ".cs");
@@ -40,32 +35,15 @@ namespace csharp_tests
                 File.Delete(this.path_generated_code);
             }
 
-            //Call code generator
-            ProcessStartInfo start_info = new ProcessStartInfo();
-            start_info.FileName = "python";
-            start_info.Arguments = string.Format("../../../python_sccd_compiler/sccdc.py {0} -o {1} -p threads -l C# -v -1", file_path, this.path_generated_code);
-            start_info.UseShellExecute = false;
-            start_info.RedirectStandardOutput = true;
-            //Print any output the compiler gave
-            using (Process process = Process.Start(start_info))
+            string expected_exception = null;
+            if (test_xml.Attribute("exception") != null && test_xml.Attribute("exception").Value.Trim() != "")
             {
-                using (StreamReader reader = process.StandardOutput)
-                {
-                    string result = reader.ReadToEnd();
-                    Console.Write(result);
-                }
+                expected_exception = test_xml.Attribute("exception").Value.Trim();
             }
 
-            //Check if file exists
-            bool target_file_exists = File.Exists(this.path_generated_code);
-            if (exception_expected)
-            {
-                Assert.AreEqual(false, target_file_exists, "An exception was expected to be thrown by the compiler but the SCCD compiler completed successfully.");
-                return; //No target file as expected, we can end the test.
-            } else
-            {
-                Assert.AreEqual(true, target_file_exists, "The SCCD Compiler did not complete compilation. No generated file has been found.");
-            }
+            //Call code generator
+            if (!this.generate(file_path, expected_exception))
+                return;
 
             //Compile generated code
             CodeCompiler code_compiler = new CodeCompiler();
@@ -130,8 +108,8 @@ namespace csharp_tests
                 {
                     Event output_event = output_listener.fetch();
                     Assert.AreNotEqual(null, output_event,
-                        string.Format("Expected results slot {0} mismatch. Expected [{1}], but got [{2}] followed by null instead.", slot_index, string.Join(", ", slot), string.Join(", ", received_output))
-                    );
+                                       string.Format("Expected results slot {0} mismatch. Expected [{1}], but got [{2}] followed by null instead.", slot_index, string.Join(", ", slot), string.Join(", ", received_output))
+                                       );
                     received_output.Add(output_event);
                     int i = 0;
                     foreach (TestEvent option in remaining_options)
@@ -142,8 +120,8 @@ namespace csharp_tests
                     }
                     //Mismath?
                     Assert.AreNotEqual(remaining_options.Count,i,
-                        string.Format("Expected results slot {0} mismatch. Expected [{1}], but got [{2}] instead.", slot_index, string.Join(", ", slot), string.Join(", ", received_output))
-                    );
+                                       string.Format("Expected results slot {0} mismatch. Expected [{1}], but got [{2}] instead.", slot_index, string.Join(", ", slot), string.Join(", ", received_output))
+                                       );
                     remaining_options.RemoveAt(i);
                 }
             }
@@ -160,11 +138,12 @@ namespace csharp_tests
             }
         }
 
-        private static IEnumerable GetTestCases()
+        protected static IEnumerable GetTestCases()
         {
             foreach (string file_path in Directory.EnumerateFiles("../../../test_files"))
             {
-                yield return new TestCaseData(file_path).SetName(Path.GetFileNameWithoutExtension(file_path));
+                if (Path.GetExtension(file_path) == ".xml")
+                    yield return new TestCaseData(file_path).SetName(Path.GetFileNameWithoutExtension(file_path));
             }
         }
     }

@@ -20,6 +20,7 @@ namespace csharp_sccd_compiler
 
         protected void parse(string input_string, string[] dont_parse = null)
         {
+            this.expression_parts = new List<ExpressionPart>();
             Expression.lexer.setInput(input_string);
             string processed_bare_expression = "";
             if (dont_parse == null)

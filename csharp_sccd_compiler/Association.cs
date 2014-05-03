@@ -86,6 +86,11 @@ namespace csharp_sccd_compiler
             if (Constants.Reserved.Contains(this.name))
                 throw new CompilerException(string.Format("Reserved word '{0}' used as class attribute for association.", this.name));
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

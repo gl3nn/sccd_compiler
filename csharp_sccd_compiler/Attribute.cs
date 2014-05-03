@@ -35,6 +35,11 @@ namespace csharp_sccd_compiler
             else
                 this.init_value = init_attribute.Value;
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

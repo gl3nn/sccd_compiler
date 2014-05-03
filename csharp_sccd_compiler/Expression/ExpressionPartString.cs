@@ -10,6 +10,11 @@ namespace csharp_sccd_compiler
         {
             this.value = value;
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

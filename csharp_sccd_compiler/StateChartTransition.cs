@@ -35,7 +35,7 @@ namespace csharp_sccd_compiler
             this.parent = parent;
             this.trigger = new TriggerEvent(xml);
             XAttribute guard_attribute = xml.Attribute("cond");
-            if (guard_attribute == null || guard_attribute.Value.Trim() == "")
+            if (guard_attribute != null && guard_attribute.Value.Trim() != "")
                 this.guard = new Expression(guard_attribute.Value.Trim());
             else
                 this.guard = null;
@@ -46,6 +46,11 @@ namespace csharp_sccd_compiler
             this.target = new StateReference(target_attribute.Value.Trim());
 
             this.action = new Action(xml);
+        }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
         }
     }
 }

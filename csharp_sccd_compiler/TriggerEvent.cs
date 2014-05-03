@@ -51,7 +51,8 @@ namespace csharp_sccd_compiler
                 this.event_name = null;
                 if (this.port != null)
                     throw new CompilerException("A transition without event can not have a port.");
-                this.is_uc = true;
+                if (!this.is_after)
+                    this.is_uc = true;
             }
             else
             {

@@ -28,6 +28,11 @@ namespace csharp_sccd_compiler
             if (this.type == "")
                 throw new CompilerException("Empty type for formal event parameter.");
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }
 

@@ -60,5 +60,10 @@ namespace csharp_sccd_compiler
                 this.parameters.Add(new FormalParameter(parameter_xml));
             }
         }
+
+        public override void accept(Visitor visitor)
+        {
+            visitor.visit (this);
+        }
     }
 }

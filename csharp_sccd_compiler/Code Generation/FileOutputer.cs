@@ -8,13 +8,13 @@ namespace csharp_sccd_compiler
     {
         int             indent_level = 0;
         int             nr_of_indent_chars = 4;
-        char            ident_char = ' ';
+        char            indent_char = ' ';
         bool            first_write = true;
         StreamWriter    output_file;
 
         public FileOutputer(string output_file_path)
         {
-            output_file = new StreamWriter(output_file_path);
+            this.output_file = new StreamWriter(output_file_path, false);
         }
 
         public void write(string text = "")
@@ -22,12 +22,12 @@ namespace csharp_sccd_compiler
             if (this.first_write)
             {
                 this.first_write = false;
-                this.output_file.Write(text.PadLeft(this.indent_level * this.nr_of_indent_chars, this.ident_char));
+                this.output_file.Write(new String(this.indent_char, this.indent_level * this.nr_of_indent_chars) + text);
             }
             else
             {
                 this.output_file.WriteLine();
-                this.output_file.Write(text.PadLeft(this.indent_level * this.nr_of_indent_chars, this.ident_char));
+                this.output_file.Write(new String(this.indent_char, this.indent_level * this.nr_of_indent_chars) + text);
             }
         }
 

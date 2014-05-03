@@ -86,14 +86,14 @@ def main():
     if args['platform'] :
         args['platform'] = args['platform'].lower()
         if args['platform'] == "threads" :
-            platform = Protocols.Threads
+            platform = Platforms.Threads
         elif args['platform'] == "gameloop" :
-            platform = Protocols.GameLoop
+            platform = Platforms.GameLoop
         else :
             Logger.showError("Invalid platform.")
             return          
     else :
-        platform = Protocols.Threads
+        platform = Platforms.Threads
         
     #Compile    
     try :

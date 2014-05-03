@@ -17,10 +17,12 @@ namespace csharp_sccd_compiler
         public Action action { get; private set; }
 
         /// <summary>
-        /// Ordered list of nodes to be entered upon taking the transition.
+        /// Ordered list of nodes to be entered upon taking the transition. 
+        /// The boolean value indicates whether the <c>StateChartNode</c> in the list is the last in a branch. 
+        /// (And was thus specified specifically in the state reference.)
         /// </summary>
         /// <value>Set by the Path Calculator visitor.</value>
-        public List<StateChartNode> enter_nodes { get; set; }
+        public List<Tuple<StateChartNode,bool>> enter_nodes { get; set; }
 
         /// <summary>
         /// Ordered list of nodes to be exited upon taking the transition.

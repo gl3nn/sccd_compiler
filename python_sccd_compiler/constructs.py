@@ -883,8 +883,7 @@ class Class(Visitable):
 ###################################
 class ClassDiagram(Visitable):
     def __init__(self, input_file):
-        self.source = input_file
-        tree = ET.parse(self.source)
+        tree = ET.parse(input_file)
         self.root = tree.getroot()
         self.name = self.root.get("name", "")
         self.author = self.root.get("author", "")

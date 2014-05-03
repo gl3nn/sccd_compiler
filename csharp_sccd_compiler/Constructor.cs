@@ -12,9 +12,9 @@ namespace csharp_sccd_compiler
         {
         }
 
-        public Constructor()
+        public Constructor(string class_name)
         {
-            this.name = "";
+            this.name = class_name;
             this.return_type = "";
             this.body = "";
             this.access = "public";

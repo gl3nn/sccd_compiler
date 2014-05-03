@@ -6,7 +6,7 @@
     <ProductVersion>10.0.0</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{DFB7F649-CA2A-40CD-925B-7D975252A8C3}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <RootNamespace>csharp_sccd_compiler</RootNamespace>
     <AssemblyName>csharp_sccd_compiler</AssemblyName>
   </PropertyGroup>
@@ -34,14 +34,9 @@
     <Reference Include="System" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Core" />
-    <Reference Include="MonoDevelop.Core, Version=2.6.0.0, Culture=neutral">
-      <Private>False</Private>
-      <Package>monodevelop</Package>
-    </Reference>
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ClassDiagram.cs" />
     <Compile Include="Class.cs" />
@@ -86,6 +81,9 @@
     <Compile Include="Code Generation\FileOutputer.cs" />
     <Compile Include="Code Generation\CodeGenerator.cs" />
     <Compile Include="Exceptions\CodeBlockException.cs" />
+    <Compile Include="Code Generation\CSharpGenerator.cs" />
+    <Compile Include="Visitors\PathCalculator.cs" />
+    <Compile Include="Compiler.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

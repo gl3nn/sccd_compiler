@@ -20,9 +20,9 @@ namespace csharp_sccd_compiler
             TABS
         }
 
-        public CodeGenerator()
+        public CodeGenerator(Platform[] supported_platforms)
         {
-
+            this.supported_platforms = supported_platforms;
         }
 
         public bool generate(ClassDiagram class_diagram, string output_file_path, Platform current_platform)

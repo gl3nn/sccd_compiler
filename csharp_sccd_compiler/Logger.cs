@@ -8,7 +8,7 @@ namespace csharp_sccd_compiler
         /// Gets or sets the verbose of the logger.
         /// </summary>
         /// <value>The verbose. -1 = no ouput; 0 = only errors; 1 = only warnings and errors; 2 = all output.</value>
-        static public int verbose { get; set; }
+        static public int verbose = 2;
 
         private Logger()
         {

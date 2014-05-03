@@ -1,0 +1,55 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="Test Multiple Target">
+    <description>
+        Testing the enter-exit sequence when having a transition that specificies a target state with multiple nodes.
+    </description>
+    <inport name="test_input" />
+    <outport name="test_output" />
+    <class name="TestClass" default="true">
+        <scxml initial="next_to_parallel">
+            <parallel id="parallel">
+                <state id="orthogonal_1" initial="inner_1">
+                    <state id="inner_1">
+                        <onentry>
+                           <raise port="test_output" event="enter_1_1" />
+                        </onentry>
+                    </state>
+                    <state id="inner_2">
+                        <onentry>
+                           <raise port="test_output" event="enter_1_2" />
+                        </onentry>
+                    </state>
+                </state>
+                <state id="orthogonal_2" initial="inner_1">
+                    <state id="inner_1">
+                        <onentry>
+                           <raise port="test_output" event="enter_2_1" />
+                        </onentry>
+                    </state>
+                    <state id="inner_2">
+                        <onentry>
+                           <raise port="test_output" event="enter_2_2" />
+                        </onentry>
+                    </state>
+                </state>
+            </parallel>
+            <state id="next_to_parallel">
+                <onentry>
+                    <raise port="test_output" event="enter_0" />
+                </onentry>
+                <transition target="../parallel/(orthogonal_1/inner_2,orthogonal_2/inner_2)"/>
+            </state>
+        </scxml>
+    </class>
+    <test>
+       <expected>
+          <slot>
+               <event name="enter_0" port="test_output"/>
+           </slot>
+           <slot>
+               <event name="enter_1_2" port="test_output"/>
+               <event name="enter_2_2" port="test_output"/>
+           </slot>
+        </expected>
+    </test>
+</diagram>

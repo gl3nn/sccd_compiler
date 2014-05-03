@@ -14,7 +14,6 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.indent()
         self.fOut.write("Statecharts + Class Diagram compiler by Glenn De Jonghe")
         self.fOut.write()
-        self.fOut.write("Source: " + class_diagram.source)
         self.fOut.write("Date:   " + time.asctime())
         if class_diagram.name or class_diagram.author or class_diagram.description:
             self.fOut.write()
@@ -32,7 +31,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write('*/')
         self.fOut.write()
         
-        #Use runtime libraries
+        #Namespace using declarations by the user
         self.fOut.write('using System;')
         self.fOut.write('using System.Collections.Generic;')
         self.fOut.write('using sccdlib;')
@@ -230,7 +229,6 @@ class CSharpGenerator(CodeGenerator):
         if class_node.statechart is not None:
             class_node.statechart.accept(self)
           
-        # write out str method
         self.fOut.dedent()
         self.fOut.write("}")
         self.fOut.write()
@@ -277,9 +275,10 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write()
         
     def visit_Method(self, method):
-        self.fOut.write(method.access + " " + method.return_type + "_" + method.parent_class.name + "(")
+        self.fOut.write(method.access + " " + method.return_type + " " + method.name + "(")
         self.writeFormalParameters(method.getParams())
-        self.fOut.extendWrite(")\n{")
+        self.fOut.extendWrite(")")
+        self.fOut.write("{")
         self.fOut.indent()
         if method.body :
             self.fOut.indent()
@@ -352,8 +351,8 @@ class CSharpGenerator(CodeGenerator):
         if len(out_transitions) == 0 :
             return
         
-        self.fOut.write('var enableds = new List<int>();')
-        for index, transition in enumerate(out_transitions, start=1):
+        self.fOut.write('List<int> enableds = new List<int>();')
+        for index, transition in enumerate(out_transitions):
             self.writeTransitionCondition(transition, index)
             
         self.fOut.write("if (enableds.Count > 1){")
@@ -366,7 +365,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write('int enabled = enableds[0];')
         self.fOut.write()      
               
-        for index, transition in enumerate(out_transitions, start=1):
+        for index, transition in enumerate(out_transitions):
             self.writeTransitionAction(transition, index)
         
         self.fOut.write('catched = true;')   
@@ -583,7 +582,7 @@ class CSharpGenerator(CodeGenerator):
         self.fOut.write("//Statechart enter/exit action method(s) :")
         self.fOut.write()
         
-        #visit children
+        #visit enter and exit actions of children
         for i in statechart.composites + statechart.basics:
             if i is not statechart.root :
                 i.enter_action.accept(self)

@@ -31,32 +31,25 @@ class PathCalculator(Visitor):
         
         source_ancestors = source_node.getAncestors()
         transition.exit_nodes = source_ancestors[:source_ancestors.index(LCA)]
-
-
-        #we first calculate the enter path as if there is only one target node
-        first_target_ancestors = target_nodes[0].getAncestors()
-        first_target_ancestors = first_target_ancestors[:first_target_ancestors.index(LCA)]
         
-        transition.enter_nodes = [(first_target_ancestors[0],True)]        
-        transition.enter_nodes.extend([(node, False) for node in first_target_ancestors[1:]])
-        
-        transition.enter_nodes.reverse()
-        
+        transition.enter_nodes = []
         
         #we then add the branching paths to the other nodes
-        for target_node in target_nodes[1:] :
+        for target_node in target_nodes :
             to_append = []
-            for (i,ancestor) in enumerate(target_node.getAncestors()) :
-                if ancestor not in transition.enter_nodes :
-                    to_append.append( (ancestor, i==0 ) ) #Only the first from the ancestor list should get True
+            for (ancestor_index,ancestor) in enumerate(target_node.getAncestors()) :
+                add = ancestor != LCA; #If we reach the LCA in the ancestor hierarchy we don't add and break
+                for enter_node_entry in transition.enter_nodes :
+                    if ancestor == enter_node_entry[0] :
+                        add = False #If we reach an ancestor in the hierarchy that is already listed as enter node, we don't add and break
+                        break
+                if add:
+                    to_append.append( (ancestor, ancestor_index==0 ) ) #Only the first from the ancestor list should get True
                 else :
                     break
                     
-            to_append.reverse()
-            transition.enter_nodes.extend(to_append)
-            
-
-       
+            to_append.reverse() #the enter sequence should be in the reverse order of the ancestor hierarchy
+            transition.enter_nodes.extend(to_append)       
 
     def getLCA(self, nodes):
         """

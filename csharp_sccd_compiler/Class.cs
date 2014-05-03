@@ -31,19 +31,25 @@ namespace csharp_sccd_compiler
             {
                 this.is_default = false;
             }
+            this.attributes = new List<Attribute>();
             foreach(XElement attribute_xml in xml.Elements("attribute"))
             {
                 this.attributes.Add(new Attribute(attribute_xml));
             }
+
+            this.methods = new List<Method>();
+            this.constructors = new List<Constructor>();
+            this.destructors = new List<Destructor>();
             foreach(XElement method_xml in xml.Elements("method"))
             {
                 this.processMethod(method_xml);
             }
+
             if (this.destructors.Count > 1)
                 throw new CompilerException("Multiple destructors defined.");
 
             if (this.constructors.Count == 0)
-                this.constructors.Add(new Constructor());
+                this.constructors.Add(new Constructor(this.name));
 
 
             var associations = new List<XElement>();
@@ -54,6 +60,7 @@ namespace csharp_sccd_compiler
                 inheritances.AddRange(relationships_xml.Elements("inheritance"));
             }
 
+            this.associations = new List<Association>();
             foreach( XElement association_xml in associations)
                 this.associations.Add(new Association(association_xml));
 
@@ -90,24 +97,3 @@ namespace csharp_sccd_compiler
         }
     }
 }
-/*
-    def processMethod(self, method_xml) :
-        name = method_xml.get("name", "")
-        if name == self.name :
-            self.constructors.append(Constructor(method_xml, self))
-        elif name == '~' + self.name:
-            self.destructors.append(Destructor(method_xml, self))
-        else :
-            if name in reserved:
-                raise CompilerException("Reserved word \"" + name + "\" used as method in class <" + self.name + ">.")
-            self.methods.append( Method(method_xml, self))
-
-    def processAttribute(self, attribute_xml):
-        attribute = Attribute(attribute_xml)
-        if attribute.name in reserved:
-            raise CompilerException("Reserved word \"" + attribute.name + "\" used as variable in class <" + self.name + ">.")
-
-        self.attributes.append(attribute)
-
-
-*/

@@ -29,14 +29,16 @@ namespace csharp_sccd_compiler
         {
             XElement root = XDocument.Load(input_file_path).Root;
             XAttribute name_attribute = root.Attribute("name");
-            if (name_attribute != null)
-                this.model_name = name_attribute.Value;
+            if (name_attribute != null && name_attribute.Value.Trim() != "")
+                this.model_name = name_attribute.Value.Trim();
             XAttribute author_attribute = root.Attribute("author");
-            if (author_attribute != null)
-                this.model_author = author_attribute.Value;
+            if (author_attribute != null && author_attribute.Value.Trim() != "")
+                this.model_author = author_attribute.Value.Trim();
             XElement description_element = root.Element("description");
-            if (description_element != null)
+            if (description_element != null && description_element.Value.Trim() != "")
                 model_description = description_element.Value;
+
+            this.class_names = new List<string>();
 
             foreach (XElement class_xml in root.Elements("class"))
             {
@@ -81,7 +83,7 @@ namespace csharp_sccd_compiler
             }
 
             List<XElement> top_elements = root.Elements("top").ToList();
-            if (top_elements.Count == 1)
+            if (top_elements.Count == 1 && top_elements[0].Value.Trim() != "")
                 this.top_section = top_elements[0].Value;
             else if (top_elements.Count > 1)
                 throw new CompilerException("Class diagram can only have one <top> element.");

@@ -10,7 +10,6 @@ class PythonGenerator(CodeGenerator):
     def visit_ClassDiagram(self, class_diagram):
         self.fOut.write("# Statechart compiler by Glenn De Jonghe")
         self.fOut.write("#")
-        self.fOut.write("# Source: " + class_diagram.source)
         self.fOut.write("# Date:   " + time.asctime())
         if class_diagram.name or class_diagram.author or class_diagram.description:
             self.fOut.write()
@@ -531,7 +530,7 @@ class PythonGenerator(CodeGenerator):
         self.fOut.write("# Statechart enter/exit action method(s) :")
         self.fOut.write()
         
-        #visit children
+        #visit enter and exit action of children
         for i in statechart.composites + statechart.basics:
             if i is not statechart.root :
                 i.enter_action.accept(self)

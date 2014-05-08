@@ -782,7 +782,6 @@
             
             <state id="aiming" initial="adjust">
                 <transition event="stop_aiming" target="../idle">
-                    <log>received stop aiming</log>
                     <raise event="stop_turning" target="turret_control"/>
                 </transition>
                 <transition event="aim_at" target=".">

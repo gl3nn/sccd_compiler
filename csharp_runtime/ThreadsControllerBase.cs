@@ -125,7 +125,7 @@ namespace sccdlib
         public override void addInput(Event input_event, double time_offset = 0.0)
         {
             this.input_mutex.WaitOne (-1);
-            base.addInput (input_event, time_offset); //Add time to offset that has already passed, so that next subtraction evens it out?
+            base.addInput (input_event, time_offset); //TODO Add time to offset that has already passed, so that next subtraction evens it out? Also Gameloop then!
             this.input_mutex.ReleaseMutex ();
             this.wait_handle.Set();
         }

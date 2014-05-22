@@ -49,20 +49,21 @@ namespace sccdlib
             if (!this.active)
                 return;
 
+            this.events.decreaseTime(delta);
+
             if (this.timers != null && this.timers.Count > 0)
             {
                 var next_timers = new Dictionary<int,double>();
                 foreach(KeyValuePair<int,double> pair in this.timers)
                 {
-                    if (pair.Value - delta <= 0.0)
-                        this.addEvent ( new Event("_" + pair.Key + "after"));
+                    double new_time = pair.Value - delta;
+                    if (new_time <= 0.0)
+                        this.addEvent (new Event("_" + pair.Key + "after"), new_time);
                     else
-                        next_timers[pair.Key] = pair.Value;
+                        next_timers[pair.Key] = new_time;
                 }
                 this.timers = next_timers;
             }
-                    
-            this.events.decreaseTime(delta);
 
             this.microstep();
             while (this.state_changed)

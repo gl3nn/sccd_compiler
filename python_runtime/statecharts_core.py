@@ -449,17 +449,17 @@ class RuntimeClassBase(object):
         if not self.active :
             return
         
+        self.events.decreaseTime(delta);
+        
         if self.timers :
             next_timers = {}
             for (key,value) in self.timers.iteritems() :
                 time = value - delta
                 if time <= 0.0 :
-                    self.addEvent( Event("_" + str(key) + "after"));
+                    self.addEvent( Event("_" + str(key) + "after"), time);
                 else :
                     next_timers[key] = time
             self.timers = next_timers;
-
-        self.events.decreaseTime(delta);
 
         self.microstep()
         while (self.state_changed) :

@@ -54,11 +54,10 @@ namespace sccdlib
                 var next_timers = new Dictionary<int,double>();
                 foreach(KeyValuePair<int,double> pair in this.timers)
                 {
-                    double time = pair.Value - delta;
-                    if (time <= 0.0)
+                    if (pair.Value - delta <= 0.0)
                         this.addEvent ( new Event("_" + pair.Key + "after"));
                     else
-                        next_timers[pair.Key] = time;
+                        next_timers[pair.Key] = pair.Value;
                 }
                 this.timers = next_timers;
             }

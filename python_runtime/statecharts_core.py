@@ -334,7 +334,7 @@ class GameLoopControllerBase(ControllerBase):
         
     def update(self, delta):
         self.input_queue.decreaseTime(delta)
-        for event in this.input_queue.popDueEvents() :
+        for event in self.input_queue.popDueEvents() :
             self.broadcast(event)
         self.object_manager.stepAll(delta)
         

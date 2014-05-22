@@ -1,7 +1,7 @@
 from Tank import Tank
 import math
 from mymath import D360
-from ai_controller import Controller
+from ai_controller import Controller, Event
 
 class AITank(Tank):
 	def __init__(self, field, data):			
@@ -10,7 +10,7 @@ class AITank(Tank):
 		self.controller.start()		
 			
 	def update(self, delta):
-		self.controller.addInput("update","engine")
+		self.controller.addInput(Event("update","engine"))
 		self.controller.update(delta)
 		
 	def angleToDest(self, (dest_x,dest_y)):

@@ -58,4 +58,4 @@ class CodeGenerator(Visitor):
                     indent_type = TABS_USED
                     
             self.fOut.write(lines[index][to_strip_index:])
-            index += index
+            index += 1

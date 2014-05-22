@@ -1,5 +1,5 @@
 from Tank import Tank
-from player_controller import Controller
+from player_controller import Controller, Event
 
 class PlayerTank(Tank):
 	def __init__(self, field, data):		
@@ -13,11 +13,11 @@ class PlayerTank(Tank):
 	def addListener(self, ports):
 		return self.controller.addOutputListener(ports)
 								
-	def event(self, event_name, port, time = 0.0, parameters = []):
-		self.controller.addInput(event_name, port, time, parameters)
+	def event(self, event_name, port):
+		self.controller.addInput(Event(event_name, port))
 			
 	def update(self, delta):
-		self.controller.addInput("update","engine")
+		self.controller.addInput(Event("update","engine"))
 		self.controller.update(delta)
 		
 		

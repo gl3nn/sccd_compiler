@@ -152,9 +152,17 @@ namespace csharp_sccd_compiler
                     throw new StateReferenceException(string.Format("Invalid token at position {0} in state reference.", token.pos));
             }
 
-            //TODO better validation of the target! When is it a valid state configuration?
             if (split_stack.Count != 0 || current_node == null) //RB missing or extra COMMA
                 throw new StateReferenceException("State reference ends unexpectedly.");
+
+            //TODO better validation of the target! When is it a valid state configuration?
+            foreach (StateChartNode node in state_reference.target_nodes)
+            {
+                if (object.ReferenceEquals(current_node,node))
+                    throw new StateReferenceException("A state reference can't reference the same node more than once.");
+                if (node.isDescendantOrAncestorOf(current_node))
+                    throw new StateReferenceException("A state reference can't reference a node and one of its descendants.");
+            }
 
             state_reference.target_nodes.Add(current_node);
 

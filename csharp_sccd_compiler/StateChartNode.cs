@@ -302,17 +302,14 @@ namespace csharp_sccd_compiler
         /// Returns a list representing the containment hierarchy of this node.
         /// </summary>
         /// <returns>The ancestors with node being the first element and its outermost parent (root) being the last.</returns>
-        public List<StateChartNode> getAncestors()
+        public IEnumerable<StateChartNode> getAncestors()
         {
-            List<StateChartNode> ancestors = new List<StateChartNode>();
             StateChartNode current = this;
             while ( !current.is_root)
             {
-                ancestors.Add(current);
                 current = current.parent;
+                yield return current;
             }
-            ancestors.Add(current);
-            return ancestors;
         }
     
         public bool isDescendantOf(StateChartNode anc)
@@ -325,6 +322,11 @@ namespace csharp_sccd_compiler
                     return true;
             }
             return false;
+        }
+
+        public bool isDescendantOrAncestorOf(StateChartNode node)
+        {
+            return this.isDescendantOf(node) || node.isDescendantOf(this);
         }
 
         public override void accept(Visitor visitor)

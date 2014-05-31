@@ -40,47 +40,39 @@ namespace csharp_sccd_compiler
 
         public override void visit(StateChartTransition transition)
         {
-            StateChartNode source_node = transition.parent;
-            List<StateChartNode> target_nodes = transition.target.target_nodes;
-
             //Find the scope of the transition (lowest common proper ancestor)
             //TODO: Could it be made more efficient if we calculated the LCA from the source node and just one of the target nodes?
 
-            StateChartNode LCA = this.calculateLCA(source_node, target_nodes);
-
+            StateChartNode LCA = this.calculateLCA(transition);
             //Calculate exit nodes
-            List<StateChartNode> source_ancestors = source_node.getAncestors();
-            int index = 0;
-            while (!object.ReferenceEquals(source_ancestors[index],LCA))
-                index++;
-            transition.exit_nodes = source_ancestors.GetRange(0,index);
-
-            //we first calculate the enter path as if there is only one target node
-            var first_target_ancestors = target_nodes[0].getAncestors();
-            index = 0;
-            while (!object.ReferenceEquals(first_target_ancestors[index],LCA))
-                index++;
-            first_target_ancestors = first_target_ancestors.GetRange(0,index);
-
+            transition.exit_nodes = new List<StateChartNode>(){transition.parent};
+            foreach(StateChartNode node in transition.parent.getAncestors())
+            {
+                if (object.ReferenceEquals(node, LCA))
+                    break;
+                transition.exit_nodes.Add(node);
+            }
+            //Calculate enter nodes
             transition.enter_nodes = new List<Tuple<StateChartNode, bool>>();
 
-            foreach (StateChartNode target_node in target_nodes)
+            foreach (StateChartNode target_node in transition.target.target_nodes)
             {
-                var to_append = new List<Tuple<StateChartNode, bool>>();
-                var ancestors = target_node.getAncestors();
-                for (int ancestor_index = 0; ancestor_index < ancestors.Count; ++ancestor_index)
+                var to_append = new List<Tuple<StateChartNode, bool>>(){new Tuple<StateChartNode, bool>(target_node, true)};
+                foreach (StateChartNode anc in target_node.getAncestors())
                 {
-                    bool to_add = !object.ReferenceEquals(LCA, ancestors[ancestor_index]); //If we reach the LCA in the ancestor hierarchy we don't add and break
+                    if (object.ReferenceEquals(anc, LCA))//If we reach the LCA in the ancestor hierarchy we break
+                        break;
+                    bool to_add = true; //boolean value to see if the current ancestor should be added to the result
                     foreach (Tuple<StateChartNode, bool> enter_node_entry in transition.enter_nodes)
                     {
-                        if (object.ReferenceEquals(enter_node_entry.Item1, ancestors[ancestor_index]))
+                        if (object.ReferenceEquals(enter_node_entry.Item1, anc))
                         {
                             to_add = false; //If we reach an ancestor in the hierarchy that is already listed as enter node, we don't add and break
                             break;
                         }
                     }
                     if (to_add)
-                        to_append.Add(new Tuple<StateChartNode, bool>(ancestors[ancestor_index], ancestor_index == 0)); //Only the first from the ancestor list should get True
+                        to_append.Add(new Tuple<StateChartNode, bool>(anc, false)); //Only target nodes get true
                     else
                         break;
                 }
@@ -89,12 +81,12 @@ namespace csharp_sccd_compiler
             }
         }
 
-        private StateChartNode calculateLCA(StateChartNode source_node, List<StateChartNode> target_nodes)
+        private StateChartNode calculateLCA(StateChartTransition transition)
         {
-            foreach(StateChartNode anc in source_node.getAncestors())
+            foreach(StateChartNode anc in transition.parent.getAncestors())
             {
                 bool all_descendants = true;
-                foreach (StateChartNode node in target_nodes)
+                foreach (StateChartNode node in transition.target.target_nodes)
                 {
                     if (!node.isDescendantOf(anc))
                     {

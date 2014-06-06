@@ -18,7 +18,7 @@ namespace csharp_sccd_compiler
             this.output_file.indent();
             this.output_file.write("Statecharts + Class Diagram compiler by Glenn De Jonghe");
             this.output_file.write();
-            this.output_file.write(string.Format("Generated on {0}.", DateTime.Now.ToString("yyyy-mm-dd HH:mm:ss")));
+            this.output_file.write(string.Format("Generated on {0}.", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")));
             if  (class_diagram.model_name != null || class_diagram.model_author != null || class_diagram.model_description != null)
                 this.output_file.write();
 

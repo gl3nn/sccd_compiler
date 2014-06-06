@@ -579,13 +579,10 @@ class StateChartNode(Visitable):
         """ Returns a list representing the containment hierarchy of node.
             node is always the first element, and its outermost parent is the last.
         """
-        ancestors=[]
         current = self
         while not current.is_root :
-            ancestors.append(current)
             current = current.parent
-        ancestors.append(current)
-        return ancestors
+            yield current
     
     def isDescendantOf(self, anc):
         current = self
@@ -594,6 +591,10 @@ class StateChartNode(Visitable):
             if current == anc :
                 return True
         return False
+        
+    def isDescendantOrAncestorOf(self, node):
+        return self.isDescendantOf(node) or node.isDescendantOf(self)
+  
         
 ##################################
 

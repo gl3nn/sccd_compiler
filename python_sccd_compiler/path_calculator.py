@@ -21,46 +21,49 @@ class PathCalculator(Visitor):
             transition.accept(self)
             
     def visit_StateChartTransition(self, transition):
-        
-        source_node = transition.getParentNode()
-        target_nodes = transition.getTargetNodes()
         #Find the scope of the transition (lowest common proper ancestor)
         #TODO: Could it be made more efficient if we calculated the LCA from the source node and just one of the target nodes?
-
-        LCA = self.getLCA([source_node] + target_nodes)
+        LCA = self.calculateLCA(transition)
         
-        source_ancestors = source_node.getAncestors()
-        transition.exit_nodes = source_ancestors[:source_ancestors.index(LCA)]
-        
+        #Calculate exit nodes
+        transition.exit_nodes = [transition.parent_node]
+        for node in transition.parent_node.getAncestors() :
+            if (node == LCA) :
+                break
+            transition.exit_nodes.append(node)
+       
+        #Calculate enter nodes
         transition.enter_nodes = []
         
         #we then add the branching paths to the other nodes
-        for target_node in target_nodes :
-            to_append = []
-            for (ancestor_index,ancestor) in enumerate(target_node.getAncestors()) :
-                add = ancestor != LCA; #If we reach the LCA in the ancestor hierarchy we don't add and break
+        for target_node in transition.target.target_nodes :
+            to_append_list = [(target_node, True)]
+            for anc in target_node.getAncestors() :
+                if anc == LCA : #If we reach the LCA in the ancestor hierarchy we break
+                    break;
+                to_add = True;  #boolean value to see if the current ancestor should be added to the result
                 for enter_node_entry in transition.enter_nodes :
-                    if ancestor == enter_node_entry[0] :
-                        add = False #If we reach an ancestor in the hierarchy that is already listed as enter node, we don't add and break
+                    if anc == enter_node_entry[0] :
+                        to_add = False #If we reach an ancestor in the hierarchy that is already listed as enter node, we don't add and break
                         break
-                if add:
-                    to_append.append( (ancestor, ancestor_index==0 ) ) #Only the first from the ancestor list should get True
+                if to_add:
+                    to_append_list.append((anc, False)) #Only the first from the ancestor list should get True
                 else :
                     break
                     
-            to_append.reverse() #the enter sequence should be in the reverse order of the ancestor hierarchy
-            transition.enter_nodes.extend(to_append)       
+            to_append_list.reverse() #the enter sequence should be in the reverse order of the ancestor hierarchy
+            transition.enter_nodes.extend(to_append_list)       
 
-    def getLCA(self, nodes):
+    def calculateLCA(self, transition):
         """
-        Calculates the lowest common ancestor of the nodes
+        Calculates the lowest common ancestor of a transition
         """ 
-        x = nodes.pop()
-        for anc in x.getAncestors() :
+        for anc in transition.parent_node.getAncestors() :
             all_descendants = True 
-            for node in nodes :
+            for node in transition.target.getNodes() :
                 if not node.isDescendantOf(anc) :
                     all_descendants = False
                     break
             if all_descendants :
                 return anc
+        return None

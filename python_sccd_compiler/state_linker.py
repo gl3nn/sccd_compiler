@@ -117,11 +117,16 @@ class StateLinker(Visitor):
             
             else :
                 raise StateReferenceException("Invalid token at position " + str(token.pos) + " in state reference.")
-          
-        #TODO : better validation of the target! When is it a valid state configuration?
         
         if (len(split_stack) != 0) or (current_node is None) : #RB missing or extra COMMA
             raise StateReferenceException("State reference ends unexpectedly.")
+        
+        #TODO better validation of the target! When is it a valid state configuration?
+        for node in state_reference.target_nodes :
+            if current_node == node :
+                raise StateReferenceException("A state reference can't reference the same node more than once.")
+            if node.isDescendantOrAncestorOf(current_node) :
+                raise StateReferenceException("A state reference can't reference a node and one of its descendants.");
         
         state_reference.target_nodes.append(current_node)
             

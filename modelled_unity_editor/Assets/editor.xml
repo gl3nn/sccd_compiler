@@ -1,0 +1,118 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="SCCD Editor">
+    <description>
+        SCCD visual editor for Unity.
+    </description>
+    
+    <top>
+        using UnityEditor;
+        using UnityEngine;
+        using SCCDEditor;
+        using Event = sccdlib.Event;
+    </top>
+    
+    <inport name="input" />
+    <inport name="engine" />
+    
+    <class name="StateChartEditor" default="true">
+        <relationships>
+            <association class="State" name="states"/>
+        </relationships>
+        <attribute type="CanvasItem" name="canvas"/>
+        <method name="StateChartEditor" type="constructor">
+            <parameter type="CanvasItem" name="canvas"/>
+            <body>
+                this.canvas = canvas;
+            </body>
+        </method>
+        <scxml initial="waiting">
+            <state id="waiting">
+                <transition event="create" port="input" target=".">
+                    <parameter type="Vector2" name="position"/>
+                    <script>
+                        CanvasItem new_canvas_item = new CanvasItem(position, this.canvas);
+                        this.canvas.addChild(new_canvas_item);
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"states"' />
+                        <parameter expr='"State"'/>
+                        <parameter expr='"name"' />
+                        <parameter expr='new_canvas_item' />
+                    </raise>
+                </transition>
+                <transition event="instance_created" target=".">
+                    <script>
+                        //this.nr_of_windows += 1
+                        //print "in create_window %s" % self.nr_of_windows
+                    </script>
+                    <parameter name="association_name" type="String"/>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr="association_name" />
+                    </raise>
+                </transition>
+                <transition event="draw" port="engine" target=".">
+                    <raise scope="narrow" event="draw" target="states"/>
+                </transition>
+            </state>
+        </scxml>
+    </class>
+
+    <class name="State">
+        <attribute type="String" name="name"/>
+        <attribute type="CanvasItem" name="canvas_item"/>
+        <method name="State" type="constructor">
+            <parameter type="String" name="name"/>
+            <parameter type="CanvasItem" name="canvas_item"/>
+            <body>
+                this.name = name;
+                this.canvas_item = canvas_item;
+            </body>
+        </method>
+        <method name="draw" type="void">
+            <parameter type="bool" name="is_selected"/>
+            <body>
+                if (is_selected)
+                {
+                    var old_color = GUI.backgroundColor;
+                    GUI.backgroundColor = Color.Lerp(GUI.backgroundColor,Color.green,0.5f);
+                    GUI.Box(this.canvas_item.rect, name);    
+                    GUI.backgroundColor = old_color;
+                }
+                else
+                {
+                    GUI.Box(this.canvas_item.rect, name);
+                }
+            </body>
+        </method>
+        <scxml initial="not_selected">
+            <state id="selected">
+                <transition target="." event="draw">
+                    <script>
+                        this.draw(true);
+                    </script>
+                </transition>
+                <transition target="." port="input" event="drag" cond="true/*this.canvas_item.tag == tag*/">
+                    <parameter type="int" name="tag"/>
+                    <parameter type="Vector2" name="delta"/>
+                    <script>
+                        this.canvas_item.move(delta);
+                    </script>
+                </transition>
+                <transition event="select" port="input" target="../not_selected" cond="this.canvas_item.tag != tag">
+                    <parameter type="int" name="tag"/>
+                </transition>
+            </state>
+            <state id="not_selected">
+                <transition target="." event="draw">
+                    <script>
+                        this.draw(false);
+                    </script>
+                </transition>
+                <transition event="select" port="input" target="../selected" cond="this.canvas_item.tag == tag">
+                    <parameter type="int" name="tag"/>
+                </transition>
+            </state>
+        </scxml>
+    </class>
+    
+</diagram>

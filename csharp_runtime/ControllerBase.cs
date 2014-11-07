@@ -61,7 +61,7 @@ namespace sccdlib
             return new OutputListener(ports);   
         }
         
-        public virtual void addInput(Event input_event, double time_offset = 0.0)
+        public virtual void addInput(Event input_event, double time_offset)
         {   
             if ( input_event.getName() == "" )
                 throw new InputException("Input event can't have an empty name.");
@@ -71,12 +71,16 @@ namespace sccdlib
             
             this.input_queue.Add(input_event, time_offset);
         }
+
+        public virtual void addInput(Event input_event) {
+            this.addInput(input_event, 0.0);
+        }
     
-        public virtual void addEventList(List<Tuple<Event,double>> event_list)
+        public virtual void addEventList(List<KeyValuePair<Event,double>> event_list)
         {
-            foreach (Tuple<Event,double> event_tuple in event_list)
+            foreach (KeyValuePair<Event,double> event_tuple in event_list)
             {   
-                this.addInput (event_tuple.Item1, event_tuple.Item2);
+                this.addInput (event_tuple.Key, event_tuple.Value);
             }
         }
         

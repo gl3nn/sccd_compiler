@@ -10,12 +10,18 @@ namespace sccdlib
         object[] parameters;
         
 
-        public Event (string name = "", string port = "", object[] parameters = null)
+        public Event (string name, string port, object[] parameters)
         {
             this.name = name;
             this.port = port;
             this.parameters = (parameters == null ? new object[] {} : parameters);
         }
+
+        public Event (string name, string port): this(name, port, null) {}
+
+        public Event (string name): this(name, "", null) {}
+
+        public Event (): this("", "", null) {}
 
         public string getName ()
         {
@@ -32,10 +38,10 @@ namespace sccdlib
             return this.parameters;
         }
         
-        public override string ToString()
+        /*public override string ToString()
         {
             return string.Format("(event name : {0}; port : {1}; parameters : [{2}])", this.name, this.port, string.Join(", ", this.parameters));
-        }
+        }*/
     }
 }
 

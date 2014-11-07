@@ -17,12 +17,16 @@ namespace sccdlib
         {
         }
         
-        public void addEvent (Event input_event, double time_offset = 0.0)
+        public void addEvent (Event input_event, double time_offset)
         {
             this.events.Add (input_event, time_offset);
         }
-        
-        
+
+        public void addEvent (Event input_event)
+        {
+            this.addEvent(input_event, 0.0);
+        }
+
         public double getEarliestEventTime ()
         {
             if (this.timers != null)
@@ -47,7 +51,9 @@ namespace sccdlib
         public void step(double delta)
         {
             if (!this.active)
+            {
                 return;
+            }
 
             this.events.decreaseTime(delta);
 
@@ -64,7 +70,6 @@ namespace sccdlib
                 }
                 this.timers = next_timers;
             }
-
             this.microstep();
             while (this.state_changed)
                 this.microstep();
@@ -83,11 +88,21 @@ namespace sccdlib
             }
         }
         
-        protected abstract void transition (Event e = null);
+        protected abstract void transition (Event e);
+
+        protected virtual void transition ()
+        {
+            this.transition(null);
+        }
         
         public virtual void start ()
         {
             this.active = true;
+        }
+
+        public virtual void stop ()
+        {
+            this.active = false;
         }
         
     }

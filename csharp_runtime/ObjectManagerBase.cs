@@ -16,9 +16,13 @@ namespace sccdlib
         }
        
         
-        public void addEvent (Event input_event, double time_offset = 0.0)
+        public void addEvent (Event input_event, double time_offset)
         {
             this.events.Add (input_event, time_offset);
+        }
+
+        public void addEvent (Event input_event) {
+            this.addEvent(input_event, 0.0);
         }
         
         public void broadcast (Event new_event)
@@ -57,6 +61,8 @@ namespace sccdlib
                 this.handleAssociateEvent(handle_event.getParameters());
             } else if (event_name == "start_instance") {
                 this.handleStartInstanceEvent(handle_event.getParameters());
+            } else if (event_name == "delete_instance") {
+                this.handleDeleteEvent(handle_event.getParameters());
             }
         }
         
@@ -64,7 +70,9 @@ namespace sccdlib
         {
             this.step(delta);
             foreach (RuntimeClassBase instance in this.instances_map.Keys)
+            {
                 instance.step(delta);
+            }
         }
     
         
@@ -83,14 +91,14 @@ namespace sccdlib
         /// <param name='input_string'>
         /// Input_string.
         /// </param>
-        private List<Tuple<string, int>> processAssociationReference (string input_string)
+        private List<KeyValuePair<string, int>> processAssociationReference (string input_string)
         {
             if (input_string.Length == 0)
                 throw new AssociationReferenceException("Empty association reference.");
             string[] path_string = input_string.Split (new char[] {'/'});
             Regex regex = new Regex(@"^([a-zA-Z_]\w*)(?:\[(\d+)\])?$");
             
-            var result = new List<Tuple<string, int>>();
+            var result = new List<KeyValuePair<string, int>>();
             
             foreach (string string_piece in path_string) {
                 Match match = regex.Match (string_piece);
@@ -101,7 +109,7 @@ namespace sccdlib
                         int.TryParse(match.Groups[2].ToString(), out index);
                     else
                         index = -1;
-                    result.Add( new Tuple<string, int>(name,index));
+                    result.Add( new KeyValuePair<string, int>(name,index));
                 }else{
                     throw new AssociationReferenceException("Invalid entry in association reference.");
                 }   
@@ -121,17 +129,17 @@ namespace sccdlib
         /// <param name='traversal_list'>
         /// Traversal_list.
         /// </param>
-        private List<InstanceWrapper> getInstances (RuntimeClassBase source, List<Tuple<string, int>> traversal_list)
+        private List<InstanceWrapper> getInstances (RuntimeClassBase source, List<KeyValuePair<string, int>> traversal_list)
         {
             var currents = new List<InstanceWrapper> ();
             currents.Add (this.instances_map [source]);
-            foreach (Tuple<string, int> tuple in traversal_list) {
+            foreach (KeyValuePair<string, int> tuple in traversal_list) {
                 var nexts = new List<InstanceWrapper> ();
                 foreach ( InstanceWrapper current in currents ){
-                    Association association = current.getAssociation (tuple.Item1);   
-                    if (tuple.Item2 >= 0 )
-                        nexts.Add ( association.getInstance(tuple.Item2) );
-                    else if (tuple.Item2 == -1)
+                    Association association = current.getAssociation (tuple.Key);   
+                    if (tuple.Value >= 0 )
+                        nexts.Add ( association.getInstance(tuple.Value) );
+                    else if (tuple.Value == -1)
                         nexts.AddRange ( association.getAllInstances() );
                     else
                         throw new AssociationReferenceException("Incorrect index in association reference.");
@@ -159,6 +167,7 @@ namespace sccdlib
                 foreach( InstanceWrapper i in this.getInstances (source, traversal_list)){
                     i.getInstance().start();
                 }
+                source.addEvent(new Event("instance_started", "", new object[]{parameters[1]}));
             }
         }
         
@@ -184,22 +193,55 @@ namespace sccdlib
                 string association_name = (string)parameters [1];
                 Association association = this.instances_map[source].getAssociation (association_name);
                 if (association.allowedToAdd ()){
-                    int constructor_parameters_length = parameters.Length -2;
-                    object[] constructor_parameters = new object[constructor_parameters_length];
-                    Array.Copy(parameters, 2, constructor_parameters, 0, constructor_parameters_length);
-                    InstanceWrapper new_instance_wrapper = this.createInstance(association.getClassName (), constructor_parameters);
-                    association.addInstance (new_instance_wrapper);
+                    InstanceWrapper new_instance_wrapper;
+                    if (parameters.Length == 2) 
+                    {
+                        new_instance_wrapper = this.createInstance(association.getClassName (), new object[0]);
+                    }
+                    else
+                    {
+                        int constructor_parameters_length = parameters.Length - 3;
+                        object[] constructor_parameters = new object[constructor_parameters_length];
+                        Array.Copy(parameters, 3, constructor_parameters, 0, constructor_parameters_length);
+                        new_instance_wrapper = this.createInstance((string)parameters[2], constructor_parameters);
+                    }
+                    int id = association.addInstance (new_instance_wrapper);
+                    try {
+                        new_instance_wrapper.getAssociation ("parent").addInstance(this.instances_map[source]);
+                    } catch (AssociationReferenceException) {}
+
                     source.addEvent(
-                        new Event(name: "instance_created", parameters : new object[] {association_name})
+                        new Event("instance_created", "", new object[] {String.Format("{0}[{1}]", association_name, id)})
                     );
                 }else{
                     source.addEvent (
-                        new Event(name: "instance_creation_error", parameters : new object[] {association_name})    
+                        new Event("instance_creation_error", "", new object[] {association_name})    
                     );
                 }    
             }
         }
-        
+
+        private void handleDeleteEvent(object[] parameters)
+        {
+            if (parameters.Length < 2) {
+                throw new ParameterException ("The delete event needs at least 2 parameters.");
+            } else {
+                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                string association_name = (string)parameters [1];
+                List<KeyValuePair<string,int>> traversal_list = this.processAssociationReference (association_name);
+                List<InstanceWrapper> instances = this.getInstances(source, traversal_list);
+                Association association = this.instances_map[source].getAssociation(traversal_list[0].Key);
+                for (int i = 0; i < instances.Count; i++)
+                {
+                    InstanceWrapper instance_wrapper = instances[i];
+                    association.removeInstance(instance_wrapper);
+                    RuntimeClassBase instance = instance_wrapper.getInstance();
+                    instance.stop();
+                    //TODO if instance has destructor, call it ?.
+                    source.addEvent(new Event("instance_deleted", "", new object[] {parameters[1]}));
+                }
+            }
+        }
                 
         private void handleAssociateEvent (object[] parameters)
         {
@@ -211,15 +253,15 @@ namespace sccdlib
                 if (to_copy_list.Count != 1)
                     throw new AssociationReferenceException ("Invalid source association reference.");
                 InstanceWrapper wrapped_to_copy_instance = to_copy_list [0];
-                List<Tuple<string,int>> dest_list = this.processAssociationReference ((string)parameters [2]);
+                List<KeyValuePair<string,int>> dest_list = this.processAssociationReference ((string)parameters [2]);
                 if (dest_list.Count == 0)
                     throw new AssociationReferenceException ("Invalid destination association reference.");
-                Tuple<string,int> last_tuple = dest_list [dest_list.Count - 1];
-                if (last_tuple.Item2 != -1)
+                KeyValuePair<string,int> last_tuple = dest_list [dest_list.Count - 1];
+                if (last_tuple.Value != -1)
                     throw new AssociationReferenceException ("Last association name in association reference should not be accompanied by an index.");
                 dest_list.RemoveAt (dest_list.Count - 1);
                 foreach (InstanceWrapper i in this.getInstances(source, dest_list)) {
-                    i.getAssociation (last_tuple.Item1).addInstance (wrapped_to_copy_instance);
+                    i.getAssociation (last_tuple.Key).addInstance (wrapped_to_copy_instance);
                 }
             }
         }
@@ -233,7 +275,6 @@ namespace sccdlib
                 Event cast_event = (Event) parameters[2];
                 foreach (InstanceWrapper i in this.getInstances(source, this.processAssociationReference( (string) parameters[1])))
                     i.getInstance ().addEvent(cast_event);
-            
             }
         }   
         

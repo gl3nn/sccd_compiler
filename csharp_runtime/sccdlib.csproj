@@ -9,24 +9,25 @@
     <OutputType>Library</OutputType>
     <RootNamespace>sccdlib</RootNamespace>
     <AssemblyName>sccdlib</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
+    <DebugSymbols>True</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
+    <Optimize>False</Optimize>
     <OutputPath>bin\Debug</OutputPath>
     <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
+    <ConsolePause>False</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>True</Optimize>
     <OutputPath>bin\Release</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
+    <ConsolePause>False</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -43,12 +44,10 @@
     <Compile Include="RuntimeClassBase.cs" />
     <Compile Include="AssociationException.cs" />
     <Compile Include="IOutputListener.cs" />
-    <Compile Include="ConcurrentOutputListener.cs" />
     <Compile Include="AssociationReferenceException.cs" />
     <Compile Include="RunTimeException.cs" />
     <Compile Include="ParameterException.cs" />
     <Compile Include="EventQueue.cs" />
-    <Compile Include="ThreadsControllerBase.cs" />
     <Compile Include="InputException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

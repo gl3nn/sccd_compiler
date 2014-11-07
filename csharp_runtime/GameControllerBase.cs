@@ -3,18 +3,20 @@ using System.Collections.Generic;
 
 namespace sccdlib
 {
-    public class GameControllerBase : ControllerBase
+    public class GameLoopControllerBase : ControllerBase
     {
-        public GameControllerBase ()
+        public GameLoopControllerBase ()
             : base()
         {        
         }
         
         public void update(double delta)
-        {  
+        {
             this.input_queue.decreaseTime(delta);
-            foreach(Event e in this.input_queue.popDueEvents())
-                this.broadcast (e);
+            foreach (Event e in this.input_queue.popDueEvents())
+            {
+                this.broadcast(e);
+            }
             this.object_manager.stepAll(delta);
         }
     }

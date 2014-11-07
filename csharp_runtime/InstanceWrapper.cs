@@ -22,7 +22,7 @@ namespace sccdlib
             try{
                 return this.associations[name];
             }catch (KeyNotFoundException) {
-                throw new AssociationReferenceException("Unknown association.");
+                throw new AssociationReferenceException(String.Format("Unknown association '{0}'.", name));
             }
         }
         

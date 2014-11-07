@@ -14,12 +14,14 @@ namespace sccdlib
         AutoResetEvent wait_handle = new AutoResetEvent(false);
         DateTime last_recorded_time = DateTime.UtcNow;
         
-        public ThreadsControllerBase (bool keep_running = true)
+        public ThreadsControllerBase (bool keep_running)
             : base()
         {          
             this.keep_running = keep_running;
             this.thread = new Thread (new ThreadStart (this.run));
         }
+
+        public ThreadsControllerBase (): this(true) {}
         
         private void handleInput(double delta)
         {
@@ -122,12 +124,17 @@ namespace sccdlib
             this.thread.Join ();
         }
     
-        public override void addInput(Event input_event, double time_offset = 0.0)
+        public override void addInput(Event input_event, double time_offset)
         {
             this.input_mutex.WaitOne (-1);
             base.addInput (input_event, time_offset); //TODO Add time to offset that has already passed, so that next subtraction evens it out? Also Gameloop then!
             this.input_mutex.ReleaseMutex ();
             this.wait_handle.Set();
+        }
+
+        public override void addInput(Event input_event)
+        {
+            this.addInput(input_event, 0.0);
         }
     
         public override void addEventList(List<Tuple<Event,double>> event_list)

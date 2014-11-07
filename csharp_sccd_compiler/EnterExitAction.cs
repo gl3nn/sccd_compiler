@@ -9,7 +9,7 @@ namespace csharp_sccd_compiler
 
         public Action action { get; private set; }
 
-        public EnterExitAction(StateChartNode parent, XElement xml = null)
+        public EnterExitAction(StateChartNode parent, XElement xml)
         {
             this.parent = parent;
             if (xml != null)
@@ -17,6 +17,8 @@ namespace csharp_sccd_compiler
             else
                 this.action = null;
         }
+
+        public EnterExitAction(StateChartNode parent): this(parent, null) {}
 
         public override void accept(Visitor visitor)
         {
@@ -26,9 +28,9 @@ namespace csharp_sccd_compiler
 
     public class EnterAction : EnterExitAction
     {
-        public EnterAction(StateChartNode parent, XElement xml = null) : base(parent,xml)
-        {
-        }
+        public EnterAction(StateChartNode parent, XElement xml) : base(parent, xml) {}
+
+        public EnterAction(StateChartNode parent) : this(parent, null) {}
 
         public override void accept(Visitor visitor)
         {
@@ -38,9 +40,9 @@ namespace csharp_sccd_compiler
 
     public class ExitAction : EnterExitAction
     {
-        public ExitAction(StateChartNode parent, XElement xml = null) : base(parent,xml)
-        {
-        }
+        public ExitAction(StateChartNode parent, XElement xml) : base(parent, xml) {}
+
+        public ExitAction(StateChartNode parent) : this(parent, null) {}
 
         public override void accept(Visitor visitor)
         {

@@ -114,14 +114,6 @@ namespace csharp_sccd_compiler
             else
                 this.writeControllerConstructor(class_diagram, new List<FormalParameter>());
             
-            this.output_file.write("public static void Main()");
-            this.output_file.write("{");
-            this.output_file.indent();
-            this.output_file.write("Controller controller = new Controller();");
-            this.output_file.write("controller.start();");
-            this.output_file.dedent();
-            this.output_file.write("}");
-            
             this.output_file.dedent();
             this.output_file.write("}");
         }
@@ -132,8 +124,8 @@ namespace csharp_sccd_compiler
         private void writeControllerConstructor(ClassDiagram class_diagram, List<FormalParameter> parameters)
         {
             this.output_file.write("public Controller(");
-            this.writeFormalParameters(parameters.Concat(new FormalParameter[]{new FormalParameter("keep_running", "bool", "true")}));
-            this.output_file.extendWrite(") : base(keep_running)");
+            this.writeFormalParameters(parameters);
+            this.output_file.extendWrite(") : base()");
             this.output_file.write("{");
             this.output_file.indent();
             
@@ -233,16 +225,23 @@ namespace csharp_sccd_compiler
             
             this.output_file.write("public override void start()");
             this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("if (!this.active) {");
             
             this.output_file.indent();
             this.output_file.write("base.start();");
-            foreach (StateChartNode default_node in class_node.statechart.root.defaults)
+            if (class_node.statechart != null)
             {
-                if (default_node.is_composite)
-                    this.output_file.write("this.enterDefault_" + default_node.full_name + "();");
-                else if (default_node.is_basic)
-                    this.output_file.write("this.enter_" + default_node.full_name + "();");
+                foreach (StateChartNode default_node in class_node.statechart.root.defaults)
+                {
+                    if (default_node.is_composite)
+                        this.output_file.write("this.enterDefault_" + default_node.full_name + "();");
+                    else if (default_node.is_basic)
+                        this.output_file.write("this.enter_" + default_node.full_name + "();");
+                }
             }
+            this.output_file.dedent();
+            this.output_file.write("}");
 
             this.output_file.dedent();
             this.output_file.write("}");
@@ -498,10 +497,10 @@ namespace csharp_sccd_compiler
             //Write out trigger actions
             transition.action.accept(this);
             
-            foreach (Tuple<StateChartNode,bool> enter_node_tuple in transition.enter_nodes)
+            foreach (KeyValuePair<StateChartNode,bool> enter_node_tuple in transition.enter_nodes)
             {
-                StateChartNode entering_node = enter_node_tuple.Item1;
-                if (enter_node_tuple.Item2)
+                StateChartNode entering_node = enter_node_tuple.Key;
+                if (enter_node_tuple.Value)
                 {
                     if (entering_node.is_composite)
                         this.output_file.write("this.enterDefault_" + entering_node.full_name + "();");
@@ -821,7 +820,7 @@ namespace csharp_sccd_compiler
         public override void visit(StateReference state_ref)
         {
             this.output_file.extendWrite("new List<Node>() {");
-            this.output_file.extendWrite(string.Join(", ", (from node in state_ref.target_nodes select "Node." + node.full_name)));
+            this.output_file.extendWrite(string.Join(", ", (from node in state_ref.target_nodes select "Node." + node.full_name).ToArray()));
             this.output_file.extendWrite("}");
         }
             
@@ -831,11 +830,22 @@ namespace csharp_sccd_compiler
             in_state_call.state_reference.accept(this);
             this.output_file.extendWrite(")");
         }
-            
+
+        private string createEvent(string event_name) {
+            return "new Event(\"" + event_name + "\", \"\", new object[] {";
+        }
+
         public override void visit(RaiseEvent raise_event)
         {
-            if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE || raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
-                this.output_file.write("Event send_event = new Event(\"" + raise_event.event_name + "\", \"\", new object[] {");
+            if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE)
+            {
+                this.output_file.write(
+                    "this.object_manager.addEvent(new Event(\"narrow_cast\", \"\", new object[] {this, \"" + raise_event.target + "\", " + createEvent(raise_event.event_name));
+            }
+            else if (raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
+            {
+                this.output_file.write("this.object_manager.addEvent(new Event(\"broad_cast\", \"\", new object[] {" + createEvent(raise_event.event_name));
+            }
             else if (raise_event.scope == RaiseEvent.Scope.LOCAL_SCOPE)
                 this.output_file.write("this.addEvent( new Event(\"" + raise_event.event_name + "\", \"\", new object[] {");
             else if (raise_event.scope == RaiseEvent.Scope.OUTPUT_SCOPE)
@@ -852,17 +862,8 @@ namespace csharp_sccd_compiler
                     this.output_file.extendWrite(",");
                 param.accept(this);
             }
-
-            if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE)
-            {
-                this.output_file.extendWrite("});");
-                this.output_file.write("this.object_manager.addEvent(new Event(\"narrow_cast\", \"\", new object[] {this, \"" + raise_event.target + "\" ,send_event}));");
-            }
-            else if (raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
-            {
-                this.output_file.extendWrite("});");
-                this.output_file.write("this.object_manager.addEvent(new Event(\"broad_cast\", \"\", new object[] {send_event}));");
-            }
+            if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE || raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
+                this.output_file.extendWrite("})}));");
             else
                 this.output_file.extendWrite("}));");
         }

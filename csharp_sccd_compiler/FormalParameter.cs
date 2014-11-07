@@ -12,12 +12,14 @@ namespace csharp_sccd_compiler
         public string type { get; protected set; }
         public string default_value { get; protected set; }
 
-        public FormalParameter(string name, string type, string default_value = null)
+        public FormalParameter(string name, string type, string default_value)
         {
             this.name = name;
             this.type = type;
             this.default_value = default_value;
         }
+
+        public FormalParameter(string name, string type): this(name, type, null) {}
 
         public FormalParameter(XElement xml)
         {

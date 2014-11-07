@@ -53,26 +53,26 @@ namespace csharp_sccd_compiler
                 transition.exit_nodes.Add(node);
             }
             //Calculate enter nodes
-            transition.enter_nodes = new List<Tuple<StateChartNode, bool>>();
+            transition.enter_nodes = new List<KeyValuePair<StateChartNode, bool>>();
 
             foreach (StateChartNode target_node in transition.target.target_nodes)
             {
-                var to_append = new List<Tuple<StateChartNode, bool>>(){new Tuple<StateChartNode, bool>(target_node, true)};
+                var to_append = new List<KeyValuePair<StateChartNode, bool>>(){new KeyValuePair<StateChartNode, bool>(target_node, true)};
                 foreach (StateChartNode anc in target_node.getAncestors())
                 {
                     if (object.ReferenceEquals(anc, LCA))//If we reach the LCA in the ancestor hierarchy we break
                         break;
                     bool to_add = true; //boolean value to see if the current ancestor should be added to the result
-                    foreach (Tuple<StateChartNode, bool> enter_node_entry in transition.enter_nodes)
+                    foreach (KeyValuePair<StateChartNode, bool> enter_node_entry in transition.enter_nodes)
                     {
-                        if (object.ReferenceEquals(enter_node_entry.Item1, anc))
+                        if (object.ReferenceEquals(enter_node_entry.Key, anc))
                         {
                             to_add = false; //If we reach an ancestor in the hierarchy that is already listed as enter node, we don't add and break
                             break;
                         }
                     }
                     if (to_add)
-                        to_append.Add(new Tuple<StateChartNode, bool>(anc, false)); //Only target nodes get true
+                        to_append.Add(new KeyValuePair<StateChartNode, bool>(anc, false)); //Only target nodes get true
                     else
                         break;
                 }

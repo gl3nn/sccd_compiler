@@ -17,7 +17,7 @@ namespace csharp_sccd_compiler
             this.output_file = new StreamWriter(output_file_path, false);
         }
 
-        public void write(string text = "")
+        public void write(string text)
         {
             if (this.first_write)
             {
@@ -31,9 +31,19 @@ namespace csharp_sccd_compiler
             }
         }
 
-        public void extendWrite(string text = "")
+        public void write()
+        {
+            write("");
+        }
+
+        public void extendWrite(string text)
         {
             this.output_file.Write(text);            
+        }
+
+        public void extendWrite()
+        {
+            extendWrite("");
         }
 
         public void indent()

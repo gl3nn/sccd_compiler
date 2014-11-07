@@ -18,11 +18,15 @@ namespace csharp_sccd_compiler
         string buf;
         int pos;
 
-        public Lexer( bool skip_white_space = true, bool accept_unknown_tokens = false)
+        public Lexer(bool skip_white_space, bool accept_unknown_tokens)
         {
             this.accept_unknown_tokens = accept_unknown_tokens;
             this.skip_white_space = skip_white_space;
         }
+
+        public Lexer(bool skip_white_space): this(skip_white_space, false) {}
+
+        public Lexer(): this(true, false) {}
 
         /// <summary>
         /// Initialize the lexer with a buffer as input.

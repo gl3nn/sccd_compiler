@@ -47,11 +47,13 @@ namespace csharp_sccd_compiler
                 this.access = access_attribute.Value.Trim();
 
             //Set body
-            XAttribute body_attribute = xml.Attribute("body");
-            if (body_attribute == null)
-                this.body = "";
+            XElement[] bodies = xml.Elements("body").ToArray();
+            if (bodies.Length > 1)
+                throw new CompilerException("Multiple bodies found.");
+            if (bodies.Length == 1)
+                this.body = bodies [0].Value;
             else
-                this.body = body_attribute.Value;
+                this.body = "";
 
             //Set parameters
             this.parameters = new List<FormalParameter>();

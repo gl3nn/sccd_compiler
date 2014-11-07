@@ -22,7 +22,7 @@ namespace csharp_sccd_compiler
         /// (And was thus specified specifically in the state reference.)
         /// </summary>
         /// <value>Set by the Path Calculator visitor.</value>
-        public List<Tuple<StateChartNode,bool>> enter_nodes { get; set; }
+        public List<KeyValuePair<StateChartNode,bool>> enter_nodes { get; set; }
 
         /// <summary>
         /// Ordered list of nodes to be exited upon taking the transition.

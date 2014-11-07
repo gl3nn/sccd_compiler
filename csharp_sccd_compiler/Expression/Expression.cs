@@ -18,7 +18,7 @@ namespace csharp_sccd_compiler
             this.parse(input_string);
         }
 
-        protected void parse(string input_string, string[] dont_parse = null)
+        protected void parse(string input_string, string[] dont_parse)
         {
             this.expression_parts = new List<ExpressionPart>();
             Expression.lexer.setInput(input_string);
@@ -60,6 +60,11 @@ namespace csharp_sccd_compiler
             //Process part of input after the last created macro object
             if (processed_bare_expression != "")
                 this.expression_parts.Add( new ExpressionPartString(processed_bare_expression));
+        }
+
+        protected void parse(string input_string)
+        {
+            parse(input_string, null);
         }
 
         private InStateCall parseInStateCall()

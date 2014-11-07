@@ -22,8 +22,9 @@ namespace csharp_sccd_compiler
         public static void generateFromAST(ClassDiagram class_diagram, string output_file, CodeGenerator.Platform platform)
         {
             if ((new CSharpGenerator()).generate(class_diagram, output_file, platform))
-                Logger.displayInfo("The following classes <" + string.Join(", ", class_diagram.class_names) + "> have been exported to the following file: " + output_file);
+                Logger.displayInfo("The following classes <" + string.Join(", ", class_diagram.class_names.ToArray()) + "> have been exported to the following file: " + output_file);
         }
+
     }
 }
 

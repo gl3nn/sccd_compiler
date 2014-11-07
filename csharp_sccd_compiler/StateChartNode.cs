@@ -61,7 +61,7 @@ namespace csharp_sccd_compiler
         /// <param name="type">The type of node.</param>
         /// <param name="is_orthogonal">If set to <c>true</c> this node is orthogonal. (= child of a parallel state.</param>
         /// <param name="parent">The parent of this node. Defaults to null, which means the node is the root.</param>
-        public StateChartNode(XElement xml, StateChartNode parent = null)
+        public StateChartNode(XElement xml, StateChartNode parent)
         {
             this.parent = parent;
             this.children = new List<StateChartNode>();
@@ -127,6 +127,8 @@ namespace csharp_sccd_compiler
             this.generateChildren(xml);
             this.calculateDefaults(xml);
         }
+
+        public StateChartNode(XElement xml): this(xml, null) {}
 
         private void resolveName(XElement xml)
         {

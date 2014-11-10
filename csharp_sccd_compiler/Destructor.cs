@@ -8,7 +8,11 @@ namespace csharp_sccd_compiler
 {
     public class Destructor : Method
     {
-        public Destructor(XElement xml) : base(xml)
+        public Destructor(XElement xml, Class parent_class) : base(xml, parent_class, true)
+        {
+        }
+
+        public Destructor(Class parent_class): base(parent_class)
         {
         }
 

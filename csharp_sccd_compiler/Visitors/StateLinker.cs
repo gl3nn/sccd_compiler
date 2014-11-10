@@ -23,7 +23,8 @@ namespace csharp_sccd_compiler
 
         public override void visit(Class c)
         {
-            c.statechart.accept(this);
+            if (c.statechart != null)
+                c.statechart.accept(this);
         }
 
         public override void visit(StateChart statechart)

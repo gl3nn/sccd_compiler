@@ -54,6 +54,7 @@ namespace csharp_sccd_compiler
                 c.accept(this);
              
             //writing out ObjectManager
+            this.output_file.write();
             this.output_file.write("public class ObjectManager : ObjectManagerBase");
             this.output_file.write("{");
             this.output_file.indent();
@@ -65,7 +66,7 @@ namespace csharp_sccd_compiler
             this.output_file.write("protected override InstanceWrapper instantiate(string class_name, object[] construct_params)");
             this.output_file.write("{");
             this.output_file.indent();
-            this.output_file.write("RuntimeClassBase instance = null;");
+            this.output_file.write("IRuntimeClass instance = null;");
             this.output_file.write("List<Association> associations = new List<Association>();");
             for (int index = 0; index < class_diagram.classes.Count; ++index)
             {
@@ -78,7 +79,7 @@ namespace csharp_sccd_compiler
                 this.output_file.write("object[] new_parameters = new object[construct_params.Length + 1];");
                 this.output_file.write("new_parameters[0] = this.controller;");
                 this.output_file.write("Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);");
-                this.output_file.write("instance = (RuntimeClassBase) Activator.CreateInstance(typeof(" + class_diagram.classes[index].name + "), new_parameters);");
+                this.output_file.write("instance = (IRuntimeClass) Activator.CreateInstance(typeof(" + class_diagram.classes[index].name + "), new_parameters);");
                 foreach (Association association in class_diagram.classes[index].associations)
                     association.accept(this);
                 this.output_file.dedent();
@@ -116,6 +117,7 @@ namespace csharp_sccd_compiler
             
             this.output_file.dedent();
             this.output_file.write("}");
+            this.output_file.write();
         }
 
         /// <summary>
@@ -149,15 +151,29 @@ namespace csharp_sccd_compiler
             this.output_file.write("public class " + class_node.name);
             // Take care of inheritance
             if (class_node.super_class != null)
-                this.output_file.extendWrite(" : " + class_node.super_class);
-            else
-                this.output_file.extendWrite(" : " + "RuntimeClassBase");
+            {
+                if (class_node.statechart != null)
+                    this.output_file.extendWrite(" : " + class_node.super_class +", IRuntimeClass");
+                else
+                    this.output_file.extendWrite(" : " + class_node.super_class);
+            } 
+            else if (class_node.statechart != null) 
+            {
+                this.output_file.extendWrite(" : IRuntimeClass");
+            }
             this.output_file.write("{");
             this.output_file.indent();
-            this.output_file.write();
-            
+
             if (class_node.statechart != null)
             {
+                this.output_file.write("private ControllerBase controller;");
+                this.output_file.write("private ObjectManagerBase object_manager;");
+
+                this.output_file.write("private bool active = false;");
+                this.output_file.write("private bool state_changed = false;");
+                this.output_file.write("private EventQueue events = new EventQueue();");
+                this.output_file.write("private Dictionary<int,double> timers = null;");
+                this.output_file.write();
                 //assign each node a unique ID
                 this.output_file.write("/// <summary>");
                 this.output_file.write("/// Enum uniquely representing all statechart nodes.");
@@ -181,30 +197,33 @@ namespace csharp_sccd_compiler
                 this.output_file.write("//User defined attributes");
                 foreach (Attribute attribute in class_node.attributes)
                 {
-                    this.output_file.write(attribute.type + " " + attribute.name);
+                    this.output_file.write();
+                    if (attribute.access != "")
+                        this.output_file.extendWrite(attribute.access + " ");
+                    this.output_file.extendWrite(attribute.type + " " + attribute.name);
                     if (attribute.init_value != null)
                         this.output_file.extendWrite(" = " + attribute.init_value);
                     this.output_file.extendWrite(";");     
                 }
-                this.output_file.write();
             }
-
             if (class_node.statechart != null)
             {
+                this.output_file.write();
+                //Begin of common constructor
                 this.output_file.write("/// <summary>");
                 this.output_file.write("/// Constructor part that is common for all constructors.");
                 this.output_file.write("/// </summary>");
-                this.output_file.write("private void commonConstructor(ControllerBase controller = null)");
+                this.output_file.write("private void commonConstructor(ControllerBase controller)");
                 this.output_file.write("{");
                 this.output_file.indent(); 
                 this.output_file.write("this.controller = controller;");
                 this.output_file.write("this.object_manager = controller.getObjectManager();");
+
                 if (class_node.statechart.nr_of_after_transitions != 0)
                     this.output_file.write("this.timers = new Dictionary<int,double>();");
 
                 this.output_file.write();
                 this.output_file.write("//Initialize statechart :");
-                this.output_file.write();
 
                 if (class_node.statechart.histories.Count > 0)
                 {
@@ -217,36 +236,40 @@ namespace csharp_sccd_compiler
 
                 foreach (StateChartNode node in class_node.statechart.composites)
                     this.output_file.write("this.current_state[Node." + node.full_name + "] = new List<Node>();");
-            }
 
-            this.output_file.dedent();
-            this.output_file.write("}");
-            this.output_file.write();
-            
-            this.output_file.write("public override void start()");
-            this.output_file.write("{");
-            this.output_file.indent();
-            this.output_file.write("if (!this.active) {");
-            
-            this.output_file.indent();
-            this.output_file.write("base.start();");
+                this.output_file.dedent();
+                this.output_file.write("}");
+                this.output_file.write();
+            }
+            //End of common constructor
+
             if (class_node.statechart != null)
             {
-                foreach (StateChartNode default_node in class_node.statechart.root.defaults)
+                //Begin of start method
+                this.output_file.write("public void start()");
+                this.output_file.write("{");
+                this.output_file.indent();
+                this.output_file.write("if (!this.active) {");
+                
+                this.output_file.indent();
+                this.output_file.write("this.active = true;");
+                if (class_node.statechart != null)
                 {
-                    if (default_node.is_composite)
-                        this.output_file.write("this.enterDefault_" + default_node.full_name + "();");
-                    else if (default_node.is_basic)
-                        this.output_file.write("this.enter_" + default_node.full_name + "();");
+                    foreach (StateChartNode default_node in class_node.statechart.root.defaults)
+                    {
+                        if (default_node.is_composite)
+                            this.output_file.write("this.enterDefault_" + default_node.full_name + "();");
+                        else if (default_node.is_basic)
+                            this.output_file.write("this.enter_" + default_node.full_name + "();");
+                    }
                 }
-            }
-            this.output_file.dedent();
-            this.output_file.write("}");
+                this.output_file.dedent();
+                this.output_file.write("}");
 
-            this.output_file.dedent();
-            this.output_file.write("}");
-            this.output_file.write();
-            
+                this.output_file.dedent();
+                this.output_file.write("}");
+                //End of start() method
+            }
             //visit children
             foreach( var i in class_node.constructors)
                 i.accept(this);
@@ -259,7 +282,6 @@ namespace csharp_sccd_compiler
               
             this.output_file.dedent();
             this.output_file.write("}");
-            this.output_file.write();
         }
 
         /// <summary>
@@ -287,26 +309,46 @@ namespace csharp_sccd_compiler
                         
         public override void visit(Constructor constructor)
         {
-            this.output_file.write(constructor.access + " " + constructor.name + "(");
-            this.writeFormalParameters(new FormalParameter[]{new FormalParameter("controller", "ControllerBase", null)}.Concat(constructor.parameters));
+            this.output_file.write();
+            this.output_file.write(constructor.access + " " + constructor.parent_class.name + "(");
+            if (constructor.parent_class.statechart != null)
+                this.writeFormalParameters(new FormalParameter[]{new FormalParameter("controller", "ControllerBase", null)}.Concat(constructor.parameters));
+            else
+                this.writeFormalParameters(constructor.parameters);
             this.output_file.extendWrite(")");
+            if (constructor.super_class_parameters != null)
+            {
+                this.output_file.extendWrite(" : base(");
+                bool first_param = true;
+                foreach (Expression param in constructor.super_class_parameters)
+                {
+                    if (first_param)
+                        first_param = false;
+                    else
+                        this.output_file.extendWrite(",");
+                    param.accept(this);
+                }
+                this.output_file.extendWrite(")");
+            }
             this.output_file.write("{");
             this.output_file.indent();
-            this.output_file.write("this.commonConstructor(controller);");
+            if (constructor.parent_class.statechart != null)
+            {
+                this.output_file.write("this.commonConstructor(controller);");
+            }
             if (constructor.body != null && constructor.body.Trim() != "")
             {
-                this.output_file.write();
                 this.output_file.write("//constructor body (user-defined)");
                 this.writeCorrectIndent(constructor.body);
             }
             this.output_file.dedent();
             this.output_file.write("}");
-            this.output_file.write();
         }
             
         public override void visit(Destructor destructor)
         {
-            this.output_file.write(destructor.name + "()");
+            this.output_file.write();
+            this.output_file.write("~" + destructor.parent_class.name + "()");
             this.output_file.write("{");
             if (destructor.body != null)
             {
@@ -315,11 +357,11 @@ namespace csharp_sccd_compiler
                 this.output_file.dedent();
             }
             this.output_file.write("}");
-            this.output_file.write();
         }
             
         public override void visit(Method method)
         {
+            this.output_file.write();
             this.output_file.write(method.access + " " + method.return_type + " " + method.name + "(");
             this.writeFormalParameters(method.parameters);
             this.output_file.extendWrite(")");
@@ -333,7 +375,6 @@ namespace csharp_sccd_compiler
             }
             this.output_file.dedent();
             this.output_file.write("}");
-            this.output_file.write();
         }
 
         public override void visit(Association association)
@@ -771,7 +812,7 @@ namespace csharp_sccd_compiler
             this.writeTransitionsRecursively(statechart.root);           
                     
             //Write out transition function
-            this.output_file.write("protected override void transition (Event e = null)");
+            this.output_file.write("private void transition (Event e = null)");
             this.output_file.write("{");
             this.output_file.indent();
             this.output_file.write("if (e == null) {");
@@ -805,6 +846,119 @@ namespace csharp_sccd_compiler
             this.output_file.dedent();
             this.output_file.write("}");
             this.output_file.write();
+
+            this.output_file.write();
+
+            this.output_file.write("public void stop()");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("this.active = false;");
+            this.output_file.dedent();
+            this.output_file.write("}");
+
+            this.output_file.write();
+
+            this.output_file.write("private void microstep ()");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("List<Event> due = this.events.popDueEvents();");
+            this.output_file.write("if (due.Count == 0) {");
+            this.output_file.indent();
+            this.output_file.write("this.transition (null);");
+            this.output_file.dedent();
+            this.output_file.write("} else {");
+            this.output_file.indent();
+            this.output_file.write("foreach (Event e in due)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("this.transition(e);");
+            this.output_file.dedent();
+            this.output_file.write("}");
+            this.output_file.dedent();
+            this.output_file.write("}");
+            this.output_file.dedent();
+            this.output_file.write("}");
+
+            this.output_file.write();
+         
+            this.output_file.write("public void step(double delta)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("if (!this.active) return;");
+            this.output_file.write();
+            this.output_file.write("this.events.decreaseTime(delta);");
+            this.output_file.write();
+            this.output_file.write("if (this.timers != null && this.timers.Count > 0)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("var next_timers = new Dictionary<int,double>();");
+            this.output_file.write("foreach(KeyValuePair<int,double> pair in this.timers)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("double new_time = pair.Value - delta;");
+            this.output_file.write("if (new_time <= 0.0)");
+            this.output_file.indent();
+            this.output_file.write("this.addEvent (new Event(\"_\" + pair.Key + \"after\"), new_time);");
+            this.output_file.dedent();
+            this.output_file.write("else");
+            this.output_file.indent();
+            this.output_file.write("next_timers[pair.Key] = new_time;");
+            this.output_file.dedent();
+            this.output_file.dedent();
+            this.output_file.write("}");
+            this.output_file.write("this.timers = next_timers;");
+            this.output_file.dedent();
+            this.output_file.write("}");
+            this.output_file.write("this.microstep();");
+            this.output_file.write("while (this.state_changed)");
+            this.output_file.indent();
+            this.output_file.write("this.microstep();");
+            this.output_file.dedent();
+            this.output_file.dedent();
+            this.output_file.write("}");
+
+            this.output_file.write();
+
+            this.output_file.write("public void addEvent (Event input_event, double time_offset)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("this.events.Add (input_event, time_offset);");
+            this.output_file.dedent();
+            this.output_file.write("}");
+
+            this.output_file.write();
+
+            this.output_file.write("public void addEvent (Event input_event)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("this.addEvent(input_event, 0.0);");
+            this.output_file.dedent();
+            this.output_file.write("}");
+
+            this.output_file.write();
+
+            this.output_file.write("public double getEarliestEventTime ()");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("if (this.timers != null)");
+            this.output_file.write("{");
+            this.output_file.indent();
+            this.output_file.write("double smallest_timer_value = double.PositiveInfinity;");
+            this.output_file.write("foreach (double timer_value in this.timers.Values)");
+            this.output_file.write("{");
+            this.output_file.indent();                        
+            this.output_file.write("if (timer_value < smallest_timer_value)");
+            this.output_file.indent();
+            this.output_file.write("smallest_timer_value = timer_value;");
+            this.output_file.dedent();
+            this.output_file.dedent();
+            this.output_file.write("}");
+            this.output_file.write("return Math.Min(this.events.getEarliestTime(), smallest_timer_value); ");
+            this.output_file.dedent();
+            this.output_file.write("}");
+            this.output_file.write("return this.events.getEarliestTime();   ");
+            this.output_file.dedent();
+            this.output_file.write("}");
         }
 
         public override void visit(ExpressionPartString expression_part_string)

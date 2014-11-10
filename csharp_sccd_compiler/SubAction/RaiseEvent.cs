@@ -95,7 +95,7 @@ namespace csharp_sccd_compiler
             {
                 XAttribute expr_attribute = parameter_xml.Attribute("expr");
                 if (expr_attribute == null || expr_attribute.Value.Trim() == "")
-                    throw new ActionException("<parameter> in <raise> detected without \"value\" attribute.");
+                    throw new ActionException("<parameter> in <raise> detected without \"expr\" attribute.");
                 this.parameters.Add( new Expression(expr_attribute.Value.Trim()));
             }
         }

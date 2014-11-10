@@ -7,12 +7,20 @@ namespace csharp_sccd_compiler
 {
     public class Attribute : Visitable
     {
+        public string access { get; protected set; }
         public string name { get; private set; }
         public string type { get; private set; }
         public string init_value { get; private set; }
 
         public Attribute(XElement xml)
         {
+            //Set access level
+            XAttribute access_attribute = xml.Attribute("access");
+            if (access_attribute == null)
+                this.access = ""; //default value
+            else
+                this.access = access_attribute.Value.Trim();
+
             XAttribute name_attribute = xml.Attribute("name");
             if (name_attribute == null)
                 throw new CompilerException("Missing attribute name.");

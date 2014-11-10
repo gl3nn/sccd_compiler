@@ -45,12 +45,18 @@ namespace csharp_sccd_compiler
                 this.processMethod(method_xml);
             }
 
+            foreach(XElement constructor_xml in xml.Elements("contructor"))
+            {
+                this.constructors.Add(new Constructor(constructor_xml, this));
+            }
+
+            foreach(XElement destructor_xml in xml.Elements("destructor"))
+            {
+                this.destructors.Add(new Destructor(destructor_xml, this));
+            }
+            
             if (this.destructors.Count > 1)
                 throw new CompilerException("Multiple destructors defined.");
-
-            if (this.constructors.Count == 0)
-                this.constructors.Add(new Constructor(this.name));
-
 
             var associations = new List<XElement>();
             var inheritances = new List<XElement>();
@@ -75,7 +81,12 @@ namespace csharp_sccd_compiler
             if (statecharts.Length > 1)
                 throw new CompilerException("Multiple statecharts found.");
             if (statecharts.Length == 1)
-                this.statechart = new StateChart(statecharts[0]);
+            {
+                this.statechart = new StateChart(statecharts [0]);
+                if (this.constructors.Count == 0)
+                    this.constructors.Add(new Constructor(this));
+            }
+
         }
 
         private void processMethod(XElement method_xml)
@@ -89,11 +100,11 @@ namespace csharp_sccd_compiler
             if (Constants.Reserved.Contains(method_name))
                 throw new CompilerException(string.Format("Reserved word '{0}' used as method name.", method_name));
             if (method_name == this.name)
-                this.constructors.Add(new Constructor(method_xml));
+                this.constructors.Add(new Constructor(method_xml, this));
             else if (method_name == string.Concat("~",this.name))
-                this.destructors.Add(new Destructor(method_xml));
+                this.destructors.Add(new Destructor(method_xml, this));
             else
-                this.methods.Add(new Method(method_xml));
+                this.methods.Add(new Method(method_xml, this));
         }
 
         public override void accept(Visitor visitor)

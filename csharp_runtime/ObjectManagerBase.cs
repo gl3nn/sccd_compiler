@@ -8,7 +8,7 @@ namespace sccdlib
     {
         protected ControllerBase controller;
         EventQueue events = new EventQueue();
-        Dictionary<RuntimeClassBase,InstanceWrapper> instances_map = new Dictionary<RuntimeClassBase,InstanceWrapper> ();
+        Dictionary<IRuntimeClass,InstanceWrapper> instances_map = new Dictionary<IRuntimeClass,InstanceWrapper> ();
         
         public ObjectManagerBase (ControllerBase controller)
         {
@@ -27,7 +27,7 @@ namespace sccdlib
         
         public void broadcast (Event new_event)
         {
-            foreach (RuntimeClassBase instance in this.instances_map.Keys)
+            foreach (IRuntimeClass instance in this.instances_map.Keys)
                 instance.addEvent(new_event);
         }
         
@@ -36,7 +36,7 @@ namespace sccdlib
             //first get waiting time of the object manager's events
             double smallest_time = this.events.getEarliestTime();
             //check all the instances
-            foreach (RuntimeClassBase instance in this.instances_map.Keys)
+            foreach (IRuntimeClass instance in this.instances_map.Keys)
                 smallest_time = Math.Min(smallest_time, instance.getEarliestEventTime());
             return smallest_time;
         }
@@ -69,7 +69,7 @@ namespace sccdlib
         public void stepAll (double delta)
         {
             this.step(delta);
-            foreach (RuntimeClassBase instance in this.instances_map.Keys)
+            foreach (IRuntimeClass instance in this.instances_map.Keys)
             {
                 instance.step(delta);
             }
@@ -78,7 +78,7 @@ namespace sccdlib
         
         public void start ()
         {
-            foreach (RuntimeClassBase instance in this.instances_map.Keys)
+            foreach (IRuntimeClass instance in this.instances_map.Keys)
                 instance.start(); 
         }
         
@@ -129,7 +129,7 @@ namespace sccdlib
         /// <param name='traversal_list'>
         /// Traversal_list.
         /// </param>
-        private List<InstanceWrapper> getInstances (RuntimeClassBase source, List<KeyValuePair<string, int>> traversal_list)
+        private List<InstanceWrapper> getInstances (IRuntimeClass source, List<KeyValuePair<string, int>> traversal_list)
         {
             var currents = new List<InstanceWrapper> ();
             currents.Add (this.instances_map [source]);
@@ -161,7 +161,7 @@ namespace sccdlib
             if (parameters.Length != 2) {
                 throw new ParameterException ("The start instance event needs 2 parameters.");    
             } else {
-                RuntimeClassBase source = (RuntimeClassBase) parameters[0];
+                IRuntimeClass source = (IRuntimeClass) parameters[0];
                 var traversal_list = this.processAssociationReference((string) parameters [1]);
                 
                 foreach( InstanceWrapper i in this.getInstances (source, traversal_list)){
@@ -189,7 +189,7 @@ namespace sccdlib
             if (parameters.Length < 2) {
                 throw new ParameterException ("The create event needs at least 2 parameters.");   
             } else {
-                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                IRuntimeClass source = (IRuntimeClass)parameters [0];
                 string association_name = (string)parameters [1];
                 Association association = this.instances_map[source].getAssociation (association_name);
                 if (association.allowedToAdd ()){
@@ -226,7 +226,7 @@ namespace sccdlib
             if (parameters.Length < 2) {
                 throw new ParameterException ("The delete event needs at least 2 parameters.");
             } else {
-                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                IRuntimeClass source = (IRuntimeClass)parameters [0];
                 string association_name = (string)parameters [1];
                 List<KeyValuePair<string,int>> traversal_list = this.processAssociationReference (association_name);
                 List<InstanceWrapper> instances = this.getInstances(source, traversal_list);
@@ -235,7 +235,7 @@ namespace sccdlib
                 {
                     InstanceWrapper instance_wrapper = instances[i];
                     association.removeInstance(instance_wrapper);
-                    RuntimeClassBase instance = instance_wrapper.getInstance();
+                    IRuntimeClass instance = instance_wrapper.getInstance();
                     instance.stop();
                     //TODO if instance has destructor, call it ?.
                     source.addEvent(new Event("instance_deleted", "", new object[] {parameters[1]}));
@@ -248,7 +248,7 @@ namespace sccdlib
             if (parameters.Length != 3) {
                 throw new ParameterException ("The associate_instance event needs 3 parameters.");
             } else {
-                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                IRuntimeClass source = (IRuntimeClass)parameters [0];
                 List<InstanceWrapper> to_copy_list = this.getInstances (source, this.processAssociationReference ((string)parameters [1]));
                 if (to_copy_list.Count != 1)
                     throw new AssociationReferenceException ("Invalid source association reference.");
@@ -271,7 +271,7 @@ namespace sccdlib
             if (parameters.Length != 3){
                 throw new ParameterException ("The associate_instance event needs 3 parameters.");
             }else{
-                RuntimeClassBase source = (RuntimeClassBase)parameters [0];
+                IRuntimeClass source = (IRuntimeClass)parameters [0];
                 Event cast_event = (Event) parameters[2];
                 foreach (InstanceWrapper i in this.getInstances(source, this.processAssociationReference( (string) parameters[1])))
                     i.getInstance ().addEvent(cast_event);

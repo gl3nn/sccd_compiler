@@ -5,11 +5,11 @@ namespace sccdlib
 {
     public class InstanceWrapper
     {
-        RuntimeClassBase instance;
+        IRuntimeClass instance;
         Dictionary<string,Association> associations = new Dictionary<string, Association>();
         
         
-        public InstanceWrapper (RuntimeClassBase instance, List<Association> associations)
+        public InstanceWrapper (IRuntimeClass instance, List<Association> associations)
         {
             this.instance = instance;
             foreach (var association in associations) {
@@ -26,7 +26,7 @@ namespace sccdlib
             }
         }
         
-        public RuntimeClassBase getInstance ()
+        public IRuntimeClass getInstance ()
         {
             return this.instance;
         }

@@ -41,7 +41,6 @@
     <Compile Include="OutputListener.cs" />
     <Compile Include="ControllerBase.cs" />
     <Compile Include="GameControllerBase.cs" />
-    <Compile Include="RuntimeClassBase.cs" />
     <Compile Include="AssociationException.cs" />
     <Compile Include="IOutputListener.cs" />
     <Compile Include="AssociationReferenceException.cs" />
@@ -49,6 +48,7 @@
     <Compile Include="ParameterException.cs" />
     <Compile Include="EventQueue.cs" />
     <Compile Include="InputException.cs" />
+    <Compile Include="IRuntimeClass.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

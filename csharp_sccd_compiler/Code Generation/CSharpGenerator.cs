@@ -366,14 +366,12 @@ namespace csharp_sccd_compiler
             this.writeFormalParameters(method.parameters);
             this.output_file.extendWrite(")");
             this.output_file.write("{");
-            this.output_file.indent();
             if (method.body != null)
             {
                 this.output_file.indent();
                 this.writeCorrectIndent(method.body);
                 this.output_file.dedent();
             }
-            this.output_file.dedent();
             this.output_file.write("}");
         }
 
@@ -994,7 +992,7 @@ namespace csharp_sccd_compiler
             if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE)
             {
                 this.output_file.write(
-                    "this.object_manager.addEvent(new Event(\"narrow_cast\", \"\", new object[] {this, \"" + raise_event.target + "\", " + createEvent(raise_event.event_name));
+                    "this.object_manager.addEvent(new Event(\"narrow_cast\", \"\", new object[] {this, " + raise_event.target + ", " + createEvent(raise_event.event_name));
             }
             else if (raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
             {

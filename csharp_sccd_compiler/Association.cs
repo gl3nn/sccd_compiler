@@ -63,7 +63,7 @@ namespace csharp_sccd_compiler
                 try
                 {
                     this.max = Convert.ToInt32(max_card_attribute.Value);
-                    if(this.max < this.min)
+                    if(this.max < this.min && this.max != -1)
                         throw new FormatException();                 
                 }
                 catch(FormatException)
@@ -72,7 +72,7 @@ namespace csharp_sccd_compiler
                 }
                 catch(OverflowException)
                 {
-                    throw new CompilerException("Maximum cardinality of association is too large.");
+                    throw new CompilerException("Maximum cardinality of association causes overflow exception.");
                 }
             }
 

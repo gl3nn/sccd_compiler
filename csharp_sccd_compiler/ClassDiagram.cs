@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using System.Collections.Generic;
@@ -39,9 +40,24 @@ namespace csharp_sccd_compiler
                 model_description = description_element.Value;
 
             this.class_names = new List<string>();
-			foreach (XElement class_xml in root.Elements("class"))
+			List<XElement> substituted_xml_classes = new List<XElement> ();
+			foreach (XElement xml_class in root.Elements ("class"))
             {
-                XAttribute class_name_attribute = class_xml.Attribute("name");
+				XAttribute src_attribute = xml_class.Attribute("src");
+				if (src_attribute == null || src_attribute.Value.Trim() == "")
+					substituted_xml_classes.Add (xml_class);
+				else
+				{
+					string class_src = src_attribute.Value.Trim();
+					if (!Path.IsPathRooted(class_src))
+						class_src = Path.Combine(Path.GetDirectoryName (input_file_path), class_src);
+					XElement substitute = XDocument.Load(class_src).Root;
+                    if(xml_class.Attribute("default") != null)
+                        substitute.SetAttributeValue("default", xml_class.Attribute("default").Value);
+                    substituted_xml_classes.Add (substitute); //Use imported xml class
+				}
+
+				XAttribute class_name_attribute = substituted_xml_classes[substituted_xml_classes.Count-1].Attribute("name");
                 if (class_name_attribute == null)
                     throw new CompilerException("Missing class name.");
                 string class_name = class_name_attribute.Value.Trim();
@@ -92,7 +108,7 @@ namespace csharp_sccd_compiler
             this.classes = new List<Class>(); 
             List<Class> default_classes = new List<Class>(); 
 
-            foreach (XElement class_xml in root.Elements("class"))
+            foreach (XElement class_xml in substituted_xml_classes)
             {
                 Class processed_class = null;
                 try

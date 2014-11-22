@@ -45,7 +45,7 @@ namespace csharp_sccd_compiler
                 this.processMethod(method_xml);
             }
 
-            foreach(XElement constructor_xml in xml.Elements("contructor"))
+            foreach(XElement constructor_xml in xml.Elements("constructor"))
             {
                 this.constructors.Add(new Constructor(constructor_xml, this));
             }

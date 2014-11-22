@@ -39,12 +39,12 @@ namespace sccdlib
         
         public bool allowedToAdd ()
         {
-            return ( (this.max_card == -1) || ( this.instances.Count < this.max_card ) );    
+            return (this.max_card == -1) || ( this.instances.Count < this.max_card );    
         }
 
         public bool allowedToRemove ()
         {
-            return ( (this.min_card == -1) || ( this.instances.Count > this.min_card ) );    
+            return (this.instances.Count > this.min_card);    
         }
         
         public int addInstance (InstanceWrapper instance)
@@ -65,10 +65,33 @@ namespace sccdlib
             {
                 this.instances.Remove(this.instances_to_id [instance]);
                 this.instances_to_id.Remove(instance);
-            }
-            else
+            }else
             {
-                throw new AssociationException("Not allowed to remove the instance to the association.");
+                throw new AssociationException("Not allowed to remove the instance from the association.");
+            }
+        }
+
+        public void removeInstance(int instance_id)
+        {
+            if (this.allowedToRemove())
+            {
+                this.instances_to_id.Remove(this.instances[instance_id]);
+                this.instances.Remove(instance_id);
+            }else
+            {
+                throw new AssociationException("Not allowed to remove the instance from the association.");
+            }
+        }
+
+        public void removeAllInstances()
+        {
+            if (this.min_card == 0)
+            {
+                this.instances_to_id.Clear();
+                this.instances.Clear();
+            } else
+            {
+                throw new AssociationException("Not allowed to remove all instances from the association as the minimum cardinality is not 0.");
             }
         }
         

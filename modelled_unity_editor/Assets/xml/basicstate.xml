@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BasicState">
+    <relationships>
+        <inheritance class="State"/>
+        <association class="State" name="children"/>
+        <association class="IRuntimeClass" name="parent"/>
+        <association class="Canvas" name="canvas"/>
+    </relationships>
+    <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
+    <constructor>
+        <parameter type="CanvasItem" name="canvas_item"/>
+        <super>
+            <parameter expr="canvas_item"/>
+        </super>
+        <body>
+            <![CDATA[
+            this.children_map = new Dictionary<int,int>();
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="selected">
+        <state id="not_selected">
+            <transition event="select" port="input" target="../selected" cond="this.canvas_item.tag == tag">
+                <parameter type="int" name="tag"/>
+                <script>
+                    this.canvas_item.pushToFront();
+                </script>
+            </transition>
+            <transition event="new_child" target=".">
+            	<parameter type="int" name="id"/>
+            	<parameter type="CanvasItem" name="child"/>
+            	<script>
+            		this.canvas_item.addChild(child);
+            		this.children_map[child.tag] = id;
+                    this.canvas_item.adjustSize();
+            	</script>
+            </transition>
+        </state>
+        <state id="selected" initial="not_dragging">
+            <onentry>
+                <script>
+                    this.canvas_item.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                </script>
+            </onentry>
+            <transition event="select" port="input" target="../not_selected" cond="this.canvas_item.tag != tag">
+                <parameter type="int" name="tag"/>
+                <script>
+                    this.canvas_item.resetColor();
+                </script>
+            </transition>
+            
+            <state id="not_dragging">
+                <transition target="../dragging" port="input" event="drag">
+                    <parameter type="int" name="tag"/>
+                    <parameter type="Vector2" name="delta"/>
+                    <script>
+                        this.canvas_item.move(delta);
+                    </script>
+                </transition>
+            </state>
+            <state id="dragging">
+                <transition target="." port="input" event="drag">
+                    <parameter type="int" name="tag"/>
+                    <parameter type="Vector2" name="delta"/>
+                    <script>
+                        this.canvas_item.move(delta);
+                    </script>
+                </transition>
+                <transition target="../layout" port="input" event="mouse_up" cond="this.canvas_item.getOverlappings().Count == 0">
+                </transition>
+                <transition target="../not_dragging" port="input" event="mouse_up" cond="this.canvas_item.getOverlappings().Count > 0">
+                	<raise event="disconnect_child" target='"parent"'>
+                		<parameter expr="this.canvas_item"/>
+                	</raise>
+                	<raise event="connect_child_to_parent" target='"parent"'>
+                		<parameter expr="this.canvas_item"/>
+                		<parameter expr="this.canvas_item.getOverlappings()[0]"/>
+                	</raise>
+                </transition>
+            </state>
+            <state id="layout">
+            	<transition target="../not_dragging">
+                    <script>
+                    //grootte veranderen
+                    </script>
+            	</transition>
+            </state>
+            
+        </state>
+    </scxml>
+</class>

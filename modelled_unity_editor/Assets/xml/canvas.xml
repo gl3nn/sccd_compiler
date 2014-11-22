@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Canvas">
+    <relationships>
+        <association class="State" name="children"/>
+        <association class="State" name="all_states"/>
+    </relationships>
+    <attribute type="EditorCanvas" name="canvas"/>
+    <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
+    <attribute type="Dictionary&lt;int, int&gt;" name="all_states_map"/>
+    <attribute type="CanvasItem" name="current_item"/>
+    <constructor>
+        <parameter type="EditorCanvas" name="canvas"/>
+        <body>
+            <![CDATA[
+            this.canvas = canvas;
+            this.children_map = new Dictionary<int,int>();
+            this.all_states_map = new Dictionary<int,int>();
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="waiting">
+        <state id="waiting">
+            <transition event="create" port="input" target="../creation">
+                <parameter type="Vector2" name="position"/>
+                <script>
+                    this.current_item = new CanvasItem(position, this.canvas);
+                </script>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"all_states"' />
+                    <parameter expr='"BasicState"'/>
+                    <parameter expr='this.current_item' />                              
+                </raise>
+            </transition>
+            <transition event="disconnect_child" target=".">
+                <parameter name="child" type="CanvasItem"/>
+                <raise scope="cd" event="unassociate_instance">
+                    <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
+                </raise>
+                <script>
+                	this.children_map.Remove(child.tag);
+                	this.canvas.removeChild(child);
+                </script>
+            </transition>
+            <transition event="connect_child_to_parent" target="../connecting">
+                <parameter name="child" type="CanvasItem"/>
+                <parameter name="parent" type="CanvasItem"/>
+                <script>
+                	this.current_item = child;
+                	String parent_path = String.Format("all_states[{0}]", this.all_states_map[parent.tag]);
+                	String child_path = String.Format("all_states[{0}]", this.all_states_map[child.tag]);
+                    Debug.Log("connect_child_to_parent");
+                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='child_path' />
+                    <parameter expr='parent_path + "/children"'/>
+                </raise>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='parent_path' />
+                    <parameter expr='child_path + "/parent"'/>
+                </raise>
+            </transition>
+        </state>
+        <state id="creation">
+            <transition event="instance_created" target="../waiting">
+            	<parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                	String association_path = String.Format("{0}[{1}]", association_name, id);
+                	this.children_map[this.current_item.tag] = id;
+                	this.all_states_map[this.current_item.tag] = id;
+                	this.current_item = null;
+                </script>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='association_path' />
+                    <parameter expr='"children"'/>
+                </raise>
+            </transition>
+        </state>
+        <state id="connecting">
+        	<transition event="instance_associated" cond='association_name.EndsWith("/children")' target="../waiting">
+            	<parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                    String parent_path = association_name.Substring(0, association_name.Length-9);
+                </script>
+                <raise event="new_child" target="parent_path">
+                	<parameter expr="id"/>
+                	<parameter expr="this.current_item"/>
+                </raise>
+                <script>
+                	this.current_item = null;
+                </script>
+        	</transition>
+        </state>
+    </scxml>
+</class>

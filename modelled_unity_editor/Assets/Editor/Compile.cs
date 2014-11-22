@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System;
+using System.IO;
 using csharp_sccd_compiler;
 
 namespace SCCDEditor{
@@ -8,7 +10,17 @@ namespace SCCDEditor{
         [MenuItem("SCCD/Compile Editor")]
         public static void compile()
         {
-            Compiler.generate("Assets/editor.xml", "Assets/Editor/editor.cs", CodeGenerator.Platform.GAMELOOP);
+            Logger.verbose = 2;
+            var stdOut = System.Console.Out;
+            StringWriter consoleOut = new StringWriter();
+            System.Console.SetOut(consoleOut);
+            try {
+				Compiler.generate(Path.Combine(Application.dataPath, "editor.xml"), Path.Combine(Application.dataPath, "Editor/editor.cs"), CodeGenerator.Platform.GAMELOOP);
+            } catch (Exception e) {
+                Debug.Log(e);
+            }
+            Debug.Log( consoleOut.ToString());
+            System.Console.SetOut(stdOut);
             AssetDatabase.Refresh();
         }
     }

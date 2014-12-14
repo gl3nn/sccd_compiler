@@ -2,15 +2,17 @@ using UnityEngine;
 using System.Collections.Generic;
 
 namespace SCCDEditor{
-    public class EditorCanvas {
+	public class EditorCanvas {
 
         private List<CanvasItem>    children = new List<CanvasItem>();
         private int                 tag_counter = 0;
 
         public Rect                 rect { get; private set; }
+		public StateChartEditorWindow window { get; private set; }
 
-        public EditorCanvas()
+		public EditorCanvas(StateChartEditorWindow window)
         {
+			this.window = window;
             this.rect = new Rect(0, 0, 0, 0);
         }
         
@@ -75,13 +77,24 @@ namespace SCCDEditor{
             return new Rect (xMin,yMin,xMax-xMin, yMax-yMin);
         }
 
-        public List<CanvasItem> getOverlappings(CanvasItem item) {
+        public List<CanvasItem> getOverlappingsOf(CanvasItem item) {
             List<CanvasItem> overlappings = new List<CanvasItem>(); 
             for (int i =0; i < this.children.Count; i++)
             {
-                this.children[i].getOverlappings(overlappings, item);
+                this.children[i].getOverlappingsOf(overlappings, item);
             }
             return overlappings;
+        }
+
+        public CanvasItem getImmediateContainerOf(CanvasItem item) 
+        {
+            for (int i = 0; i < this.children.Count; i++)
+            {
+                CanvasItem container = this.children[i].getImmediateContainerOf(item); //returns tag of lowest child completely surround given item
+                if (container != null)
+                    return container;
+            }
+            return null;
         }
 
         public void pushChildToFront(CanvasItem item) 
@@ -89,5 +102,10 @@ namespace SCCDEditor{
             this.children.Remove(item);
             this.children.Add(item);
         }
+
+		public void createModalWindow(string title, SCCDModalWindow.DrawFunction draw_function)
+		{
+			this.window.createModalWindow(title, draw_function, true);
+		}
     }
 }

@@ -6,15 +6,15 @@ namespace SCCDEditor{
 
         public static float DEFAULT_WIDTH = 100;
         public static float DEFAULT_HEIGHT = 100;
-
+        public static float MARGIN = 5;
+        
         public Rect                 rect { get; private set; }
         public int                  tag { get; private set; }
         public string               label { get; set; }
-        private CanvasItem          parent { get; set; }
+        public CanvasItem           parent { get; /*private*/ set; }
+		public EditorCanvas         canvas { get; set; }
 
         private List<CanvasItem>    children    = new List<CanvasItem>();
-        private string              name;
-        private EditorCanvas        canvas;
 
         private Color?              color       = null;
 
@@ -25,7 +25,7 @@ namespace SCCDEditor{
             this.rect = rect;
             this.canvas = canvas;
             this.tag = canvas.getUniqueTag();
-            this.canvas.addChild(this);
+            //this.canvas.addChild(this);
             this.label = string.Format("state {0}", this.tag);
             this.parent = null;
         }
@@ -33,11 +33,13 @@ namespace SCCDEditor{
         public void addChild(CanvasItem child) 
         {
             this.children.Add(child);
+            child.parent = this;
         }
 
         public void removeChild(CanvasItem child)
 		{
             this.children.Remove (child);
+            child.parent = null;
 		}
         
         public void setSize(float width, float height)
@@ -94,11 +96,11 @@ namespace SCCDEditor{
 
         public List<CanvasItem> getOverlappings() 
         {
-            return this.canvas.getOverlappings(this);
+            return this.canvas.getOverlappingsOf(this);
         }
 
-        public void getOverlappings(List<CanvasItem> overlappings, CanvasItem item) {
-            if (this != item)
+        public void getOverlappingsOf(List<CanvasItem> overlappings, CanvasItem item) {
+            if (this!= item.parent && this != item)
             {
                 if (this.rect.Overlaps(item.rect))
                 {
@@ -106,9 +108,40 @@ namespace SCCDEditor{
                 }
                 for (int i =0; i < this.children.Count; i++)
                 {
-                    this.children[i].getOverlappings(overlappings, item);
+                    this.children[i].getOverlappingsOf(overlappings, item);
                 }
             }
+        }
+
+        public CanvasItem getImmediateContainer() {
+            return this.canvas.getImmediateContainerOf(this);
+        }
+
+        public CanvasItem getImmediateContainerOf(CanvasItem item) 
+        {
+            if (this.rect.Contains(new Vector2(item.rect.xMin, item.rect.yMin))
+                && this.rect.Contains(new Vector2(item.rect.xMax, item.rect.yMax)))
+            {
+                for (int i = 0; i < this.children.Count; i++)
+                {
+                    CanvasItem surrounding = this.children [i].getImmediateContainerOf(item); //returns tag of lowest child completely surround given item
+                    if (surrounding != null)
+                        return surrounding;
+                }
+                return this;
+            }
+            return null;
+        }
+        
+        public bool isAncestorOf(CanvasItem item)
+        {
+            while (item.parent != null)
+            {
+                if (item.parent == this)
+                    return true;
+                item = item.parent;
+            }
+            return false;
         }
 
         public void pushToFront() 
@@ -126,6 +159,8 @@ namespace SCCDEditor{
             this.pushToFront();
         }
 
+
+        
         public void adjustSize()
         {
             float xMin = this.rect.xMin;
@@ -134,12 +169,12 @@ namespace SCCDEditor{
             float yMax = this.rect.yMax;
             foreach(CanvasItem child in this.children)
             {
-                if (child.rect.xMin < xMin) xMin = child.rect.xMin;
-                if (child.rect.yMin < yMin) yMin = child.rect.yMin;
-                if (child.rect.xMax > xMax) xMax = child.rect.xMax;
-                if (child.rect.yMax > yMax) yMax = child.rect.yMax;
+                if (child.rect.xMin - MARGIN < xMin) xMin = child.rect.xMin - MARGIN;
+                if (child.rect.yMin - MARGIN < yMin) yMin = child.rect.yMin - MARGIN;
+                if (child.rect.xMax + MARGIN > xMax) xMax = child.rect.xMax + MARGIN;
+                if (child.rect.yMax + MARGIN > yMax) yMax = child.rect.yMax + MARGIN;
             }
-           this.rect = new Rect (xMin - 5,yMin -5 ,xMax-xMin +10, yMax-yMin +10);
+           this.rect = new Rect (xMin, yMin, xMax-xMin, yMax-yMin);
         }
     }
 }

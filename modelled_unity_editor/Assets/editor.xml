@@ -15,8 +15,10 @@
     
     <inport name="input" />
     <inport name="engine" />
+    <inport name="windows" />
     
     <class name="Canvas" default="true" src="xml/canvas.xml"/>
     <class name="State" src="xml/state.xml"/>
     <class name="BasicState" src="xml/basicstate.xml"/>
+    <class name="StateDropWindow" src="xml/state_drop_window.xml"/>
 </diagram>

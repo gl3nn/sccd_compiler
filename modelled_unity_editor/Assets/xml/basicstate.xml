@@ -3,8 +3,9 @@
     <relationships>
         <inheritance class="State"/>
         <association class="State" name="children"/>
-        <association class="IRuntimeClass" name="parent"/>
-        <association class="Canvas" name="canvas"/>
+        <association class="IRuntimeClass" name="parent" max="1"/>
+        <association class="Canvas" name="canvas" max="1"/>
+        <association class="StateDropWindow" name="state_drop" max="1"/>
     </relationships>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <constructor>
@@ -18,74 +19,124 @@
             ]]>
         </body>
     </constructor>
-    <scxml initial="selected">
-        <state id="not_selected">
-            <transition event="select" port="input" target="../selected" cond="this.canvas_item.tag == tag">
-                <parameter type="int" name="tag"/>
-                <script>
-                    this.canvas_item.pushToFront();
-                </script>
-            </transition>
-            <transition event="new_child" target=".">
-            	<parameter type="int" name="id"/>
-            	<parameter type="CanvasItem" name="child"/>
-            	<script>
-            		this.canvas_item.addChild(child);
-            		this.children_map[child.tag] = id;
-                    this.canvas_item.adjustSize();
-            	</script>
-            </transition>
-        </state>
-        <state id="selected" initial="not_dragging">
+    <scxml initial="active">
+        <state id="active" initial="selected">
             <onentry>
-                <script>
-                    this.canvas_item.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
-                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"parent"' />
+                    <parameter expr='"canvas"'/>
+                </raise>
             </onentry>
-            <transition event="select" port="input" target="../not_selected" cond="this.canvas_item.tag != tag">
-                <parameter type="int" name="tag"/>
-                <script>
-                    this.canvas_item.resetColor();
-                </script>
-            </transition>
-            
-            <state id="not_dragging">
-                <transition target="../dragging" port="input" event="drag">
+            <state id="not_selected">
+                <transition event="select" port="input" target="../selected" cond="this.canvas_item.tag == tag">
                     <parameter type="int" name="tag"/>
-                    <parameter type="Vector2" name="delta"/>
                     <script>
-                        this.canvas_item.move(delta);
+                        this.canvas_item.pushToFront();
+                    </script>
+                </transition>
+                <transition event="new_child" target=".">
+                	<parameter type="int" name="id"/>
+                	<parameter type="CanvasItem" name="child"/>
+                	<script>
+                		this.canvas_item.addChild(child);
+                		this.children_map[child.tag] = id;
+                        this.canvas_item.adjustSize();
+                	</script>
+                </transition>
+                <transition event="adjust_size" target=".">
+                    <script>
+                        this.canvas_item.adjustSize();
+                    </script>
+                </transition>
+                <transition event="disconnect_child" target=".">
+                    <parameter name="child" type="CanvasItem"/>
+                    <raise scope="cd" event="unassociate_instance">
+                        <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
+                    </raise>
+                    <script>
+                        this.children_map.Remove(child.tag);
+                        this.canvas_item.removeChild(child);
                     </script>
                 </transition>
             </state>
-            <state id="dragging">
-                <transition target="." port="input" event="drag">
+            <state id="selected" initial="not_dragging">
+                <onentry>
+                    <script>
+                        this.canvas_item.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                    </script>
+                </onentry>
+                <transition event="select" port="input" target="../not_selected" cond="this.canvas_item.tag != tag">
                     <parameter type="int" name="tag"/>
-                    <parameter type="Vector2" name="delta"/>
                     <script>
-                        this.canvas_item.move(delta);
+                        this.canvas_item.resetColor();
                     </script>
                 </transition>
-                <transition target="../layout" port="input" event="mouse_up" cond="this.canvas_item.getOverlappings().Count == 0">
-                </transition>
-                <transition target="../not_dragging" port="input" event="mouse_up" cond="this.canvas_item.getOverlappings().Count > 0">
-                	<raise event="disconnect_child" target='"parent"'>
-                		<parameter expr="this.canvas_item"/>
-                	</raise>
-                	<raise event="connect_child_to_parent" target='"parent"'>
-                		<parameter expr="this.canvas_item"/>
-                		<parameter expr="this.canvas_item.getOverlappings()[0]"/>
-                	</raise>
-                </transition>
+                
+                <state id="not_dragging">
+                    <transition target="../dragging" port="input" event="drag">
+                        <parameter type="int" name="tag"/>
+                        <parameter type="Vector2" name="delta"/>
+                        <script>
+                            this.canvas_item.move(delta);
+                        </script>
+                    </transition>
+                </state>
+                <state id="dragging">
+                    <transition target="." port="input" event="drag">
+                        <parameter type="int" name="tag"/>
+                        <parameter type="Vector2" name="delta"/>
+                        <script>
+                            this.canvas_item.move(delta);
+                        </script>
+                    </transition>
+                    <transition target="../drop" port="input" event="mouse_up"/>
+                </state>
+                <state id="drop" initial="drop_window_activation">
+                    <onentry>
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"state_drop"' />
+                            <parameter expr='"StateDropWindow"'/>
+                            <parameter expr='this.canvas_item' />
+                        </raise>
+                    </onentry>
+                    <state id="drop_window_activation">
+                        <transition event="instance_created" target="../wait_for_drop_window">
+                            <parameter name="id" type="int"/>
+                            <parameter name="association_name" type="String"/>
+                            <raise scope="cd" event="start_instance">
+                                <parameter expr='association_name' />
+                            </raise>
+                        </transition>
+                    </state>
+                    <state id="wait_for_drop_window">
+                        <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
+                            <parameter type="bool" name="do_reconnect"/>
+                            <parameter type="CanvasItem" name="connection"/>
+                            <raise scope="cd" event="delete_instance">
+                                <parameter expr='"state_drop"' />
+                            </raise>
+                            <raise target='"parent"' event="adjust_size"/>
+                        </transition>
+                        <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
+                            <parameter type="bool" name="do_reconnect"/>
+                            <parameter type="CanvasItem" name="connection"/>
+                            <raise event="disconnect_child" target='"parent"'>
+                                <parameter expr="this.canvas_item"/>
+                            </raise>
+                            <raise scope="cd" event="unassociate_instance">
+                                <parameter expr='"parent"' />                          
+                            </raise>
+                            <raise event="connect_child_to_parent" target='"canvas"'>
+                                <parameter expr="this.canvas_item"/>
+                                <parameter expr="connection"/>
+                            </raise>
+                            <raise scope="cd" event="delete_instance">
+                                <parameter expr='"state_drop"' />
+                            </raise>
+                        </transition>
+                    </state>
+                </state>            
             </state>
-            <state id="layout">
-            	<transition target="../not_dragging">
-                    <script>
-                    //grootte veranderen
-                    </script>
-            	</transition>
-            </state>
-            
         </state>
     </scxml>
 </class>

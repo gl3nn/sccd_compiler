@@ -28,11 +28,14 @@
                 <raise scope="cd" event="create_instance">
                     <parameter expr='"all_states"' />
                     <parameter expr='"BasicState"'/>
-                    <parameter expr='this.current_item' />                              
+                    <parameter expr='this.current_item' />
                 </raise>
             </transition>
             <transition event="disconnect_child" target=".">
                 <parameter name="child" type="CanvasItem"/>
+                <script>
+                    Debug.Log(string.Format("removing tag {0} from canvas", child.tag));
+                </script>
                 <raise scope="cd" event="unassociate_instance">
                     <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
                 </raise>
@@ -46,9 +49,12 @@
                 <parameter name="parent" type="CanvasItem"/>
                 <script>
                 	this.current_item = child;
-                	String parent_path = String.Format("all_states[{0}]", this.all_states_map[parent.tag]);
+                    String parent_path = ".";
+                    if (parent != null)
+                    {
+                        parent_path = String.Format("all_states[{0}]", this.all_states_map[parent.tag]);
+                    }
                 	String child_path = String.Format("all_states[{0}]", this.all_states_map[child.tag]);
-                    Debug.Log("connect_child_to_parent");
                 </script>
                 <raise scope="cd" event="associate_instance">
                     <parameter expr='child_path' />
@@ -59,23 +65,34 @@
                     <parameter expr='child_path + "/parent"'/>
                 </raise>
             </transition>
+            <transition event="new_child" target=".">
+                <parameter type="int" name="id"/>
+                <parameter type="CanvasItem" name="child"/>
+                <script>
+                    this.canvas.addChild(child);
+                    this.children_map[child.tag] = id;
+                    //this.canvas.adjustSize();
+                    Debug.Log(string.Format("new child with id {0} and tag {1}", id, child.tag));
+                </script>
+            </transition>
         </state>
         <state id="creation">
-            <transition event="instance_created" target="../waiting">
+            <transition event="instance_created" target="../connecting">
             	<parameter name="id" type="int"/>
                 <parameter name="association_name" type="String"/>
                 <script>
                 	String association_path = String.Format("{0}[{1}]", association_name, id);
-                	this.children_map[this.current_item.tag] = id;
+                	//this.children_map[this.current_item.tag] = id;
+                    Debug.Log(string.Format("setting tag {0} to id {1}", this.current_item.tag, id));
                 	this.all_states_map[this.current_item.tag] = id;
-                	this.current_item = null;
+                	//this.current_item = null;
                 </script>
                 <raise scope="cd" event="start_instance">
                     <parameter expr='association_path' />
                 </raise>
                 <raise scope="cd" event="associate_instance">
                     <parameter expr='association_path' />
-                    <parameter expr='"children"'/>
+                    <parameter expr='"./children"'/>
                 </raise>
             </transition>
         </state>

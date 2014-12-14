@@ -7,15 +7,18 @@ namespace SCCDEditor{
     public class StateChartEditorWindow : EditorWindow
     {
 		// Imported from compiled model.
-        Controller controller;
+        private Controller      controller;
 
-        EditorCanvas canvas;
-        Vector2 canvas_scroll_position = Vector2.zero;
+        private double          update_time = 0;
 
-		double update_time = 0;
+        public  EditorCanvas    canvas { private set; get; }
+		private Rect            canvas_area;
+        private Vector2         canvas_scroll_position = Vector2.zero;
 
-        int selected_toolbar_button = 0;
-        string[] toolbar_buttons = new string[] {"Basic", "Composite"};
+        private SCCDModalWindow modal_window = null;
+
+        private int             selected_toolbar_button = 0;
+        private string[]        toolbar_buttons = new string[] {"Basic", "Composite"};
 
 
 		[MenuItem("SCCD/Open Editor")]
@@ -26,15 +29,34 @@ namespace SCCDEditor{
             window.title = "StateChart Editor";
             UnityEngine.Object.DontDestroyOnLoad( window );
         }
-    
+
+        public Vector2 getWindowModalPosition()
+        {
+            return new Vector2(this.position.width/2, this.position.height/2);
+        }
+
+		public Vector2 getCanvasModalPosition()
+		{
+            return new Vector2(this.canvas_area.width/2, this.canvas_area.height/2);
+		}
+
         public StateChartEditorWindow()
         {
-            this.canvas = new EditorCanvas();
+            this.canvas = new EditorCanvas(this);
             this.controller = new Controller(this.canvas);
             this.controller.start();
         }
+
+		public void createModalWindow(string title, SCCDModalWindow.DrawFunction draw_function, bool over_canvas = false)
+		{
+            if (over_canvas)
+                this.modal_window = new SCCDModalWindow(title, draw_function, this.getCanvasModalPosition);
+            else
+                this.modal_window = new SCCDModalWindow(title, draw_function, this.getWindowModalPosition);
+		}
     
-        private void handleCanvasEvents() {
+        private void handleCanvasEvents() 
+        {
             //if (Event.current.type != EventType.Ignore && Event.current.type != EventType.Used){
             if (Event.current.type == EventType.MouseDown)
             {
@@ -80,32 +102,60 @@ namespace SCCDEditor{
 
         private void drawToolArea()
         {
-            GUILayout.BeginArea (new Rect(0,0, this.position.width, 40) , "", "box");
-            GUILayout.BeginHorizontal();
-            this.selected_toolbar_button = GUILayout.Toolbar(this.selected_toolbar_button, this.toolbar_buttons);
+            GUILayout.BeginHorizontal("box");
+            this.selected_toolbar_button = GUILayout.Toolbar(this.selected_toolbar_button, this.toolbar_buttons, "button");
             GUILayout.EndHorizontal();
-            GUILayout.EndArea();
         }
-        
-        public void OnGUI()
+
+        private void updateController()
         {
-            this.drawToolArea();
-            Rect draw_area = new Rect(0, 40, this.position.width, this.position.height - 40);
-            this.canvas.adjustSizeToMinimum(draw_area);
-            this.canvas_scroll_position = GUI.BeginScrollView (draw_area, this.canvas_scroll_position, this.canvas.rect);    
             var stdOut = System.Console.Out;
             var consoleOut = new StringWriter();
             System.Console.SetOut(consoleOut);
-            this.handleCanvasEvents();
-            if (Event.current.type == EventType.Repaint)
-                this.canvas.draw();
-            this.controller.update (this.update_time);
+            if (Event.current.type == EventType.Layout)
+                this.controller.update(this.update_time);
             string output = consoleOut.ToString();
             if(output != "")
                 Debug.Log(output);
             System.Console.SetOut(stdOut);
             this.update_time = 0;
+        }
+
+        private void drawGUI()
+        {
+            GUILayout.BeginVertical();
+            this.drawToolArea();
+            Rect canvas_area = GUILayoutUtility.GetRect(0, 100000, 0, 100000, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            this.canvas.adjustSizeToMinimum(canvas_area);
+            this.canvas_scroll_position = GUI.BeginScrollView (canvas_area, this.canvas_scroll_position, this.canvas.rect);
+            if (Event.current.type == EventType.Repaint)
+            {
+                this.canvas_area = canvas_area;
+                this.canvas.draw();
+            }
+            this.handleCanvasEvents();
+            this.updateController();
             GUI.EndScrollView();
+            GUILayout.EndVertical();
+        }
+
+        public void OnGUI()
+        {
+            GUI.enabled = this.modal_window == null;
+            GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
+            this.drawGUI();
+            if (Event.current.type == EventType.Layout)
+            {
+                if (this.modal_window != null && this.modal_window.should_close)
+                    this.modal_window = null;
+            }
+            if (this.modal_window != null)
+            {
+                GUI.enabled = true;
+                this.BeginWindows();
+                this.modal_window.draw();
+                this.EndWindows();
+            }
         }
 
         public void Update()

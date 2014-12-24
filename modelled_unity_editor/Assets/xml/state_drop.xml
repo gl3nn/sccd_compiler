@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="StateDrop">
+    <relationships>
+        <association class="State" name="parent" max="1"/>
+    </relationships>
+    <attribute type="List&lt;CanvasItem&gt;" name="connection_options"/>
+    <attribute type="string[]" name="connection_options_strings"/>
+    <attribute type="int" name="selected_option" init-value="0"/>
+    <attribute type="CanvasItem" name="canvas_item" />
+    <constructor>
+        <parameter type="CanvasItem" name="canvas_item"/>
+        <body>
+        <![CDATA[
+            this.canvas_item = canvas_item;
+            this.connection_options = new List<CanvasItem>();
+            List<CanvasItem> overlappings = canvas_item.getOverlappings();
+            if (overlappings.Count == 0)
+            {
+            	if (this.canvas_item.parent != null)
+            		this.connection_options.Add(null);
+            }
+            else
+            {
+            	for (int i = overlappings.Count - 1; i >= 0; i--)
+            	{
+                    if (overlappings[i] == this.canvas_item.parent)
+                        break;
+            		this.connection_options.Add(overlappings[i]);
+            		if (overlappings[i].completelyContains(this.canvas_item))
+            			break;
+            	}
+            }
+        ]]>
+        </body>
+    </constructor>
+    <method access="public" type="void" name="drawModalWindow">
+    	<parameter name="modal_window" type="SCCDModalWindow"/>
+        <body>
+        <![CDATA[
+            GUILayout.Label("Connect to:");
+            this.selected_option = GUILayout.SelectionGrid(this.selected_option, this.connection_options_strings, 1, "MenuItem");
+            EditorGUILayout.BeginHorizontal();          
+            if (GUILayout.Button("Yes"))
+            {
+                this.addEvent(new sccdlib.Event("state_drop_popup_response", "", new object[] {true, this.connection_options[this.selected_option]}));
+                modal_window.close();
+            }
+            if (GUILayout.Button("No"))
+            {
+                this.addEvent(new sccdlib.Event("state_drop_popup_response", "", new object[] {false, null}));
+                modal_window.close();
+            }
+            EditorGUILayout.EndHorizontal();
+        ]]>
+        </body>
+    </method>
+    <scxml initial="root">
+        <state id="root">
+            <transition target="../final" cond="this.connection_options.Count == 0 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] != null)">
+                <script>
+                    CanvasItem connection = null;
+                    bool do_reconnect = false;
+                    if (this.connection_options.Count == 1)
+                    {
+                        do_reconnect = true;
+                        connection = this.connection_options[0];
+                    }
+                </script>
+                <raise target='"parent"' event="state_drop_response">
+                    <parameter expr="do_reconnect"/>
+                    <parameter expr="connection"/>
+                </raise>
+            </transition>
+            <transition cond="this.connection_options.Count &gt; 1 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] == null)" target="../popup"/>
+        </state>
+        <state id="final"/>
+        <state id="popup">
+            <onentry>
+                <script>
+                <![CDATA[
+                    this.connection_options_strings = new string[this.connection_options.Count];
+                    for (int i = 0; i < this.connection_options.Count; i++)
+                    {
+                        if (this.connection_options[i] != null)
+                            this.connection_options_strings[i] = this.connection_options[i].label;
+                        else
+                            this.connection_options_strings[i] = "Canvas(disconnecting)";
+                    }
+                    this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
+                ]]>
+                </script>
+            </onentry>
+            <transition port="" event="state_drop_popup_response" target="../final">
+                <parameter type="bool" name="do_reconnect"/>
+                <parameter type="CanvasItem" name="connection"/>
+                <raise target='"parent"' event="state_drop_response">
+                    <parameter expr="do_reconnect"/>
+                    <parameter expr="connection"/>
+                </raise>
+           </transition>
+        </state>
+    </scxml>
+</class>
+

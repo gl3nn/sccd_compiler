@@ -86,17 +86,6 @@ namespace SCCDEditor{
             return overlappings;
         }
 
-        public CanvasItem getImmediateContainerOf(CanvasItem item) 
-        {
-            for (int i = 0; i < this.children.Count; i++)
-            {
-                CanvasItem container = this.children[i].getImmediateContainerOf(item); //returns tag of lowest child completely surround given item
-                if (container != null)
-                    return container;
-            }
-            return null;
-        }
-
         public void pushChildToFront(CanvasItem item) 
         {
             this.children.Remove(item);

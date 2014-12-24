@@ -72,7 +72,6 @@
                     this.canvas.addChild(child);
                     this.children_map[child.tag] = id;
                     //this.canvas.adjustSize();
-                    Debug.Log(string.Format("new child with id {0} and tag {1}", id, child.tag));
                 </script>
             </transition>
         </state>
@@ -82,17 +81,15 @@
                 <parameter name="association_name" type="String"/>
                 <script>
                 	String association_path = String.Format("{0}[{1}]", association_name, id);
-                	//this.children_map[this.current_item.tag] = id;
                     Debug.Log(string.Format("setting tag {0} to id {1}", this.current_item.tag, id));
                 	this.all_states_map[this.current_item.tag] = id;
-                	//this.current_item = null;
                 </script>
-                <raise scope="cd" event="start_instance">
-                    <parameter expr='association_path' />
-                </raise>
                 <raise scope="cd" event="associate_instance">
                     <parameter expr='association_path' />
                     <parameter expr='"./children"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
                 </raise>
             </transition>
         </state>

@@ -8,15 +8,16 @@ namespace SCCDEditor{
         public static float DEFAULT_HEIGHT = 100;
         public static float MARGIN = 5;
         
-        public Rect                 rect { get; private set; }
-        public int                  tag { get; private set; }
-        public string               label { get; set; }
-        public CanvasItem           parent { get; /*private*/ set; }
-		public EditorCanvas         canvas { get; set; }
+        public Rect                         rect { get; private set; }
+        public int                          tag { get; private set; }
+        public string                       label { get; set; }
+        public CanvasItem                   parent { get; /*private*/ set; }
+		public EditorCanvas                 canvas { get; set; }
 
-        private List<CanvasItem>    children    = new List<CanvasItem>();
+        private List<CanvasItem>            children    = new List<CanvasItem>();
+        private Dictionary<int, Vector2>    connection_points = new Dictionary<int, Vector2>();
 
-        private Color?              color       = null;
+        private Color?                      color       = null;
 
         public CanvasItem (Vector2 center, EditorCanvas canvas)
         {
@@ -28,6 +29,20 @@ namespace SCCDEditor{
             //this.canvas.addChild(this);
             this.label = string.Format("state {0}", this.tag);
             this.parent = null;
+            this.setDefaultConnectionPoints();
+        }
+
+        private void setDefaultConnectionPoints()
+        {
+            this.connection_points[0] = new Vector2(this.rect.center.x, this.rect.yMin);
+            this.connection_points[1] = new Vector2(this.rect.xMax, this.rect.center.y);
+            this.connection_points[2] = new Vector2(this.rect.center.x, this.rect.yMax);
+            this.connection_points[3] = new Vector2(this.rect.xMin, this.rect.center.y);
+        }
+
+        public Vector2 getPoint(int id)
+        {
+            return this.connection_points [id];
         }
 
         public void addChild(CanvasItem child) 
@@ -41,11 +56,6 @@ namespace SCCDEditor{
             this.children.Remove (child);
             child.parent = null;
 		}
-        
-        public void setSize(float width, float height)
-        {
-            this.rect = new Rect(this.rect.x, this.rect.y, width, height);
-        }
 
         public void setColor(Color color)
         {
@@ -65,6 +75,8 @@ namespace SCCDEditor{
         public void move(Vector2 delta)
 		{
 			this.rect = new Rect(this.rect.x + delta [0], this.rect.y + delta [1], this.rect.width, this.rect.height);
+			for (int i=0; i < this.children.Count; i++)
+				this.children[i].move(delta);
 		}
 
         public void draw()
@@ -100,7 +112,7 @@ namespace SCCDEditor{
         }
 
         public void getOverlappingsOf(List<CanvasItem> overlappings, CanvasItem item) {
-            if (this!= item.parent && this != item)
+            if (this != item)
             {
                 if (this.rect.Overlaps(item.rect))
                 {
@@ -113,24 +125,10 @@ namespace SCCDEditor{
             }
         }
 
-        public CanvasItem getImmediateContainer() {
-            return this.canvas.getImmediateContainerOf(this);
-        }
-
-        public CanvasItem getImmediateContainerOf(CanvasItem item) 
+        public bool completelyContains(CanvasItem item) 
         {
-            if (this.rect.Contains(new Vector2(item.rect.xMin, item.rect.yMin))
-                && this.rect.Contains(new Vector2(item.rect.xMax, item.rect.yMax)))
-            {
-                for (int i = 0; i < this.children.Count; i++)
-                {
-                    CanvasItem surrounding = this.children [i].getImmediateContainerOf(item); //returns tag of lowest child completely surround given item
-                    if (surrounding != null)
-                        return surrounding;
-                }
-                return this;
-            }
-            return null;
+            return this.rect.Contains( new Vector2(item.rect.xMin, item.rect.yMin))
+				&& this.rect.Contains (new Vector2 (item.rect.xMax, item.rect.yMax));
         }
         
         public bool isAncestorOf(CanvasItem item)
@@ -158,8 +156,6 @@ namespace SCCDEditor{
             this.children.Add(item);
             this.pushToFront();
         }
-
-
         
         public void adjustSize()
         {
@@ -175,6 +171,8 @@ namespace SCCDEditor{
                 if (child.rect.yMax + MARGIN > yMax) yMax = child.rect.yMax + MARGIN;
             }
            this.rect = new Rect (xMin, yMin, xMax-xMin, yMax-yMin);
+           if (this.parent != null)
+                this.parent.adjustSize();
         }
     }
 }

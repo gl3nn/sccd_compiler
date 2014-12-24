@@ -1,7 +1,7 @@
 /*
     Statecharts + Class Diagram compiler by Glenn De Jonghe
     
-    Generated on 2014-12-13 18:45:59.
+    Generated on 2014-12-15 18:28:32.
     
     Model name:   SCCD Editor
     Model author: Glenn De Jonghe
@@ -191,7 +191,6 @@ public class Canvas : IRuntimeClass
                 this.canvas.addChild(child);
                                     this.children_map[child.tag] = id;
                                     //this.canvas.adjustSize();
-                                    Debug.Log(string.Format("new child with id {0} and tag {1}", id, child.tag));
                 this.enter_Root_waiting();
             }
             catched = true;
@@ -220,12 +219,10 @@ public class Canvas : IRuntimeClass
                 String association_name = (String)parameters[1];
                 this.exit_Root_creation();
                 String association_path = String.Format("{0}[{1}]", association_name, id);
-                                	//this.children_map[this.current_item.tag] = id;
                                     Debug.Log(string.Format("setting tag {0} to id {1}", this.current_item.tag, id));
                                 	this.all_states_map[this.current_item.tag] = id;
-                                	//this.current_item = null;
-                this.object_manager.addEvent(new Event("start_instance", "", new object[] { this, association_path}));
                 this.object_manager.addEvent(new Event("associate_instance", "", new object[] { this, association_path,"./children"}));
+                this.object_manager.addEvent(new Event("start_instance", "", new object[] { this, association_path}));
                 this.enter_Root_connecting();
             }
             catched = true;
@@ -387,6 +384,7 @@ public class BasicState : State, IRuntimeClass
         Root_active,
         Root_active_selected,
         Root_active_selected_drop,
+        Root_active_setup,
         Root_active_not_selected,
         Root_active_selected_not_dragging,
         Root_active_selected_dragging,
@@ -432,12 +430,14 @@ public class BasicState : State, IRuntimeClass
     
     private void enter_Root_active()
     {
-        this.object_manager.addEvent(new Event("associate_instance", "", new object[] { this, "parent","canvas"}));
         this.current_state[Node.Root].Add(Node.Root_active);
     }
     
     private void exit_Root_active()
     {
+        if (this.current_state[Node.Root_active].Contains(Node.Root_active_setup)){
+            this.exit_Root_active_setup();
+        }
         if (this.current_state[Node.Root_active].Contains(Node.Root_active_not_selected)){
             this.exit_Root_active_not_selected();
         }
@@ -469,7 +469,7 @@ public class BasicState : State, IRuntimeClass
     
     private void enter_Root_active_selected_drop()
     {
-        this.object_manager.addEvent(new Event("create_instance", "", new object[] { this, "state_drop","StateDropWindow",this.canvas_item}));
+        this.object_manager.addEvent(new Event("create_instance", "", new object[] { this, "state_drop","StateDrop",this.canvas_item}));
         this.current_state[Node.Root_active_selected].Add(Node.Root_active_selected_drop);
     }
     
@@ -482,6 +482,16 @@ public class BasicState : State, IRuntimeClass
             this.exit_Root_active_selected_drop_wait_for_drop_window();
         }
         this.current_state[Node.Root_active_selected].Remove(Node.Root_active_selected_drop);
+    }
+    
+    private void enter_Root_active_setup()
+    {
+        this.current_state[Node.Root_active].Add(Node.Root_active_setup);
+    }
+    
+    private void exit_Root_active_setup()
+    {
+        this.current_state[Node.Root_active].Remove(Node.Root_active_setup);
     }
     
     private void enter_Root_active_not_selected()
@@ -539,7 +549,7 @@ public class BasicState : State, IRuntimeClass
     private void enterDefault_Root_active()
     {
         this.enter_Root_active();
-        this.enterDefault_Root_active_selected();
+        this.enter_Root_active_setup();
     }
     
     private void enterDefault_Root_active_selected()
@@ -571,12 +581,38 @@ public class BasicState : State, IRuntimeClass
     {
         bool catched = false;
         if (!catched){
-            if (this.current_state[Node.Root_active][0] == Node.Root_active_not_selected){
+            if (this.current_state[Node.Root_active][0] == Node.Root_active_setup){
+                catched = this.transition_Root_active_setup(e);
+            } else if (this.current_state[Node.Root_active][0] == Node.Root_active_not_selected){
                 catched = this.transition_Root_active_not_selected(e);
             } else if (this.current_state[Node.Root_active][0] == Node.Root_active_selected){
                 catched = this.transition_Root_active_selected(e);
             }
         }
+        return catched;
+    }
+    
+    private bool transition_Root_active_setup(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        enableds.Add(0);
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_active_setup. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                this.exit_Root_active_setup();
+                this.object_manager.addEvent(new Event("associate_instance", "", new object[] { this, "parent","canvas"}));
+                this.enter_Root_active_selected();
+                this.enterDefault_Root_active_selected_drop();
+            }
+            catched = true;
+        }
+        
         return catched;
     }
     
@@ -933,7 +969,7 @@ public class BasicState : State, IRuntimeClass
     }
 }
 
-public class StateDropWindow : IRuntimeClass
+public class StateDrop : IRuntimeClass
 {
     private ControllerBase controller;
     private ObjectManagerBase object_manager;
@@ -980,26 +1016,28 @@ public class StateDropWindow : IRuntimeClass
         }
     }
     
-    public StateDropWindow(ControllerBase controller, CanvasItem canvas_item)
+    public StateDrop(ControllerBase controller, CanvasItem canvas_item)
     {
         this.commonConstructor(controller);
         //constructor body (user-defined)
         this.canvas_item = canvas_item;
         this.connection_options = new List<CanvasItem>();
-        CanvasItem container = canvas_item.getImmediateContainer();
-        if (container == null)
+        List<CanvasItem> overlappings = canvas_item.getOverlappings();
+        if (overlappings.Count == 0)
         {
-            this.connection_options.AddRange(canvas_item.getOverlappings());
-            if (canvas_item.parent != null)
-            {
-                //disconnect is an option
-                Debug.Log("disconnect is an option");
-                this.connection_options.Add(null);
-            }          
+        	if (this.canvas_item.parent != null)
+        		this.connection_options.Add(null);
         }
-        else if (container != canvas_item.parent)
+        else
         {
-            this.connection_options.Add(container);
+        	for (int i = overlappings.Count - 1; i >= 0; i--)
+        	{
+                if (overlappings[i] == this.canvas_item.parent)
+                    break;
+        		this.connection_options.Add(overlappings[i]);
+        		if (overlappings[i].completelyContains(this.canvas_item))
+        			break;
+        	}
         }
     }
     
@@ -1050,7 +1088,7 @@ public class StateDropWindow : IRuntimeClass
                                 if (this.connection_options[i] != null)
                                     this.connection_options_strings[i] = this.connection_options[i].label;
                                 else
-                                    this.connection_options_strings[i] = "Canvas(Disconnect)";
+                                    this.connection_options_strings[i] = "Canvas(disconnecting)";
                             }
                             this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
         this.current_state[Node.Root].Add(Node.Root_popup);
@@ -1271,12 +1309,12 @@ public class ObjectManager : ObjectManagerBase
             associations.Add(new Association("children", "State", 0, -1));
             associations.Add(new Association("parent", "IRuntimeClass", 0, 1));
             associations.Add(new Association("canvas", "Canvas", 0, 1));
-            associations.Add(new Association("state_drop", "StateDropWindow", 0, 1));
-        }else if (class_name == "StateDropWindow" ){
+            associations.Add(new Association("state_drop", "StateDrop", 0, 1));
+        }else if (class_name == "StateDrop" ){
             object[] new_parameters = new object[construct_params.Length + 1];
             new_parameters[0] = this.controller;
             Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);
-            instance = (IRuntimeClass) Activator.CreateInstance(typeof(StateDropWindow), new_parameters);
+            instance = (IRuntimeClass) Activator.CreateInstance(typeof(StateDrop), new_parameters);
             associations.Add(new Association("parent", "State", 0, 1));
         }
         if (instance != null) {

@@ -20,5 +20,5 @@
     <class name="Canvas" default="true" src="xml/canvas.xml"/>
     <class name="State" src="xml/state.xml"/>
     <class name="BasicState" src="xml/basicstate.xml"/>
-    <class name="StateDropWindow" src="xml/state_drop_window.xml"/>
+    <class name="StateDrop" src="xml/state_drop.xml"/>
 </diagram>

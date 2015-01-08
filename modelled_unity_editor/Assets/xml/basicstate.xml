@@ -9,7 +9,7 @@
     </relationships>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <constructor>
-        <parameter type="CanvasItem" name="canvas_item"/>
+        <parameter type="GUICanvasMember" name="canvas_item"/>
         <super>
             <parameter expr="canvas_item"/>
         </super>
@@ -38,26 +38,26 @@
                 </transition>
                 <transition event="new_child" target=".">
                 	<parameter type="int" name="id"/>
-                	<parameter type="CanvasItem" name="child"/>
+                	<parameter type="GUICanvasMember" name="child"/>
                 	<script>
-                		this.canvas_item.addChild(child);
+                		this.canvas_item.addChildWidget(child);
                 		this.children_map[child.tag] = id;
-                        this.canvas_item.adjustSize();
+                        //this.canvas_item.adjustSize();
                 	</script>
                 </transition>
                 <transition event="adjust_size" target=".">
                     <script>
-                        this.canvas_item.adjustSize();
+                        //this.canvas_item.adjustSize();
                     </script>
                 </transition>
                 <transition event="disconnect_child" target=".">
-                    <parameter name="child" type="CanvasItem"/>
+                    <parameter name="child" type="GUICanvasMember"/>
                     <raise scope="cd" event="unassociate_instance">
                         <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
                     </raise>
                     <script>
                         this.children_map.Remove(child.tag);
-                        this.canvas_item.removeChild(child);
+                        this.canvas_item.removeChildWidget(child);
                     </script>
                 </transition>
             </state>
@@ -113,7 +113,7 @@
                     <state id="wait_for_drop_window">
                         <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
                             <parameter type="bool" name="do_reconnect"/>
-                            <parameter type="CanvasItem" name="connection"/>
+                            <parameter type="GUICanvasMember" name="connection"/>
                             <raise scope="cd" event="delete_instance">
                                 <parameter expr='"state_drop"' />
                             </raise>
@@ -121,7 +121,7 @@
                         </transition>
                         <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
                             <parameter type="bool" name="do_reconnect"/>
-                            <parameter type="CanvasItem" name="connection"/>
+                            <parameter type="GUICanvasMember" name="connection"/>
                             <raise event="disconnect_child" target='"parent"'>
                                 <parameter expr="this.canvas_item"/>
                             </raise>

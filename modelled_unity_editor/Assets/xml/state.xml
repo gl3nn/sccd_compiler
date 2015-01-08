@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="State">
-    <attribute type="CanvasItem" name="canvas_item" access="protected"/>
+    <attribute type="GUICanvasMember" name="canvas_item" access="protected"/>
     <constructor>
-        <parameter type="CanvasItem" name="canvas_item"/>
+        <parameter type="GUICanvasMember" name="canvas_item"/>
         <body>
             this.canvas_item = canvas_item;
         </body>

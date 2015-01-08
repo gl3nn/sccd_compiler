@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Button">
+    <relationships>
+        <association class="Toolbar" name="toolbar" max="1"/>
+    </relationships>
+    <attribute type="GUIButton" name="button_widget"/>
+    <constructor>
+        <parameter type="GUIHorizontalGroup" name="toolbar_widget"/>
+        <parameter type="GUIButtonInformation" name="button_information"/>
+        <body>
+            <![CDATA[
+            this.button_widget = new GUIButton(toolbar_widget, button_information);
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="off">
+        <state id="off">
+            <onentry>
+                <script>
+                    this.button_widget.is_on = false;
+                </script>
+            </onentry>
+            <transition event="left-mouse-down" port="input" target="../on" cond="this.button_widget.tag == tag">
+                <parameter name="tag" type="int"/>
+                <raise event="button_pressed" target='"toolbar"'>
+                    <parameter expr="tag"/>
+                </raise>
+            </transition>
+        </state>
+        <state id="on">
+            <onentry>
+                <script>
+                    this.button_widget.is_on = true;
+                </script>
+            </onentry>
+            <transition event="reset" target="../off" cond="this.button_widget.tag != except_tag">
+                <parameter name="except_tag" type="int"/>
+            </transition>
+        </state>
+    </scxml>
+</class>

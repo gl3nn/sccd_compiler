@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 
-namespace SCCDEditor{
+namespace SCCDEditor{/*
     public class ConnectionPoint
     {
         public CanvasItem   canvas_item { get; private set;}
@@ -36,7 +36,7 @@ namespace SCCDEditor{
         {
             this.end = new ConnectionPoint(end_item, 0);
         }
-        /*
+
         private static void Initialize()
         {
             if (lineTex == null)
@@ -59,7 +59,7 @@ namespace SCCDEditor{
             // depending on the alphaBlend parameter. Use reflection to "borrow" these references.
             blitMaterial = (Material)typeof(GUI).GetMethod("get_blitMaterial", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
             blendMaterial = (Material)typeof(GUI).GetMethod("get_blendMaterial", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
-        }*/
+        }
         
         public static void drawLine(Vector2 start_pos, Vector2 end_pos)
         {       
@@ -95,5 +95,5 @@ namespace SCCDEditor{
             if (this.end != null)
                 Connection.drawLine(begin_point, this.end.getPoint());
         }
-    }
+    }*/
 }

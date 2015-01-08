@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Canvas">
     <relationships>
+        <association class="StateChartEditor" name="window" max="1"/>
         <association class="State" name="children"/>
         <association class="State" name="all_states"/>
     </relationships>
-    <attribute type="EditorCanvas" name="canvas"/>
+    <attribute type="GUIScrollCanvas" name="canvas_widget"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="all_states_map"/>
-    <attribute type="CanvasItem" name="current_item"/>
+    <attribute type="GUICanvasMember" name="current_item"/>
     <constructor>
-        <parameter type="EditorCanvas" name="canvas"/>
+        <parameter type="GUIWidgetGroup" name="window_widget"/>
         <body>
             <![CDATA[
-            this.canvas = canvas;
+            this.canvas_widget = new GUIScrollCanvas(window_widget);
             this.children_map = new Dictionary<int,int>();
             this.all_states_map = new Dictionary<int,int>();
             ]]>
@@ -23,7 +24,7 @@
             <transition event="create" port="input" target="../creation">
                 <parameter type="Vector2" name="position"/>
                 <script>
-                    this.current_item = new CanvasItem(position, this.canvas);
+                    this.current_item = new GUICanvasMember(this.canvas_widget, position);
                 </script>
                 <raise scope="cd" event="create_instance">
                     <parameter expr='"all_states"' />
@@ -32,7 +33,7 @@
                 </raise>
             </transition>
             <transition event="disconnect_child" target=".">
-                <parameter name="child" type="CanvasItem"/>
+                <parameter name="child" type="GUICanvasMember"/>
                 <script>
                     Debug.Log(string.Format("removing tag {0} from canvas", child.tag));
                 </script>
@@ -41,12 +42,12 @@
                 </raise>
                 <script>
                 	this.children_map.Remove(child.tag);
-                	this.canvas.removeChild(child);
+                	this.canvas_widget.removeChildWidget(child);
                 </script>
             </transition>
             <transition event="connect_child_to_parent" target="../connecting">
-                <parameter name="child" type="CanvasItem"/>
-                <parameter name="parent" type="CanvasItem"/>
+                <parameter name="child" type="GUICanvasMember"/>
+                <parameter name="parent" type="GUICanvasMember"/>
                 <script>
                 	this.current_item = child;
                     String parent_path = ".";
@@ -67,9 +68,9 @@
             </transition>
             <transition event="new_child" target=".">
                 <parameter type="int" name="id"/>
-                <parameter type="CanvasItem" name="child"/>
+                <parameter type="GUICanvasMember" name="child"/>
                 <script>
-                    this.canvas.addChild(child);
+                    this.canvas_widget.addChildWidget(child);
                     this.children_map[child.tag] = id;
                     //this.canvas.adjustSize();
                 </script>

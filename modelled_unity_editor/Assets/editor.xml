@@ -17,7 +17,10 @@
     <inport name="engine" />
     <inport name="windows" />
     
-    <class name="Canvas" default="true" src="xml/canvas.xml"/>
+    <class name="StateChartEditor" default="true" src="xml/statechart_editor.xml"/>
+    <class name="Toolbar" src="xml/toolbar.xml"/>
+    <class name="Button" src="xml/button.xml"/>
+    <class name="Canvas" src="xml/canvas.xml"/>
     <class name="State" src="xml/state.xml"/>
     <class name="BasicState" src="xml/basicstate.xml"/>
     <class name="StateDrop" src="xml/state_drop.xml"/>

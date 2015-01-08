@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="StateChartWindow">
+    <relationships>
+        <association class="Toolbar" name="toolbar" max="1"/>
+        <association class="Canvas" name="canvas" max="1"/>
+    </relationships>
+    <attribute type="GUITopLevel" name="window_widget"/>
+    <constructor>
+        <parameter type="GUITopLevel" name="window_widget"/>
+        <body>
+            <![CDATA[
+            this.window_widget = window_widget;
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="toolbar_creation">
+        <state id="toolbar_creation">
+            <transition target="../toolbar_activation">
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"toolbar"' />
+                    <parameter expr='"Toolbar"'/>
+                    <parameter expr='this.window_widget' />
+                </raise>
+            </transition>
+        </state>
+        <state id="toolbar_activation">
+            <transition event="instance_created" target="../canvas_creation">
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='"toolbar/window"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='"toolbar"' />
+                </raise>
+            </transition>
+        </state>
+        <state id="canvas_creation">
+            <transition target="../canvas_activation">
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"canvas"' />
+                    <parameter expr='"Canvas"'/>
+                    <parameter expr='this.window_widget' />
+                </raise>
+            </transition>
+        </state>
+        <state id="canvas_activation">
+            <transition event="instance_created" target="../main">
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='"canvas/window"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='"canvas"' />
+                </raise>
+            </transition>
+        </state>
+        <state id="main">
+            <transition event="left-mouse-down" port="input" target=".">
+                <parameter type="int" name="tag"/>
+                <parameter type="Vector2" name="position"/>
+                <script>
+                    Debug.Log(tag);
+                </script>
+            </transition>
+        </state>
+    </scxml>
+</class>

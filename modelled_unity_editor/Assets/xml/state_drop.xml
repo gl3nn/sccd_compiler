@@ -3,17 +3,17 @@
     <relationships>
         <association class="State" name="parent" max="1"/>
     </relationships>
-    <attribute type="List&lt;CanvasItem&gt;" name="connection_options"/>
+    <attribute type="List&lt;GUICanvasMember&gt;" name="connection_options"/>
     <attribute type="string[]" name="connection_options_strings"/>
     <attribute type="int" name="selected_option" init-value="0"/>
-    <attribute type="CanvasItem" name="canvas_item" />
+    <attribute type="GUICanvasMember" name="canvas_item" />
     <constructor>
-        <parameter type="CanvasItem" name="canvas_item"/>
+        <parameter type="GUICanvasMember" name="canvas_item"/>
         <body>
         <![CDATA[
             this.canvas_item = canvas_item;
-            this.connection_options = new List<CanvasItem>();
-            List<CanvasItem> overlappings = canvas_item.getOverlappings();
+            this.connection_options = new List<GUICanvasMember>();
+            List<GUICanvasMember> overlappings = new List<GUICanvasMember>();//canvas_item.getOverlappings();
             if (overlappings.Count == 0)
             {
             	if (this.canvas_item.parent != null)
@@ -26,7 +26,7 @@
                     if (overlappings[i] == this.canvas_item.parent)
                         break;
             		this.connection_options.Add(overlappings[i]);
-            		if (overlappings[i].completelyContains(this.canvas_item))
+            		if (false/*overlappings[i].completelyContains(this.canvas_item)*/)
             			break;
             	}
             }
@@ -58,7 +58,7 @@
         <state id="root">
             <transition target="../final" cond="this.connection_options.Count == 0 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] != null)">
                 <script>
-                    CanvasItem connection = null;
+                    GUICanvasMember connection = null;
                     bool do_reconnect = false;
                     if (this.connection_options.Count == 1)
                     {
@@ -86,13 +86,13 @@
                         else
                             this.connection_options_strings[i] = "Canvas(disconnecting)";
                     }
-                    this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
+                    //this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
                 ]]>
                 </script>
             </onentry>
             <transition port="" event="state_drop_popup_response" target="../final">
                 <parameter type="bool" name="do_reconnect"/>
-                <parameter type="CanvasItem" name="connection"/>
+                <parameter type="GUICanvasMember" name="connection"/>
                 <raise target='"parent"' event="state_drop_response">
                     <parameter expr="do_reconnect"/>
                     <parameter expr="connection"/>

@@ -1,7 +1,7 @@
 /*
     Statecharts + Class Diagram compiler by Glenn De Jonghe
     
-    Generated on 2014-12-15 18:28:32.
+    Generated on 2015-01-08 04:10:21.
     
     Model name:   SCCD Editor
     Model author: Glenn De Jonghe
@@ -20,6 +20,895 @@ using Event = sccdlib.Event;
 #pragma warning disable 0219 // variable assigned but not used.
 #pragma warning disable 0414 // private field assigned but not used.
 
+
+public class StateChartWindow : IRuntimeClass
+{
+    private ControllerBase controller;
+    private ObjectManagerBase object_manager;
+    private bool active = false;
+    private bool state_changed = false;
+    private EventQueue events = new EventQueue();
+    private Dictionary<int,double> timers = null;
+    
+    /// <summary>
+    /// Enum uniquely representing all statechart nodes.
+    /// </summary>
+    public enum Node {
+        Root,
+        Root_toolbar_creation,
+        Root_toolbar_activation,
+        Root_canvas_creation,
+        Root_canvas_activation,
+        Root_main,
+    };
+    
+    Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();
+    
+    //User defined attributes
+    GUITopLevel window_widget;
+    
+    /// <summary>
+    /// Constructor part that is common for all constructors.
+    /// </summary>
+    private void commonConstructor(ControllerBase controller)
+    {
+        this.controller = controller;
+        this.object_manager = controller.getObjectManager();
+        
+        //Initialize statechart :
+        this.current_state[Node.Root] = new List<Node>();
+    }
+    
+    public void start()
+    {
+        if (!this.active) {
+            this.active = true;
+            this.enter_Root_toolbar_creation();
+        }
+    }
+    private void narrowCast(string parent_path, Event send_event){
+        this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, send_event}));
+    }
+    
+    private void broadCast(Event send_event){
+        this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));
+    }
+    
+    
+    public StateChartWindow(ControllerBase controller, GUITopLevel window_widget)
+    {
+        this.commonConstructor(controller);
+        //constructor body (user-defined)
+        this.window_widget = window_widget;
+    }
+    //Statechart enter/exit action method(s) :
+    
+    private void enter_Root_toolbar_creation()
+    {
+        this.current_state[Node.Root].Add(Node.Root_toolbar_creation);
+    }
+    
+    private void exit_Root_toolbar_creation()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_toolbar_creation);
+    }
+    
+    private void enter_Root_toolbar_activation()
+    {
+        this.current_state[Node.Root].Add(Node.Root_toolbar_activation);
+    }
+    
+    private void exit_Root_toolbar_activation()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_toolbar_activation);
+    }
+    
+    private void enter_Root_canvas_creation()
+    {
+        this.current_state[Node.Root].Add(Node.Root_canvas_creation);
+    }
+    
+    private void exit_Root_canvas_creation()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_canvas_creation);
+    }
+    
+    private void enter_Root_canvas_activation()
+    {
+        this.current_state[Node.Root].Add(Node.Root_canvas_activation);
+    }
+    
+    private void exit_Root_canvas_activation()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_canvas_activation);
+    }
+    
+    private void enter_Root_main()
+    {
+        this.current_state[Node.Root].Add(Node.Root_main);
+    }
+    
+    private void exit_Root_main()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_main);
+    }
+    
+    //Statechart transitions :
+    
+    private bool transition_Root(Event e)
+    {
+        bool catched = false;
+        if (!catched){
+            if (this.current_state[Node.Root][0] == Node.Root_toolbar_creation){
+                catched = this.transition_Root_toolbar_creation(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_toolbar_activation){
+                catched = this.transition_Root_toolbar_activation(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_canvas_creation){
+                catched = this.transition_Root_canvas_creation(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_canvas_activation){
+                catched = this.transition_Root_canvas_activation(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_main){
+                catched = this.transition_Root_main(e);
+            }
+        }
+        return catched;
+    }
+    
+    private bool transition_Root_toolbar_creation(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        enableds.Add(0);
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_toolbar_creation. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                this.exit_Root_toolbar_creation();
+                this.object_manager.addEvent(new Event("create_instance", "", new object[] { this, "toolbar","Toolbar",this.window_widget}));
+                this.enter_Root_toolbar_activation();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_toolbar_activation(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "instance_created" && e.getPort() == ""){
+            enableds.Add(0);
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_toolbar_activation. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                this.exit_Root_toolbar_activation();
+                this.object_manager.addEvent(new Event("associate_instance", "", new object[] { this, ".","toolbar/window"}));
+                this.object_manager.addEvent(new Event("start_instance", "", new object[] { this, "toolbar"}));
+                this.enter_Root_canvas_creation();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_canvas_creation(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        enableds.Add(0);
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_canvas_creation. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                this.exit_Root_canvas_creation();
+                this.object_manager.addEvent(new Event("create_instance", "", new object[] { this, "canvas","Canvas",this.window_widget}));
+                this.enter_Root_canvas_activation();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_canvas_activation(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "instance_created" && e.getPort() == ""){
+            enableds.Add(0);
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_canvas_activation. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                this.exit_Root_canvas_activation();
+                this.object_manager.addEvent(new Event("associate_instance", "", new object[] { this, ".","canvas/window"}));
+                this.object_manager.addEvent(new Event("start_instance", "", new object[] { this, "canvas"}));
+                this.enter_Root_main();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_main(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "left-mouse-down" && e.getPort() == "input"){
+            enableds.Add(0);
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_main. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                object[] parameters = e.getParameters();
+                int tag = (int)parameters[0];
+                Vector2 position = (Vector2)parameters[1];
+                this.exit_Root_main();
+                Debug.Log(tag);
+                this.enter_Root_main();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private void transition (Event e = null)
+    {
+        if (e == null) {
+            e = new Event();
+        }
+        this.state_changed = this.transition_Root(e);
+    }
+    
+    public bool inState(List<Node> nodes)
+    {
+        foreach(List<Node> actives in current_state.Values){
+            foreach(Node node in actives)
+                nodes.Remove (node);
+            if (nodes.Count == 0){
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
+    public void stop()
+    {
+        this.active = false;
+    }
+    
+    private void microstep ()
+    {
+        List<Event> due = this.events.popDueEvents();
+        if (due.Count == 0) {
+            this.transition (null);
+        } else {
+            foreach (Event e in due)
+            {
+                this.transition(e);
+            }
+        }
+    }
+    
+    public void step(double delta)
+    {
+        if (!this.active) return;
+        
+        this.events.decreaseTime(delta);
+        
+        if (this.timers != null && this.timers.Count > 0)
+        {
+            var next_timers = new Dictionary<int,double>();
+            foreach(KeyValuePair<int,double> pair in this.timers)
+            {
+                double new_time = pair.Value - delta;
+                if (new_time <= 0.0)
+                    this.addEvent (new Event("_" + pair.Key + "after"), new_time);
+                else
+                    next_timers[pair.Key] = new_time;
+            }
+            this.timers = next_timers;
+        }
+        this.microstep();
+        while (this.state_changed)
+            this.microstep();
+    }
+    
+    public void addEvent (Event input_event, double time_offset)
+    {
+        this.events.Add (input_event, time_offset);
+    }
+    
+    public void addEvent (Event input_event)
+    {
+        this.addEvent(input_event, 0.0);
+    }
+    
+    public double getEarliestEventTime ()
+    {
+        if (this.timers != null)
+        {
+            double smallest_timer_value = double.PositiveInfinity;
+            foreach (double timer_value in this.timers.Values)
+            {
+                if (timer_value < smallest_timer_value)
+                    smallest_timer_value = timer_value;
+            }
+            return Math.Min(this.events.getEarliestTime(), smallest_timer_value); 
+        }
+        return this.events.getEarliestTime();   
+    }
+}
+
+public class Toolbar : IRuntimeClass
+{
+    private ControllerBase controller;
+    private ObjectManagerBase object_manager;
+    private bool active = false;
+    private bool state_changed = false;
+    private EventQueue events = new EventQueue();
+    private Dictionary<int,double> timers = null;
+    
+    /// <summary>
+    /// Enum uniquely representing all statechart nodes.
+    /// </summary>
+    public enum Node {
+        Root,
+        Root_buttons_creation_loop,
+        Root_button_activation,
+        Root_listening,
+    };
+    
+    Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();
+    
+    //User defined attributes
+    GUIHorizontalGroup toolbar_widget;
+    List<GUIButtonInformation> buttons_information;
+    int button_count = 0;
+    
+    /// <summary>
+    /// Constructor part that is common for all constructors.
+    /// </summary>
+    private void commonConstructor(ControllerBase controller)
+    {
+        this.controller = controller;
+        this.object_manager = controller.getObjectManager();
+        
+        //Initialize statechart :
+        this.current_state[Node.Root] = new List<Node>();
+    }
+    
+    public void start()
+    {
+        if (!this.active) {
+            this.active = true;
+            this.enter_Root_buttons_creation_loop();
+        }
+    }
+    private void narrowCast(string parent_path, Event send_event){
+        this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, send_event}));
+    }
+    
+    private void broadCast(Event send_event){
+        this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));
+    }
+    
+    
+    public Toolbar(ControllerBase controller, GUIWidgetGroup window_widget)
+    {
+        this.commonConstructor(controller);
+        //constructor body (user-defined)
+        this.toolbar_widget = new GUIHorizontalGroup(window_widget);
+        this.buttons_information = new List<GUIButtonInformation>
+        {
+            new GUIButtonInformation("Select", "set-select"),
+            new GUIButtonInformation("Create Association", "set-create-association"),
+            new GUIButtonInformation("Create State", "set-create-state")
+        };
+    }
+    //Statechart enter/exit action method(s) :
+    
+    private void enter_Root_buttons_creation_loop()
+    {
+        this.current_state[Node.Root].Add(Node.Root_buttons_creation_loop);
+    }
+    
+    private void exit_Root_buttons_creation_loop()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_buttons_creation_loop);
+    }
+    
+    private void enter_Root_button_activation()
+    {
+        this.current_state[Node.Root].Add(Node.Root_button_activation);
+    }
+    
+    private void exit_Root_button_activation()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_button_activation);
+    }
+    
+    private void enter_Root_listening()
+    {
+        this.current_state[Node.Root].Add(Node.Root_listening);
+    }
+    
+    private void exit_Root_listening()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_listening);
+    }
+    
+    //Statechart transitions :
+    
+    private bool transition_Root(Event e)
+    {
+        bool catched = false;
+        if (!catched){
+            if (this.current_state[Node.Root][0] == Node.Root_buttons_creation_loop){
+                catched = this.transition_Root_buttons_creation_loop(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_button_activation){
+                catched = this.transition_Root_button_activation(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_listening){
+                catched = this.transition_Root_listening(e);
+            }
+        }
+        return catched;
+    }
+    
+    private bool transition_Root_buttons_creation_loop(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (this.button_count < this.buttons_information.Count){
+            enableds.Add(0);
+        }
+        
+        if (this.button_count >= this.buttons_information.Count){
+            enableds.Add(1);
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_buttons_creation_loop. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                this.exit_Root_buttons_creation_loop();
+                this.object_manager.addEvent(new Event("create_instance", "", new object[] { this, "buttons","Button",this.toolbar_widget,this.buttons_information[this.button_count]}));
+                this.enter_Root_button_activation();
+            }
+            if (enabled == 1){
+                this.exit_Root_buttons_creation_loop();
+                this.enter_Root_listening();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_button_activation(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "instance_created" && e.getPort() == ""){
+            enableds.Add(0);
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_button_activation. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                object[] parameters = e.getParameters();
+                int id = (int)parameters[0];
+                String association_name = (String)parameters[1];
+                this.exit_Root_button_activation();
+                String association_path = String.Format("{0}[{1}]", association_name, id);
+                this.object_manager.addEvent(new Event("associate_instance", "", new object[] { this, ".",association_path + "/toolbar"}));
+                this.object_manager.addEvent(new Event("start_instance", "", new object[] { this, association_path}));
+                this.button_count++;
+                this.enter_Root_buttons_creation_loop();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_listening(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "button_pressed" && e.getPort() == ""){
+            enableds.Add(0);
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_listening. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                object[] parameters = e.getParameters();
+                int button_tag = (int)parameters[0];
+                this.exit_Root_listening();
+                this.narrowCast("buttons", new Event("reset", "", new object[] {button_tag}));
+                this.enter_Root_listening();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private void transition (Event e = null)
+    {
+        if (e == null) {
+            e = new Event();
+        }
+        this.state_changed = this.transition_Root(e);
+    }
+    
+    public bool inState(List<Node> nodes)
+    {
+        foreach(List<Node> actives in current_state.Values){
+            foreach(Node node in actives)
+                nodes.Remove (node);
+            if (nodes.Count == 0){
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
+    public void stop()
+    {
+        this.active = false;
+    }
+    
+    private void microstep ()
+    {
+        List<Event> due = this.events.popDueEvents();
+        if (due.Count == 0) {
+            this.transition (null);
+        } else {
+            foreach (Event e in due)
+            {
+                this.transition(e);
+            }
+        }
+    }
+    
+    public void step(double delta)
+    {
+        if (!this.active) return;
+        
+        this.events.decreaseTime(delta);
+        
+        if (this.timers != null && this.timers.Count > 0)
+        {
+            var next_timers = new Dictionary<int,double>();
+            foreach(KeyValuePair<int,double> pair in this.timers)
+            {
+                double new_time = pair.Value - delta;
+                if (new_time <= 0.0)
+                    this.addEvent (new Event("_" + pair.Key + "after"), new_time);
+                else
+                    next_timers[pair.Key] = new_time;
+            }
+            this.timers = next_timers;
+        }
+        this.microstep();
+        while (this.state_changed)
+            this.microstep();
+    }
+    
+    public void addEvent (Event input_event, double time_offset)
+    {
+        this.events.Add (input_event, time_offset);
+    }
+    
+    public void addEvent (Event input_event)
+    {
+        this.addEvent(input_event, 0.0);
+    }
+    
+    public double getEarliestEventTime ()
+    {
+        if (this.timers != null)
+        {
+            double smallest_timer_value = double.PositiveInfinity;
+            foreach (double timer_value in this.timers.Values)
+            {
+                if (timer_value < smallest_timer_value)
+                    smallest_timer_value = timer_value;
+            }
+            return Math.Min(this.events.getEarliestTime(), smallest_timer_value); 
+        }
+        return this.events.getEarliestTime();   
+    }
+}
+
+public class Button : IRuntimeClass
+{
+    private ControllerBase controller;
+    private ObjectManagerBase object_manager;
+    private bool active = false;
+    private bool state_changed = false;
+    private EventQueue events = new EventQueue();
+    private Dictionary<int,double> timers = null;
+    
+    /// <summary>
+    /// Enum uniquely representing all statechart nodes.
+    /// </summary>
+    public enum Node {
+        Root,
+        Root_off,
+        Root_on,
+    };
+    
+    Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();
+    
+    //User defined attributes
+    GUIButton button_widget;
+    
+    /// <summary>
+    /// Constructor part that is common for all constructors.
+    /// </summary>
+    private void commonConstructor(ControllerBase controller)
+    {
+        this.controller = controller;
+        this.object_manager = controller.getObjectManager();
+        
+        //Initialize statechart :
+        this.current_state[Node.Root] = new List<Node>();
+    }
+    
+    public void start()
+    {
+        if (!this.active) {
+            this.active = true;
+            this.enter_Root_off();
+        }
+    }
+    private void narrowCast(string parent_path, Event send_event){
+        this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, send_event}));
+    }
+    
+    private void broadCast(Event send_event){
+        this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));
+    }
+    
+    
+    public Button(ControllerBase controller, GUIHorizontalGroup toolbar_widget, GUIButtonInformation button_information)
+    {
+        this.commonConstructor(controller);
+        //constructor body (user-defined)
+        this.button_widget = new GUIButton(toolbar_widget, button_information);
+    }
+    //Statechart enter/exit action method(s) :
+    
+    private void enter_Root_off()
+    {
+        this.button_widget.is_on = false;
+        this.current_state[Node.Root].Add(Node.Root_off);
+    }
+    
+    private void exit_Root_off()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_off);
+    }
+    
+    private void enter_Root_on()
+    {
+        this.button_widget.is_on = true;
+        this.current_state[Node.Root].Add(Node.Root_on);
+    }
+    
+    private void exit_Root_on()
+    {
+        this.current_state[Node.Root].Remove(Node.Root_on);
+    }
+    
+    //Statechart transitions :
+    
+    private bool transition_Root(Event e)
+    {
+        bool catched = false;
+        if (!catched){
+            if (this.current_state[Node.Root][0] == Node.Root_off){
+                catched = this.transition_Root_off(e);
+            } else if (this.current_state[Node.Root][0] == Node.Root_on){
+                catched = this.transition_Root_on(e);
+            }
+        }
+        return catched;
+    }
+    
+    private bool transition_Root_off(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "left-mouse-down" && e.getPort() == "input"){
+            object[] parameters = e.getParameters();
+            int tag = (int)parameters[0];
+            if (this.button_widget.tag == tag){
+                enableds.Add(0);
+            }
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_off. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                object[] parameters = e.getParameters();
+                int tag = (int)parameters[0];
+                this.exit_Root_off();
+                this.narrowCast("toolbar", new Event("button_pressed", "", new object[] {tag}));
+                this.enter_Root_on();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private bool transition_Root_on(Event e)
+    {
+        bool catched = false;
+        List<int> enableds = new List<int>();
+        if (e.getName() == "reset" && e.getPort() == ""){
+            object[] parameters = e.getParameters();
+            int except_tag = (int)parameters[0];
+            if (this.button_widget.tag != except_tag){
+                enableds.Add(0);
+            }
+        }
+        
+        if (enableds.Count > 1){
+            Console.WriteLine("Runtime warning : indeterminism detected in a transition from node Root_on. Only the first in document order enabled transition is executed.");
+        }
+        if (enableds.Count > 0){
+            int enabled = enableds[0];
+            
+            if (enabled == 0){
+                object[] parameters = e.getParameters();
+                int except_tag = (int)parameters[0];
+                this.exit_Root_on();
+                this.enter_Root_off();
+            }
+            catched = true;
+        }
+        
+        return catched;
+    }
+    
+    private void transition (Event e = null)
+    {
+        if (e == null) {
+            e = new Event();
+        }
+        this.state_changed = this.transition_Root(e);
+    }
+    
+    public bool inState(List<Node> nodes)
+    {
+        foreach(List<Node> actives in current_state.Values){
+            foreach(Node node in actives)
+                nodes.Remove (node);
+            if (nodes.Count == 0){
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
+    public void stop()
+    {
+        this.active = false;
+    }
+    
+    private void microstep ()
+    {
+        List<Event> due = this.events.popDueEvents();
+        if (due.Count == 0) {
+            this.transition (null);
+        } else {
+            foreach (Event e in due)
+            {
+                this.transition(e);
+            }
+        }
+    }
+    
+    public void step(double delta)
+    {
+        if (!this.active) return;
+        
+        this.events.decreaseTime(delta);
+        
+        if (this.timers != null && this.timers.Count > 0)
+        {
+            var next_timers = new Dictionary<int,double>();
+            foreach(KeyValuePair<int,double> pair in this.timers)
+            {
+                double new_time = pair.Value - delta;
+                if (new_time <= 0.0)
+                    this.addEvent (new Event("_" + pair.Key + "after"), new_time);
+                else
+                    next_timers[pair.Key] = new_time;
+            }
+            this.timers = next_timers;
+        }
+        this.microstep();
+        while (this.state_changed)
+            this.microstep();
+    }
+    
+    public void addEvent (Event input_event, double time_offset)
+    {
+        this.events.Add (input_event, time_offset);
+    }
+    
+    public void addEvent (Event input_event)
+    {
+        this.addEvent(input_event, 0.0);
+    }
+    
+    public double getEarliestEventTime ()
+    {
+        if (this.timers != null)
+        {
+            double smallest_timer_value = double.PositiveInfinity;
+            foreach (double timer_value in this.timers.Values)
+            {
+                if (timer_value < smallest_timer_value)
+                    smallest_timer_value = timer_value;
+            }
+            return Math.Min(this.events.getEarliestTime(), smallest_timer_value); 
+        }
+        return this.events.getEarliestTime();   
+    }
+}
 
 public class Canvas : IRuntimeClass
 {
@@ -43,10 +932,10 @@ public class Canvas : IRuntimeClass
     Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();
     
     //User defined attributes
-    EditorCanvas canvas;
+    GUIScrollCanvas canvas_widget;
     Dictionary<int, int> children_map;
     Dictionary<int, int> all_states_map;
-    CanvasItem current_item;
+    GUICanvasMember current_item;
     
     /// <summary>
     /// Constructor part that is common for all constructors.
@@ -67,12 +956,20 @@ public class Canvas : IRuntimeClass
             this.enter_Root_waiting();
         }
     }
+    private void narrowCast(string parent_path, Event send_event){
+        this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, send_event}));
+    }
     
-    public Canvas(ControllerBase controller, EditorCanvas canvas)
+    private void broadCast(Event send_event){
+        this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));
+    }
+    
+    
+    public Canvas(ControllerBase controller, GUIWidgetGroup window_widget)
     {
         this.commonConstructor(controller);
         //constructor body (user-defined)
-        this.canvas = canvas;
+        this.canvas_widget = new GUIScrollCanvas(window_widget);
         this.children_map = new Dictionary<int,int>();
         this.all_states_map = new Dictionary<int,int>();
     }
@@ -155,23 +1052,23 @@ public class Canvas : IRuntimeClass
                 object[] parameters = e.getParameters();
                 Vector2 position = (Vector2)parameters[0];
                 this.exit_Root_waiting();
-                this.current_item = new CanvasItem(position, this.canvas);
+                this.current_item = new GUICanvasMember(this.canvas_widget, position);
                 this.object_manager.addEvent(new Event("create_instance", "", new object[] { this, "all_states","BasicState",this.current_item}));
                 this.enter_Root_creation();
             }
             if (enabled == 1){
                 object[] parameters = e.getParameters();
-                CanvasItem child = (CanvasItem)parameters[0];
+                GUICanvasMember child = (GUICanvasMember)parameters[0];
                 this.exit_Root_waiting();
                 Debug.Log(string.Format("removing tag {0} from canvas", child.tag));
                 this.object_manager.addEvent(new Event("unassociate_instance", "", new object[] { this, String.Format("children[{0}]", this.children_map[child.tag])}));
                 this.children_map.Remove(child.tag);
-                                	this.canvas.removeChild(child);
+                                	this.canvas_widget.removeChildWidget(child);
                 this.enter_Root_waiting();
             } else if (enabled == 2){
                 object[] parameters = e.getParameters();
-                CanvasItem child = (CanvasItem)parameters[0];
-                CanvasItem parent = (CanvasItem)parameters[1];
+                GUICanvasMember child = (GUICanvasMember)parameters[0];
+                GUICanvasMember parent = (GUICanvasMember)parameters[1];
                 this.exit_Root_waiting();
                 this.current_item = child;
                                     String parent_path = ".";
@@ -186,9 +1083,9 @@ public class Canvas : IRuntimeClass
             } else if (enabled == 3){
                 object[] parameters = e.getParameters();
                 int id = (int)parameters[0];
-                CanvasItem child = (CanvasItem)parameters[1];
+                GUICanvasMember child = (GUICanvasMember)parameters[1];
                 this.exit_Root_waiting();
-                this.canvas.addChild(child);
+                this.canvas_widget.addChildWidget(child);
                                     this.children_map[child.tag] = id;
                                     //this.canvas.adjustSize();
                 this.enter_Root_waiting();
@@ -256,7 +1153,7 @@ public class Canvas : IRuntimeClass
                 String association_name = (String)parameters[1];
                 this.exit_Root_connecting();
                 String parent_path = association_name.Substring(0, association_name.Length-9);
-                this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, new Event("new_child", "", new object[] {id,this.current_item})}));
+                this.narrowCast(parent_path, new Event("new_child", "", new object[] {id,this.current_item}));
                 this.current_item = null;
                 this.enter_Root_waiting();
             }
@@ -358,9 +1255,9 @@ public class Canvas : IRuntimeClass
 public class State
 {
     //User defined attributes
-    protected CanvasItem canvas_item;
+    protected GUICanvasMember canvas_item;
     
-    public State(CanvasItem canvas_item)
+    public State(GUICanvasMember canvas_item)
     {
         //constructor body (user-defined)
         this.canvas_item = canvas_item;
@@ -419,8 +1316,16 @@ public class BasicState : State, IRuntimeClass
             this.enterDefault_Root_active();
         }
     }
+    private void narrowCast(string parent_path, Event send_event){
+        this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, send_event}));
+    }
     
-    public BasicState(ControllerBase controller, CanvasItem canvas_item) : base(canvas_item)
+    private void broadCast(Event send_event){
+        this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));
+    }
+    
+    
+    public BasicState(ControllerBase controller, GUICanvasMember canvas_item) : base(canvas_item)
     {
         this.commonConstructor(controller);
         //constructor body (user-defined)
@@ -656,23 +1561,23 @@ public class BasicState : State, IRuntimeClass
             if (enabled == 1){
                 object[] parameters = e.getParameters();
                 int id = (int)parameters[0];
-                CanvasItem child = (CanvasItem)parameters[1];
+                GUICanvasMember child = (GUICanvasMember)parameters[1];
                 this.exit_Root_active_not_selected();
-                this.canvas_item.addChild(child);
+                this.canvas_item.addChildWidget(child);
                                 		this.children_map[child.tag] = id;
-                                        this.canvas_item.adjustSize();
+                                        //this.canvas_item.adjustSize();
                 this.enter_Root_active_not_selected();
             } else if (enabled == 2){
                 this.exit_Root_active_not_selected();
-                this.canvas_item.adjustSize();
+                //this.canvas_item.adjustSize();
                 this.enter_Root_active_not_selected();
             } else if (enabled == 3){
                 object[] parameters = e.getParameters();
-                CanvasItem child = (CanvasItem)parameters[0];
+                GUICanvasMember child = (GUICanvasMember)parameters[0];
                 this.exit_Root_active_not_selected();
                 this.object_manager.addEvent(new Event("unassociate_instance", "", new object[] { this, String.Format("children[{0}]", this.children_map[child.tag])}));
                 this.children_map.Remove(child.tag);
-                                        this.canvas_item.removeChild(child);
+                                        this.canvas_item.removeChildWidget(child);
                 this.enter_Root_active_not_selected();
             }
             catched = true;
@@ -833,7 +1738,7 @@ public class BasicState : State, IRuntimeClass
         if (e.getName() == "state_drop_response" && e.getPort() == ""){
             object[] parameters = e.getParameters();
             bool do_reconnect = (bool)parameters[0];
-            CanvasItem connection = (CanvasItem)parameters[1];
+            GUICanvasMember connection = (GUICanvasMember)parameters[1];
             if (!do_reconnect){
                 enableds.Add(0);
             }
@@ -842,7 +1747,7 @@ public class BasicState : State, IRuntimeClass
         if (e.getName() == "state_drop_response" && e.getPort() == ""){
             object[] parameters = e.getParameters();
             bool do_reconnect = (bool)parameters[0];
-            CanvasItem connection = (CanvasItem)parameters[1];
+            GUICanvasMember connection = (GUICanvasMember)parameters[1];
             if (do_reconnect){
                 enableds.Add(1);
             }
@@ -857,20 +1762,20 @@ public class BasicState : State, IRuntimeClass
             if (enabled == 0){
                 object[] parameters = e.getParameters();
                 bool do_reconnect = (bool)parameters[0];
-                CanvasItem connection = (CanvasItem)parameters[1];
+                GUICanvasMember connection = (GUICanvasMember)parameters[1];
                 this.exit_Root_active_selected_drop();
                 this.object_manager.addEvent(new Event("delete_instance", "", new object[] { this, "state_drop"}));
-                this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "parent", new Event("adjust_size", "", new object[] {})}));
+                this.narrowCast("parent", new Event("adjust_size", "", new object[] {}));
                 this.enter_Root_active_selected_not_dragging();
             }
             if (enabled == 1){
                 object[] parameters = e.getParameters();
                 bool do_reconnect = (bool)parameters[0];
-                CanvasItem connection = (CanvasItem)parameters[1];
+                GUICanvasMember connection = (GUICanvasMember)parameters[1];
                 this.exit_Root_active_selected_drop();
-                this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "parent", new Event("disconnect_child", "", new object[] {this.canvas_item})}));
+                this.narrowCast("parent", new Event("disconnect_child", "", new object[] {this.canvas_item}));
                 this.object_manager.addEvent(new Event("unassociate_instance", "", new object[] { this, "parent"}));
-                this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "canvas", new Event("connect_child_to_parent", "", new object[] {this.canvas_item,connection})}));
+                this.narrowCast("canvas", new Event("connect_child_to_parent", "", new object[] {this.canvas_item,connection}));
                 this.object_manager.addEvent(new Event("delete_instance", "", new object[] { this, "state_drop"}));
                 this.enter_Root_active_selected_not_dragging();
             }
@@ -991,10 +1896,10 @@ public class StateDrop : IRuntimeClass
     Dictionary<Node,List<Node>> current_state = new Dictionary<Node,List<Node>>();
     
     //User defined attributes
-    List<CanvasItem> connection_options;
+    List<GUICanvasMember> connection_options;
     string[] connection_options_strings;
     int selected_option = 0;
-    CanvasItem canvas_item;
+    GUICanvasMember canvas_item;
     
     /// <summary>
     /// Constructor part that is common for all constructors.
@@ -1015,14 +1920,22 @@ public class StateDrop : IRuntimeClass
             this.enter_Root_root();
         }
     }
+    private void narrowCast(string parent_path, Event send_event){
+        this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, parent_path, send_event}));
+    }
     
-    public StateDrop(ControllerBase controller, CanvasItem canvas_item)
+    private void broadCast(Event send_event){
+        this.object_manager.addEvent(new Event("broad_cast", "", new object[] {send_event}));
+    }
+    
+    
+    public StateDrop(ControllerBase controller, GUICanvasMember canvas_item)
     {
         this.commonConstructor(controller);
         //constructor body (user-defined)
         this.canvas_item = canvas_item;
-        this.connection_options = new List<CanvasItem>();
-        List<CanvasItem> overlappings = canvas_item.getOverlappings();
+        this.connection_options = new List<GUICanvasMember>();
+        List<GUICanvasMember> overlappings = new List<GUICanvasMember>();//canvas_item.getOverlappings();
         if (overlappings.Count == 0)
         {
         	if (this.canvas_item.parent != null)
@@ -1035,7 +1948,7 @@ public class StateDrop : IRuntimeClass
                 if (overlappings[i] == this.canvas_item.parent)
                     break;
         		this.connection_options.Add(overlappings[i]);
-        		if (overlappings[i].completelyContains(this.canvas_item))
+        		if (false/*overlappings[i].completelyContains(this.canvas_item)*/)
         			break;
         	}
         }
@@ -1090,7 +2003,7 @@ public class StateDrop : IRuntimeClass
                                 else
                                     this.connection_options_strings[i] = "Canvas(disconnecting)";
                             }
-                            this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
+                            //this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
         this.current_state[Node.Root].Add(Node.Root_popup);
     }
     
@@ -1136,14 +2049,14 @@ public class StateDrop : IRuntimeClass
             
             if (enabled == 0){
                 this.exit_Root_root();
-                CanvasItem connection = null;
+                GUICanvasMember connection = null;
                                     bool do_reconnect = false;
                                     if (this.connection_options.Count == 1)
                                     {
                                         do_reconnect = true;
                                         connection = this.connection_options[0];
                                     }
-                this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "parent", new Event("state_drop_response", "", new object[] {do_reconnect,connection})}));
+                this.narrowCast("parent", new Event("state_drop_response", "", new object[] {do_reconnect,connection}));
                 this.enter_Root_final();
             }
             if (enabled == 1){
@@ -1179,9 +2092,9 @@ public class StateDrop : IRuntimeClass
             if (enabled == 0){
                 object[] parameters = e.getParameters();
                 bool do_reconnect = (bool)parameters[0];
-                CanvasItem connection = (CanvasItem)parameters[1];
+                GUICanvasMember connection = (GUICanvasMember)parameters[1];
                 this.exit_Root_popup();
-                this.object_manager.addEvent(new Event("narrow_cast", "", new object[] {this, "parent", new Event("state_drop_response", "", new object[] {do_reconnect,connection})}));
+                this.narrowCast("parent", new Event("state_drop_response", "", new object[] {do_reconnect,connection}));
                 this.enter_Root_final();
             }
             catched = true;
@@ -1289,11 +2202,32 @@ public class ObjectManager : ObjectManagerBase
     {
         IRuntimeClass instance = null;
         List<Association> associations = new List<Association>();
-        if (class_name == "Canvas" ){
+        if (class_name == "StateChartWindow" ){
+            object[] new_parameters = new object[construct_params.Length + 1];
+            new_parameters[0] = this.controller;
+            Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);
+            instance = (IRuntimeClass) Activator.CreateInstance(typeof(StateChartWindow), new_parameters);
+            associations.Add(new Association("toolbar", "Toolbar", 0, 1));
+            associations.Add(new Association("canvas", "Canvas", 0, 1));
+        }else if (class_name == "Toolbar" ){
+            object[] new_parameters = new object[construct_params.Length + 1];
+            new_parameters[0] = this.controller;
+            Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);
+            instance = (IRuntimeClass) Activator.CreateInstance(typeof(Toolbar), new_parameters);
+            associations.Add(new Association("window", "StateChartEditor", 0, 1));
+            associations.Add(new Association("buttons", "Button", 0, -1));
+        }else if (class_name == "Button" ){
+            object[] new_parameters = new object[construct_params.Length + 1];
+            new_parameters[0] = this.controller;
+            Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);
+            instance = (IRuntimeClass) Activator.CreateInstance(typeof(Button), new_parameters);
+            associations.Add(new Association("toolbar", "Toolbar", 0, 1));
+        }else if (class_name == "Canvas" ){
             object[] new_parameters = new object[construct_params.Length + 1];
             new_parameters[0] = this.controller;
             Array.Copy(construct_params, 0, new_parameters, 1, construct_params.Length);
             instance = (IRuntimeClass) Activator.CreateInstance(typeof(Canvas), new_parameters);
+            associations.Add(new Association("window", "StateChartEditor", 0, 1));
             associations.Add(new Association("children", "State", 0, -1));
             associations.Add(new Association("all_states", "State", 0, -1));
         }else if (class_name == "State" ){
@@ -1326,12 +2260,12 @@ public class ObjectManager : ObjectManagerBase
 
 public class Controller : GameLoopControllerBase
 {
-    public Controller(EditorCanvas canvas) : base()
+    public Controller(GUITopLevel window_widget) : base()
     {
         this.addInputPort("input");
         this.addInputPort("engine");
         this.addInputPort("windows");
         this.object_manager = new ObjectManager(this);
-        this.object_manager.createInstance("Canvas", new object[]{canvas});
+        this.object_manager.createInstance("StateChartWindow", new object[]{window_widget});
     }
 }

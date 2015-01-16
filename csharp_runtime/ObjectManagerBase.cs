@@ -70,11 +70,14 @@ namespace sccdlib
 
         public void stepAll (double delta)
         {
-            this.step(delta);
-            foreach (IRuntimeClass instance in this.instances_map.Keys)
+            do
             {
-                instance.step(delta);
-            }
+                this.step(delta);
+                foreach (IRuntimeClass instance in this.instances_map.Keys)
+                {
+                    instance.step(delta);
+                }
+            } while (!this.events.isEmpty());
         }
     
         
@@ -103,6 +106,8 @@ namespace sccdlib
             var result = new List<KeyValuePair<string, int>>();
             
             foreach (string string_piece in path_string) {
+                if (string_piece == ".")
+                    continue;
                 Match match = regex.Match (string_piece);
                 if (match.Success ){
                     string name = match.Groups[1].ToString ();
@@ -193,7 +198,11 @@ namespace sccdlib
             } else {
                 IRuntimeClass source = (IRuntimeClass)parameters [0];
                 string association_name = (string)parameters [1];
-                Association association = this.instances_map[source].getAssociation (association_name);
+                List<KeyValuePair<string,int>> traversal_list = this.processAssociationReference(association_name);
+                if (traversal_list.Count != 1 )
+                    throw new ParameterException ("You can only create instances for immediate associations.");
+
+                Association association = this.instances_map[source].getAssociation (traversal_list[0].Key);
                 if (association.allowedToAdd ()){
                     InstanceWrapper new_instance_wrapper;
                     if (parameters.Length == 2) 
@@ -208,9 +217,9 @@ namespace sccdlib
                         new_instance_wrapper = this.createInstance((string)parameters[2], constructor_parameters);
                     }
                     int id = association.addInstance (new_instance_wrapper);
-                    try {
+                    /*try {
                         new_instance_wrapper.getAssociation ("parent").addInstance(this.instances_map[source]);
-                    } catch (AssociationReferenceException) {}
+                    } catch (AssociationReferenceException) {}*/
 
                     source.addEvent(
 						new Event("instance_created", "", new object[] {id, association_name})
@@ -230,30 +239,37 @@ namespace sccdlib
             } else {
                 IRuntimeClass source = (IRuntimeClass)parameters [0];
                 List<KeyValuePair<string,int>> traversal_list = this.processAssociationReference ((string)parameters [1]);
-
                 KeyValuePair<string,int> last_tuple = traversal_list [traversal_list.Count - 1];
                 traversal_list.RemoveAt (traversal_list.Count - 1);
                 List<InstanceWrapper> instances = this.getInstances(source, traversal_list);
                 for (int i = 0; i < instances.Count; i++) {
                     try
                     {
+                        Association association = instances[i].getAssociation (last_tuple.Key);
                         if (last_tuple.Value == -1)
                         {
                             //Remove all instances in the association
-                            instances[i].getAssociation (last_tuple.Key).removeAllInstances();
+                            if (is_delete_event)
+                            {
+                                foreach (InstanceWrapper stop_instance in association.getAllInstances())
+                                {
+                                    stop_instance.getInstance().stop();
+                                }
+                            }
+                            association.removeAllInstances();
                         }
                         else
                         {
                             //Only remove the instance from the association with the specified id
-                            instances[i].getAssociation (last_tuple.Key).removeInstance (last_tuple.Value);
+                            if (is_delete_event)
+                                association.getInstance(last_tuple.Value).getInstance().stop();
+                            association.removeInstance (last_tuple.Value);
                         }
                     }
                     catch (AssociationException)
                     {
                         throw new RunTimeException(string.Format("Error removing instance from association reference '{0}'.", parameters [1]));
                     }
-                    if (is_delete_event)
-                        instances[i].getInstance().stop();
                 }
             }
         }

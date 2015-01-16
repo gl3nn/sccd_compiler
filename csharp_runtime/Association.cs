@@ -76,6 +76,7 @@ namespace sccdlib
             if (this.allowedToRemove())
             {
                 this.instances_to_id.Remove(this.instances[instance_id]);
+                System.Console.WriteLine (string.Format ("removing id ({0})", instance_id));
                 this.instances.Remove(instance_id);
             }else
             {

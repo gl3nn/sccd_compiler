@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 
 namespace SCCDEditor{/*
-    public class ConnectionPoint
+    public class GUICanvasEdge
     {
         public CanvasItem   canvas_item { get; private set;}
         public int          point_id { get; set;}
@@ -20,7 +20,7 @@ namespace SCCDEditor{/*
         }
     }
 
-    public class Connection
+    public class GUICanvasEdge : GUIWidget
     {
 
         ConnectionPoint begin = null;

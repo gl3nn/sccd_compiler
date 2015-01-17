@@ -3,13 +3,9 @@ using System.Collections.Generic;
 
 namespace SCCDEditor
 {
-    public class GUIHorizontalGroup : GUIWidgetGroup
+    public class GUIHorizontalGroup : GUIGroupWidget
     {
-        public GUIHorizontalGroup(GUIWidgetGroup parent): base(parent)
-        {
-        }
-
-        public override void OnGUI()
+        protected override void OnGUI()
         {
             GUILayout.BeginHorizontal("box");
             base.OnGUI();

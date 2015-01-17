@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="State">
-    <attribute type="GUICanvasMember" name="canvas_item" access="protected"/>
+    <attribute type="GUICanvasElement" name="widget" access="protected"/>
     <constructor>
-        <parameter type="GUICanvasMember" name="canvas_item"/>
+        <parameter type="GUICanvasElement" name="widget"/>
         <body>
-            this.canvas_item = canvas_item;
+            this.widget = widget;
         </body>
     </constructor>
 </class>

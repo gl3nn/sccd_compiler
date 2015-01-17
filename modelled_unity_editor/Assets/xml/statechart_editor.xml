@@ -49,19 +49,16 @@
                     <parameter expr='"."' />
                     <parameter expr='"canvas/window"'/>
                 </raise>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"canvas"' />
+                    <parameter expr='"toolbar/canvas"'/>
+                </raise>
                 <raise scope="cd" event="start_instance">
                     <parameter expr='"canvas"' />
                 </raise>
             </transition>
         </state>
         <state id="main">
-            <transition event="left-mouse-down" port="input" target=".">
-                <parameter type="int" name="tag"/>
-                <parameter type="Vector2" name="position"/>
-                <script>
-                    Debug.Log(tag);
-                </script>
-            </transition>
         </state>
     </scxml>
 </class>

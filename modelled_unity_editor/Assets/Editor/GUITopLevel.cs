@@ -4,23 +4,51 @@ namespace SCCDEditor
 {
     public class GUITopLevel : GUIVerticalGroup
     {
-        public GUITopLevel() : base(null)
+        private GUIModalWindow modal_window = null;
+
+        private StateChartEditorWindow window;
+
+        public static GUITopLevel current { get; private set; }
+        
+        public GUITopLevel(StateChartEditorWindow window)
         {
+            this.window = window;
         }
 
-        public override void OnGUI()
+        public void setModalWindow(GUIModalWindow modal_window)
         {
+            this.modal_window = modal_window;
+        }
+
+        protected override void OnGUI()
+        {
+            GUITopLevel.current = this;
+
             if (Event.current.type != EventType.Layout)
             {
-                GUIWidget.current_event = null;
-            }
-            base.OnGUI();
-            if (Event.current.type != EventType.Layout)
-            {
-                if (GUIWidget.current_event != null)
-                    GUIWidget.controller.addInput(GUIWidget.current_event);
+                this.position = this.window.position;
+                if (Event.current.type != EventType.Repaint)
+                    GUIEvent.current = null;
             }
 
+            GUI.enabled = this.modal_window == null;
+
+            base.OnGUI();
+
+            this.window.processEvent();
+
+            if (this.modal_window != null && this.modal_window.should_close)
+                this.modal_window = null;
+
+            if (this.modal_window != null)
+            {
+                GUI.enabled = true;
+                this.window.BeginWindows();
+                this.modal_window.draw();
+                this.window.EndWindows();
+            }
+
+            GUITopLevel.current = null;
         }
     }
 }

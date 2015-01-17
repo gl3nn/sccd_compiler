@@ -3,13 +3,9 @@ using System.Collections.Generic;
 
 namespace SCCDEditor
 {
-    public class GUIVerticalGroup : GUIWidgetGroup
+    public class GUIVerticalGroup : GUIGroupWidget
     {
-        public GUIVerticalGroup(GUIWidgetGroup parent): base(parent)
-        {
-        }
-        
-        public override void OnGUI()
+        protected override void OnGUI()
         {
             GUILayout.BeginVertical();
             base.OnGUI();

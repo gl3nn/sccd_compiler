@@ -9,9 +9,9 @@
     </relationships>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <constructor>
-        <parameter type="GUICanvasMember" name="canvas_item"/>
+        <parameter type="GUICanvasElement" name="widget"/>
         <super>
-            <parameter expr="canvas_item"/>
+            <parameter expr="widget"/>
         </super>
         <body>
             <![CDATA[
@@ -19,126 +19,163 @@
             ]]>
         </body>
     </constructor>
-    <scxml initial="active">
-        <state id="active" initial="setup">
-        	<state id="setup">
-        		<transition target="../selected/drop">
-	                <raise scope="cd" event="associate_instance">
-	                    <parameter expr='"parent"' />
-	                    <parameter expr='"canvas"'/>
-	                </raise>
-        		</transition>
-        	</state>
-            <state id="not_selected">
-                <transition event="select" port="input" target="../selected" cond="this.canvas_item.tag == tag">
-                    <parameter type="int" name="tag"/>
-                    <script>
-                        this.canvas_item.pushToFront();
-                    </script>
-                </transition>
-                <transition event="new_child" target=".">
-                	<parameter type="int" name="id"/>
-                	<parameter type="GUICanvasMember" name="child"/>
-                	<script>
-                		this.canvas_item.addChildWidget(child);
-                		this.children_map[child.tag] = id;
-                        //this.canvas_item.adjustSize();
-                	</script>
-                </transition>
-                <transition event="adjust_size" target=".">
-                    <script>
-                        //this.canvas_item.adjustSize();
-                    </script>
-                </transition>
-                <transition event="disconnect_child" target=".">
-                    <parameter name="child" type="GUICanvasMember"/>
-                    <raise scope="cd" event="unassociate_instance">
-                        <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
-                    </raise>
-                    <script>
-                        this.children_map.Remove(child.tag);
-                        this.canvas_item.removeChildWidget(child);
-                    </script>
-                </transition>
-            </state>
-            <state id="selected" initial="not_dragging">
-                <onentry>
-                    <script>
-                        this.canvas_item.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
-                    </script>
-                </onentry>
-                <transition event="select" port="input" target="../not_selected" cond="this.canvas_item.tag != tag">
-                    <parameter type="int" name="tag"/>
-                    <script>
-                        this.canvas_item.resetColor();
-                    </script>
-                </transition>
+    <scxml initial="main">            
+        <parallel id="main">
+        
+            <!-- MAIN ACTIVE LISTENING LOOP -->
+            
+            <state id="event_processing" initial="listening">
+                <state id="listening">
                 
-                <state id="not_dragging">
-                    <transition target="../dragging" port="input" event="drag">
-                        <parameter type="int" name="tag"/>
-                        <parameter type="Vector2" name="delta"/>
+                    <transition event="new_child" target=".">
+                        <parameter type="int" name="id"/>
+                        <parameter type="GUICanvasElement" name="child"/>
                         <script>
-                            this.canvas_item.move(delta);
+                            this.widget.addElement(child);
+                            this.children_map[child.tag] = id;
+                            this.widget.adjustSize();
                         </script>
                     </transition>
-                </state>
-                <state id="dragging">
-                    <transition target="." port="input" event="drag">
-                        <parameter type="int" name="tag"/>
-                        <parameter type="Vector2" name="delta"/>
+
+                    <transition event="adjust_size" target=".">
                         <script>
-                            this.canvas_item.move(delta);
+                            this.widget.adjustSize();
                         </script>
                     </transition>
-                    <transition target="../drop" port="input" event="mouse_up"/>
-                </state>
-                <state id="drop" initial="drop_window_activation">
-                    <onentry>
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"state_drop"' />
-                            <parameter expr='"StateDrop"'/>
-                            <parameter expr='this.canvas_item' />
+
+                    <transition event="disconnect_child" target=".">
+                        <parameter name="child" type="GUICanvasElement"/>
+                        <raise scope="cd" event="unassociate_instance">
+                            <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
                         </raise>
-                    </onentry>
-                    <state id="drop_window_activation">
-                        <transition event="instance_created" target="../wait_for_drop_window">
-                            <parameter name="id" type="int"/>
-                            <parameter name="association_name" type="String"/>
-                            <raise scope="cd" event="start_instance">
-                                <parameter expr='association_name' />
-                            </raise>
-                        </transition>
-                    </state>
-                    <state id="wait_for_drop_window">
-                        <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
-                            <parameter type="bool" name="do_reconnect"/>
-                            <parameter type="GUICanvasMember" name="connection"/>
-                            <raise scope="cd" event="delete_instance">
-                                <parameter expr='"state_drop"' />
-                            </raise>
-                            <raise target='"parent"' event="adjust_size"/>
-                        </transition>
-                        <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
-                            <parameter type="bool" name="do_reconnect"/>
-                            <parameter type="GUICanvasMember" name="connection"/>
-                            <raise event="disconnect_child" target='"parent"'>
-                                <parameter expr="this.canvas_item"/>
-                            </raise>
-                            <raise scope="cd" event="unassociate_instance">
-                                <parameter expr='"parent"' />                          
-                            </raise>
-                            <raise event="connect_child_to_parent" target='"canvas"'>
-                                <parameter expr="this.canvas_item"/>
-                                <parameter expr="connection"/>
-                            </raise>
-                            <raise scope="cd" event="delete_instance">
-                                <parameter expr='"state_drop"' />
-                            </raise>
-                        </transition>
-                    </state>
-                </state>            
+                        <script>
+                            this.children_map.Remove(child.tag);
+                            this.widget.removeElement(child);
+                        </script>
+                    </transition>
+                    
+                    <transition event="left-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
+                        <parameter name="tag" type="int"/>
+                        <raise event="unselect" target='"canvas"'>
+                            <parameter expr='this.widget.tag'/>
+                        </raise>
+                        <raise event="set_selected" />
+                    </transition>
+                    <transition event="middle-mouse-down" port="input" cond="tag == this.widget.tag" target=".">
+                        <parameter name="tag" type="int"/>
+                        <raise event="unselect" target='"canvas"'>
+                            <parameter expr='this.widget.tag'/>
+                        </raise>
+                    </transition>
+                    <transition event="right-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
+                        <parameter name="tag" type="int"/>
+                        <raise event="unselect" target='"canvas"'>
+                            <parameter expr='this.widget.tag'/>
+                        </raise>
+                    </transition>
+                 </state>
             </state>
-        </state>
+            
+            <!-- SELECTED STATE AND DEPENDENT ACTIONS -->
+            
+            <state id="selection_state" initial="setup">
+                <state id="setup">
+                    <transition target="../selected/drop/"/>
+                </state>
+        
+                <state id="not_selected">
+                    <transition event="set_selected" target="../selected">
+                        <script>
+                            this.widget.pushToFront();
+                        </script>
+                    </transition>
+                </state>
+                <state id="selected" initial="not_dragging">
+                    <onentry>
+                        <script>
+                            this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                        </script>
+                    </onentry>
+                    <transition event="unselect" target="../not_selected" cond="this.widget.tag != except_tag">
+                        <parameter type="int" name="except_tag"/>
+                        <script>
+                            this.widget.resetColor();
+                        </script>
+                    </transition>
+                    
+                    <state id="not_dragging">
+                        <transition target="../dragging" port="input" event="left-mouse-drag">
+                            <parameter type="int" name="tag"/>
+                            <parameter type="Vector2" name="position"/>
+                            <parameter type="Vector2" name="delta"/>
+                            <script>
+                                this.widget.move(delta);
+                            </script>
+                        </transition>
+                    </state>
+                    <state id="dragging">
+                        <transition target="." port="input" event="left-mouse-drag">
+                            <parameter type="int" name="tag"/>
+                            <parameter type="Vector2" name="position"/>
+                            <parameter type="Vector2" name="delta"/>
+                            <script>
+                                this.widget.move(delta);
+                            </script>
+                        </transition>
+                        <transition target="../drop" port="input" event="left-mouse-up"/>
+                    </state>
+                    <state id="drop" initial="drop_window_creation">
+                        <state id="drop_window_creation">
+                            <onentry>
+                                <raise scope="cd" event="create_instance">
+                                    <parameter expr='"state_drop"' />
+                                    <parameter expr='"StateDrop"'/>
+                                    <parameter expr='this.widget' />
+                                </raise>
+                                <raise scope="cd" event="associate_instance">
+                                    <parameter expr='"."' />
+                                    <parameter expr='"state_drop/dropped_state"'/>
+                                </raise>
+                            </onentry>
+                            
+                            <transition event="instance_associated" target="../wait_for_drop_window">
+                                <parameter name="id" type="int"/>
+                                <parameter name="association_name" type="String"/>
+                                <raise scope="cd" event="start_instance">
+                                    <parameter expr='"state_drop"' />
+                                </raise>
+                            </transition>
+                        </state>
+                        <state id="wait_for_drop_window">
+                            <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
+                                <parameter type="bool" name="do_reconnect"/>
+                                <parameter type="GUICanvasElement" name="connection"/>
+                                <raise scope="cd" event="delete_instance">
+                                    <parameter expr='"state_drop"' />
+                                </raise>
+                                <raise target='"parent"' event="adjust_size"/>
+                            </transition>
+                            <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
+                                <parameter type="bool" name="do_reconnect"/>
+                                <parameter type="GUICanvasElement" name="connection"/>
+                                <raise event="disconnect_child" target='"parent"'>
+                                    <parameter expr="this.widget"/>
+                                </raise>
+                                <raise scope="cd" event="unassociate_instance">
+                                    <parameter expr='"parent"' />                          
+                                </raise>
+                                <raise event="connect_child_to_parent" target='"canvas"'>
+                                    <parameter expr="this.widget"/>
+                                    <parameter expr="connection"/>
+                                </raise>
+                                <raise scope="cd" event="delete_instance">
+                                    <parameter expr='"state_drop"' />
+                                </raise>
+                            </transition>
+                        </state>
+                    </state>
+                </state>           
+            </state>
+        </parallel>
     </scxml>
 </class>

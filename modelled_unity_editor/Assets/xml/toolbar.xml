@@ -2,21 +2,23 @@
 <class name="Toolbar">
     <relationships>
         <association class="StateChartEditor" name="window" max="1"/>
+        <association class="Canvas" name="canvas" max="1"/>
         <association class="Button" name="buttons"/>
     </relationships>
     <attribute type="GUIHorizontalGroup" name="toolbar_widget"/>
     <attribute type="List&lt;GUIButtonInformation&gt;" name="buttons_information"/>
     <attribute type="int" name="button_count" init-value='0'/>
     <constructor>
-        <parameter type="GUIWidgetGroup" name="window_widget"/>
+        <parameter type="GUITopLevel" name="window_widget"/>
         <body>
             <![CDATA[
-            this.toolbar_widget = new GUIHorizontalGroup(window_widget);
+            this.toolbar_widget = new GUIHorizontalGroup();
+            window_widget.addChild(this.toolbar_widget);
             this.buttons_information = new List<GUIButtonInformation>
             {
-                new GUIButtonInformation("Select", "set-select"),
-                new GUIButtonInformation("Create Association", "set-create-association"),
-                new GUIButtonInformation("Create State", "set-create-state")
+                new GUIButtonInformation("Basic", "set-basic"),
+                new GUIButtonInformation("Parallel", "set-parallel"),
+                new GUIButtonInformation("History", "set-history")
             };
             ]]>
         </body>
@@ -54,9 +56,13 @@
         </state>
         <state id="listening">
             <transition event="button_pressed" target=".">
+                <parameter name="button_action" type="string"/>
                 <parameter name="button_tag" type="int"/>
                 <raise event="reset" target='"buttons"'>
                     <parameter expr="button_tag"/>
+                </raise>
+                <raise event="toolbar_action" target='"canvas"'>
+                    <parameter expr="button_action"/>
                 </raise>
             </transition>
         </state>

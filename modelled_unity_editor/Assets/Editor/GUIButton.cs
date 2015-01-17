@@ -8,12 +8,12 @@ namespace SCCDEditor
         public GUIButtonInformation properties { get; private set; }
         public bool is_on = false;
 
-        public GUIButton(GUIWidgetGroup parent, GUIButtonInformation button_information): base(parent)
+        public GUIButton(GUIButtonInformation button_information)
         {
             this.properties = button_information;
         }
         
-        public override void OnGUI()
+        protected override void OnGUI()
         {
             GUIStyle button_style = GUI.skin.GetStyle("button");
             Rect position = GUILayoutUtility.GetRect(new GUIContent(this.properties.label), button_style);
@@ -25,15 +25,12 @@ namespace SCCDEditor
                 if (this.position.Contains(Event.current.mousePosition))
                 {
                     GUIUtility.hotControl = id;
-                    this.doLeftMouseDown();
-                    //Event.current.Use();
                 }
             } else if (event_type == EventType.MouseUp)
             {
                 if (GUIUtility.hotControl == id)
                 {
                     GUIUtility.hotControl = 0;
-                    //Event.current.Use();
                 }
             } else if (event_type == EventType.Repaint)
             {
@@ -47,6 +44,7 @@ namespace SCCDEditor
                     false //hasKeyboardFocus
                 );
             }
+            this.catchMouseDefault();
         }
 
     }
@@ -54,12 +52,12 @@ namespace SCCDEditor
     public class GUIButtonInformation
     {
         public string label         { private set; get; }
-        public string event_name    { private set; get; }
+        public string action        { private set; get; }
 
-        public GUIButtonInformation(string label, string event_name)
+        public GUIButtonInformation(string label, string action)
         {
             this.label = label;
-            this.event_name = event_name;
+            this.action = action;
         }
     }
 }

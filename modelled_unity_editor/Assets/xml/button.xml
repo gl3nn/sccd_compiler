@@ -9,7 +9,8 @@
         <parameter type="GUIButtonInformation" name="button_information"/>
         <body>
             <![CDATA[
-            this.button_widget = new GUIButton(toolbar_widget, button_information);
+            this.button_widget = new GUIButton(button_information);
+            toolbar_widget.addChild(this.button_widget);
             ]]>
         </body>
     </constructor>
@@ -23,6 +24,7 @@
             <transition event="left-mouse-down" port="input" target="../on" cond="this.button_widget.tag == tag">
                 <parameter name="tag" type="int"/>
                 <raise event="button_pressed" target='"toolbar"'>
+                    <parameter expr="this.button_widget.properties.action"/>
                     <parameter expr="tag"/>
                 </raise>
             </transition>

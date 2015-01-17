@@ -1,60 +1,36 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace SCCDEditor
 {
     public class GUIWidget
     {
         public Rect                         position    { get; protected set; }
-        public GUIWidgetGroup               parent      { get; private set; }
         public int                          tag         { get; private set; }
 
-        public static int                   tag_counter = 0;
+        private static int                  tag_counter = 0;
 
-        public static sccdlib.Event         current_event = null;
-
-        public static Controller            controller;
-
-        public GUIWidget(GUIWidgetGroup parent)
+        public GUIWidget()
         {
             this.tag = GUIWidget.tag_counter++;
-            if (parent != null)
-                parent.addChildWidget(this);
         }
 
-        public void setParent(GUIWidgetGroup parent)
+        protected void catchMouseDefault()
         {
-            this.parent = parent;
-        }
-
-        public void pushToFront() 
-        {
-            if (this.parent != null)
-                this.parent.pushChildToFront(this);
-        }
-
-        public bool isAncestorOf(GUIWidget widget)
-        {
-            while (widget.parent != null)
+            if (Event.current.type != EventType.Repaint && Event.current.type != EventType.Layout)
             {
-                if (widget.parent == this)
-                    return true;
-                widget = widget.parent;
+                if (this.position.Contains(Event.current.mousePosition))
+                    GUIEvent.current = new GUIEvent(this.tag, Event.current.mousePosition);
             }
-            return false;
         }
 
-        public virtual void OnGUI()
+        public void doOnGUI()
         {
+            this.OnGUI();
         }
 
-        protected void doLeftMouseDown()
+        protected virtual void OnGUI()
         {
-            GUIWidget.current_event = new sccdlib.Event("left-mouse-down", "input", new object[] {this.tag, Event.current.mousePosition});
-        }
-
-        protected void doMiddleMouseDown()
-        {
-            GUIWidget.controller.addInput(new sccdlib.Event("middle-mouse-down", "input", new object[] {this.tag, Event.current.mousePosition}));
         }
     }
 }

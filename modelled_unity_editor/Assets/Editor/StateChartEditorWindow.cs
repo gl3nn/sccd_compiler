@@ -13,8 +13,6 @@ namespace SCCDEditor{
 
         //public  EditorCanvas    canvas { private set; get; }
 
-        //private SCCDModalWindow modal_window = null;
-
         private GUITopLevel  window_widget;
 
 
@@ -22,90 +20,106 @@ namespace SCCDEditor{
         public static void Init()
         {
             StateChartEditorWindow window = (StateChartEditorWindow) EditorWindow.GetWindow(typeof(StateChartEditorWindow), false);
-            window.wantsMouseMove = true;
+            //window.wantsMouseMove = true;
             window.title = "StateChart Editor";
             //UnityEngine.Object.DontDestroyOnLoad( window );
         }
 
-        /*public Vector2 getWindowModalPosition()
-        {
-            return new Vector2(this.position.width/2, this.position.height/2);
-        }*/
-
-		/*public Vector2 getCanvasModalPosition()
-		{
-            return new Vector2(this.canvas_area.width/2, this.canvas_area.height/2);
-		}*/
-
         public StateChartEditorWindow()
         {
-            this.window_widget = new GUITopLevel();
+            this.window_widget = new GUITopLevel(this);
             this.controller = new Controller(this.window_widget);
-            GUIWidget.controller = this.controller;
             this.controller.start();
-            /*
-            GUIVerticalGroup vertical = new GUIVerticalGroup(this.window_widget);
-            GUIHorizontalGroup toolbar = new GUIHorizontalGroup(vertical);
-            GUIButton button1 = new GUIButton(toolbar, "button1");
-            GUIButton button2 = new GUIButton(toolbar, "button2");
-            GUIButton button3 = new GUIButton(toolbar, "button3");
-            GUIScrollCanvas canvas = new GUIScrollCanvas(vertical);
-            GUICanvasMember canvas_widget = new GUICanvasMember(canvas, new Vector2(100, 100));
-            */
         }
 
-		/*public void createModalWindow(string title, SCCDModalWindow.DrawFunction draw_function, bool over_canvas = false)
-		{
-            if (over_canvas)
-                this.modal_window = new SCCDModalWindow(title, draw_function, this.getCanvasModalPosition);
-            else
-                this.modal_window = new SCCDModalWindow(title, draw_function, this.getWindowModalPosition);
-		}
-        */
-        private void handleEvents() 
+        public void processEvent()
         {
-            //if (Event.current.type != EventType.Ignore && Event.current.type != EventType.Used){
+            if (Event.current.type == EventType.Layout)
+                return;
+            
+            if (Event.current.type == EventType.Repaint)
+            {
+                this.updateController();
+                return;
+            }
+            
+            sccdlib.Event input_event = null;
+
+            // NEXT ARE ALL EVENTS RELATED TO THE MOUSE WHICH SHOULD NOT BE GENERATED IF THE MOUSE IS NOT OVER THE WINDOW
+            if (GUIEvent.current == null)
+                return;
+
+            // PROCESS MOUSE DOWN EVENT
             if (Event.current.type == EventType.MouseDown)
             {
-                /*if (Event.current.button == 2)
-                {
-                    this.controller.addInput(new sccdlib.Event("select", "input", new object[] {-1}));
-                    this.controller.addInput(new sccdlib.Event("create", "input", new object[] {Event.current.mousePosition}));
-                    Event.current.Use();
-                } else */if (Event.current.button == 0)
-                {
-                    //int tag = this.catchMouse(Event.current.mousePosition);
-                    //this.controller.addInput(new sccdlib.Event("select", "input", new object[] {tag}));
-                    //Event.current.Use();
-                }
-            } else if (Event.current.type == EventType.MouseUp)
-            {
+                string event_name = "";
+
                 if (Event.current.button == 0)
-                {
-                    this.controller.addInput(new sccdlib.Event("mouse_up", "input", new object[] {}));
-                    //Event.current.Use();
-                }
-            } else if (Event.current.type == EventType.MouseDrag)
+                    event_name = "left-mouse-down";
+                else if (Event.current.button == 1)
+                    event_name = "right-mouse-down";
+                else if (Event.current.button == 2)
+                    event_name = "middle-mouse-down";
+
+                if (event_name != "")
+                    input_event = new sccdlib.Event(event_name, "input", new object[] {
+                        GUIEvent.current.focus_tag,
+                        GUIEvent.current.mouse_position
+                    });
+            }
+            // PROCESS MOUSE UP EVENT
+            else if (Event.current.type == EventType.MouseUp)
             {
+                string event_name = "";
+
                 if (Event.current.button == 0)
-                {
-                    /*int tag = this.catchMouse(Event.current.mousePosition - Event.current.delta);
-                    sccdlib.Event drag_event = new sccdlib.Event("drag", "input", new object[]
-                    {
-                        tag,
+                    event_name = "left-mouse-up";
+                else if (Event.current.button == 1)
+                    event_name = "right-mouse-up";
+                else if (Event.current.button == 2)
+                    event_name = "middle-mouse-up";
+
+                if (event_name != "")
+                    input_event = new sccdlib.Event(event_name, "input", new object[] {
+                        GUIEvent.current.focus_tag,
+                        GUIEvent.current.mouse_position
+                    });
+            }
+            // PROCESS MOUSE DRAG EVENT
+            else if (Event.current.type == EventType.MouseDrag)
+            {
+                string event_name = "";
+
+                if (Event.current.button == 0)
+                    event_name = "left-mouse-drag";
+                else if (Event.current.button == 1)
+                    event_name = "right-mouse-drag";
+                else if (Event.current.button == 2)
+                    event_name = "middle-mouse-drag";
+
+                if (event_name != "")
+                    input_event = new sccdlib.Event(event_name, "input", new object[] {
+                        GUIEvent.current.focus_tag,
+                        GUIEvent.current.mouse_position,
                         Event.current.delta
                     });
-                    this.controller.addInput(drag_event);
-                    Event.current.Use();*/
-                }
             }
-            //}
-			
-        }
+            // PROCESS MOUSE MOVE EVENT
+            else if (Event.current.type == EventType.MouseMove)
+            {
+                input_event = new sccdlib.Event("mouse-move", "input", new object[] {
+                    GUIEvent.current.focus_tag,
+                    GUIEvent.current.mouse_position,
+                    Event.current.delta
+                });
+            }
 
-        /*private int catchMouse(Vector2 mouse_position) {
-            return this.window_widget.catchMouse(mouse_position);
-        }*/
+            if (input_event != null)
+            {
+                this.controller.addInput(input_event);
+                this.updateController();
+            }
+        }
 
         private void updateController()
         {
@@ -119,39 +133,12 @@ namespace SCCDEditor{
             System.Console.SetOut(stdOut);
             this.update_time = 0;
         }
-        /*
-        private void drawGUI()
-        {
-            GUILayout.BeginVertical();
-            this.drawToolArea();
-
-            this.handleCanvasEvents();
-            this.updateController();
-            GUI.EndScrollView();
-            GUILayout.EndVertical();
-        }*/
 
         public void OnGUI()
         {
-            if (Event.current.type == EventType.Layout)
-                this.updateController();
-            //this.handleEvents();
-            this.window_widget.OnGUI();
-            /*GUI.enabled = this.modal_window == null;
             GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
-            this.drawGUI();
-            if (Event.current.type == EventType.Layout)
-            {
-                if (this.modal_window != null && this.modal_window.should_close)
-                    this.modal_window = null;
-            }
-            if (this.modal_window != null)
-            {
-                GUI.enabled = true;
-                this.BeginWindows();
-                this.modal_window.draw();
-                this.EndWindows();
-            }*/
+
+            this.window_widget.doOnGUI();
         }
 
         public void Update()

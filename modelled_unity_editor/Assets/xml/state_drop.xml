@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="StateDrop">
     <relationships>
-        <association class="State" name="parent" max="1"/>
+        <association class="State" name="dropped_state" max="1"/>
     </relationships>
-    <attribute type="List&lt;GUICanvasMember&gt;" name="connection_options"/>
+    <attribute type="List&lt;GUICanvasElement&gt;" name="connection_options"/>
     <attribute type="string[]" name="connection_options_strings"/>
     <attribute type="int" name="selected_option" init-value="0"/>
-    <attribute type="GUICanvasMember" name="canvas_item" />
+    <attribute type="GUICanvasElement" name="canvas_member" />
     <constructor>
-        <parameter type="GUICanvasMember" name="canvas_item"/>
+        <parameter type="GUICanvasElement" name="canvas_member"/>
         <body>
         <![CDATA[
-            this.canvas_item = canvas_item;
-            this.connection_options = new List<GUICanvasMember>();
-            List<GUICanvasMember> overlappings = new List<GUICanvasMember>();//canvas_item.getOverlappings();
+            this.canvas_member = canvas_member;
+            this.connection_options = new List<GUICanvasElement>();
+            List<GUICanvasElement> overlappings = canvas_member.getOverlappings();
             if (overlappings.Count == 0)
             {
-            	if (this.canvas_item.parent != null)
+            	if (this.canvas_member.parent != this.canvas_member.canvas)
             		this.connection_options.Add(null);
             }
             else
             {
             	for (int i = overlappings.Count - 1; i >= 0; i--)
             	{
-                    if (overlappings[i] == this.canvas_item.parent)
+                    if (overlappings[i] == this.canvas_member.parent)
                         break;
             		this.connection_options.Add(overlappings[i]);
-            		if (false/*overlappings[i].completelyContains(this.canvas_item)*/)
+            		if (overlappings[i].completelyContains(this.canvas_member))
             			break;
             	}
             }
@@ -34,11 +34,13 @@
         </body>
     </constructor>
     <method access="public" type="void" name="drawModalWindow">
-    	<parameter name="modal_window" type="SCCDModalWindow"/>
+    	<parameter name="modal_window" type="GUIModalWindow"/>
         <body>
         <![CDATA[
+            EditorGUILayout.Space();
             GUILayout.Label("Connect to:");
             this.selected_option = GUILayout.SelectionGrid(this.selected_option, this.connection_options_strings, 1, "MenuItem");
+            EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();          
             if (GUILayout.Button("Yes"))
             {
@@ -58,7 +60,7 @@
         <state id="root">
             <transition target="../final" cond="this.connection_options.Count == 0 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] != null)">
                 <script>
-                    GUICanvasMember connection = null;
+                    GUICanvasElement connection = null;
                     bool do_reconnect = false;
                     if (this.connection_options.Count == 1)
                     {
@@ -66,7 +68,7 @@
                         connection = this.connection_options[0];
                     }
                 </script>
-                <raise target='"parent"' event="state_drop_response">
+                <raise target='"dropped_state"' event="state_drop_response">
                     <parameter expr="do_reconnect"/>
                     <parameter expr="connection"/>
                 </raise>
@@ -86,14 +88,14 @@
                         else
                             this.connection_options_strings[i] = "Canvas(disconnecting)";
                     }
-                    //this.canvas_item.canvas.createModalWindow("State Drop", this.drawModalWindow);
+                    new GUIModalWindow("State Drop", this.canvas_member.canvas, this.drawModalWindow);
                 ]]>
                 </script>
             </onentry>
             <transition port="" event="state_drop_popup_response" target="../final">
                 <parameter type="bool" name="do_reconnect"/>
-                <parameter type="GUICanvasMember" name="connection"/>
-                <raise target='"parent"' event="state_drop_response">
+                <parameter type="GUICanvasElement" name="connection"/>
+                <raise target='"dropped_state"' event="state_drop_response">
                     <parameter expr="do_reconnect"/>
                     <parameter expr="connection"/>
                 </raise>

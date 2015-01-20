@@ -2,42 +2,78 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 
-namespace SCCDEditor{/*
-    public class GUICanvasEdge
+namespace SCCDEditor{
+    public class GUICanvasConnectionPoint
     {
-        public CanvasItem   canvas_item { get; private set;}
+        public GUICanvasElement   canvas_element { get; private set;}
         public int          point_id { get; set;}
 
-        public ConnectionPoint(CanvasItem canvas_item, int point_id)
+        public GUICanvasConnectionPoint(GUICanvasElement canvas_element, int point_id)
         {
-            this.canvas_item = canvas_item;
+            this.canvas_element = canvas_element;
             this.point_id = point_id;
         }
 
-        public Vector2 getPoint()
+        public GUICanvasConnectionPoint(GUICanvasElement canvas_element, Vector2 closest_to)
         {
-            return this.canvas_item.getPoint(this.point_id);
+            this.canvas_element = canvas_element;
+            this.setClosest(closest_to);
+        }
+
+        public Vector2 getPosition()
+        {
+            return this.canvas_element.getConnectionPointPosition(this.point_id);
+        }
+
+        /*public Vector2 getClosest(Vector2 mouse)
+        {
+            return(mouse);
+        }
+        */
+
+        public void setClosest(Vector2 closest_to)
+        {
+            this.point_id =  this.canvas_element.getClosestConnectionPoint(closest_to);
         }
     }
 
     public class GUICanvasEdge : GUIWidget
     {
+        GUICanvasConnectionPoint start = null;
+        GUICanvasConnectionPoint end = null;
+        public List<Vector2> control_points = new List<Vector2>();
 
-        ConnectionPoint begin = null;
-        ConnectionPoint end = null;
-        List<Vector2> mid_points = new List<Vector2>();
-
-        public Connection(CanvasItem begin_item)
+        public GUICanvas canvas    { get; private set; }
+        
+        public GUICanvasEdge(GUICanvasElement start_element, Vector2 closest_to)
         {
-            this.begin = new ConnectionPoint(begin_item, 0);
+            this.start = new GUICanvasConnectionPoint(start_element, closest_to);
+            this.end = new GUICanvasConnectionPoint(start_element, closest_to);
+            this.canvas = start_element.canvas;
+            this.canvas.addEdge(this);
         }
 
-        public void setEndPoint(CanvasItem end_item)
+        public void adjustEndPoint(Vector2 closest_to)
         {
-            this.end = new ConnectionPoint(end_item, 0);
+            this.end.setClosest(closest_to);
         }
 
-        private static void Initialize()
+        public void createEndPoint(GUICanvasElement end_item, Vector2 closest_to)
+        {
+            this.end = new GUICanvasConnectionPoint(end_item, closest_to);
+        }
+
+        public void removeEndPoint()
+        {
+            this.end = null;
+        }
+
+        public void delete()
+        {
+            this.canvas.removeEdge(this);
+        }
+
+        /*private static void Initialize()
         {
             if (lineTex == null)
             {
@@ -59,11 +95,11 @@ namespace SCCDEditor{/*
             // depending on the alphaBlend parameter. Use reflection to "borrow" these references.
             blitMaterial = (Material)typeof(GUI).GetMethod("get_blitMaterial", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
             blendMaterial = (Material)typeof(GUI).GetMethod("get_blendMaterial", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
-        }
+        }*/
         
         public static void drawLine(Vector2 start_pos, Vector2 end_pos)
         {       
-            if ( start_pos.x > end_pos.x ){
+            /*if ( start_pos.x > end_pos.x ){
                 Vector2 temp = start_pos;
                 start_pos = end_pos;
                 end_pos = temp;
@@ -79,21 +115,41 @@ namespace SCCDEditor{/*
                Color.black,
                null,
                3.25f
+            );*/
+
+            Handles.DrawLine(
+                new Vector3(start_pos.x, start_pos.y),
+                new Vector3(end_pos.x, end_pos.y)
             );
         }
-        
-        public void draw () 
+
+        public void popControlPoint()
         {
-            Vector2 begin_point = this.begin.getPoint();
+            this.control_points.RemoveAt(this.control_points.Count - 1);
+        }
+
+        public void addControlPoint(Vector2 position)
+        {
+            this.control_points.Add(position);
+        }
+
+        public bool hasControlPoints()
+        {
+            return this.control_points.Count != 0;
+        }
+
+        protected override void OnGUI()
+        {
+			Vector2 begin_point = this.start.getPosition ();
             Vector2 next_point;
-            for (int i = 0; i < this.mid_points.Count; i++)
+            for (int i = 0; i < this.control_points.Count; i++)
             {
-                next_point = this.mid_points[i];
-                Connection.drawLine(begin_point, next_point);
+                next_point = this.control_points[i];
+                GUICanvasEdge.drawLine(begin_point, next_point);
                 begin_point = next_point;
             }
             if (this.end != null)
-                Connection.drawLine(begin_point, this.end.getPoint());
+                GUICanvasEdge.drawLine(begin_point, this.end.getPosition());
         }
-    }*/
+    }
 }

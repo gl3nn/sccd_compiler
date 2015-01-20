@@ -10,8 +10,6 @@ namespace SCCDEditor{
 
         public string                       label       { get; set; }
         public GUICanvasBase                parent      { get; private set; }
-            
-        //private Dictionary<int, Vector2>    connection_points = new Dictionary<int, Vector2>();
 
         private Color?                      color       = null;
 
@@ -114,18 +112,35 @@ namespace SCCDEditor{
         {
             this.position = this.calculateContainer(this.position, 5.0f);
         }
-
-        /*private void setDefaultConnectionPoints()
-        {
-            this.connection_points[0] = new Vector2(this.rect.center.x, this.rect.yMin);
-            this.connection_points[1] = new Vector2(this.rect.xMax, this.rect.center.y);
-            this.connection_points[2] = new Vector2(this.rect.center.x, this.rect.yMax);
-            this.connection_points[3] = new Vector2(this.rect.xMin, this.rect.center.y);
-        }*/
         
-        /* public Vector2 getPoint(int id)
+        public Vector2 getConnectionPointPosition(int id)
         {
-            return this.connection_points [id];
-        }*/
+            if (id == 0)
+                return new Vector2(this.position.center.x, this.position.yMin);
+            else if (id == 1)
+                return new Vector2(this.position.xMax, this.position.center.y);
+            else if (id == 2)
+                return new Vector2(this.position.center.x, this.position.yMax);
+            else if (id == 3)
+                return new Vector2(this.position.xMin, this.position.center.y);
+            else
+                throw new GUIException("Invalid connection point position.");
+        }
+
+        public int getClosestConnectionPoint(Vector2 position)
+        {
+            int smallest_id = 0;
+            float smallest_distance = Vector2.Distance(this.getConnectionPointPosition(0), position);
+            for (int i = 1; i < 4; i++)
+            {
+                float distance = Vector2.Distance(this.getConnectionPointPosition(i), position);
+                if (distance < smallest_distance)
+                {
+                    smallest_id = i;
+                    smallest_distance = distance;
+                }
+            }
+            return smallest_id;
+        }
     }
 }

@@ -4,14 +4,27 @@ using System.Collections.Generic;
 namespace SCCDEditor{
    public class GUICanvas : GUICanvasBase {
 
-        public Rect                 view_rect { get; private set; }
+        public Rect                     view_rect { get; private set; }
 
-        private Vector2             scroll_position = Vector2.zero;
+        private Vector2                 scroll_position = Vector2.zero;
+
+        protected List<GUICanvasEdge>   edges    { get; private set; }
 
         public GUICanvas()
         {
+            this.edges = new List<GUICanvasEdge>();
             this.view_rect = new Rect(0, 0, 0, 0);
             this.canvas = this;
+        }
+
+        public void addEdge(GUICanvasEdge edge)
+        {
+            this.edges.Add(edge);
+        }
+        
+        public void removeEdge(GUICanvasEdge edge)
+        {
+            this.edges.Remove(edge);
         }
 
         protected override void OnGUI()
@@ -31,6 +44,10 @@ namespace SCCDEditor{
             if (get_mouse)
                 GUIEvent.current = new GUIEvent(this.tag, Event.current.mousePosition);
             base.OnGUI();
+            for (int i=0; i < this.edges.Count; i++)
+            {
+                this.edges[i].doOnGUI();
+            }
             GUI.EndScrollView();
         }
         

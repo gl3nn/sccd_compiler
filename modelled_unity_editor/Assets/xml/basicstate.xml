@@ -22,11 +22,13 @@
     <scxml initial="main">            
         <parallel id="main">
         
-            <!-- MAIN ACTIVE LISTENING LOOP -->
+            <!-- STATE INDEPENDENT ACTIONS -->
             
-            <state id="event_processing" initial="listening">
+            <state id="state_independent_actions" initial="listening">
                 <state id="listening">
                 
+                    <!-- Set state creation type (toolbar event) -->
+
                     <transition event="new_child" target=".">
                         <parameter type="int" name="id"/>
                         <parameter type="GUICanvasElement" name="child"/>
@@ -53,128 +55,196 @@
                             this.widget.removeElement(child);
                         </script>
                     </transition>
-                    
-                    <transition event="left-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
-                        <parameter name="tag" type="int"/>
-                        <raise event="unselect" target='"canvas"'>
-                            <parameter expr='this.widget.tag'/>
-                        </raise>
-                        <raise event="set_selected" />
-                    </transition>
-                    <transition event="middle-mouse-down" port="input" cond="tag == this.widget.tag" target=".">
-                        <parameter name="tag" type="int"/>
-                        <raise event="unselect" target='"canvas"'>
-                            <parameter expr='this.widget.tag'/>
-                        </raise>
-                    </transition>
-                    <transition event="right-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
-                        <parameter name="tag" type="int"/>
-                        <raise event="unselect" target='"canvas"'>
-                            <parameter expr='this.widget.tag'/>
-                        </raise>
-                    </transition>
-                 </state>
+ 
+                </state>
             </state>
             
-            <!-- SELECTED STATE AND DEPENDENT ACTIONS -->
+            <!-- STATE DEPENDENT ACTIONS -->
             
-            <state id="selection_state" initial="setup">
+            <state id="state_dependent_actions" initial="default">
+                    
+                <!-- Only on initial creation of the state we want to enter the drop state as default. -->
+
                 <state id="setup">
-                    <transition target="../selected/drop/"/>
+                    <transition target="../default/selected/drop/"/>
                 </state>
-        
-                <state id="not_selected">
-                    <transition event="set_selected" target="../selected">
-                        <script>
-                            this.widget.pushToFront();
-                        </script>
-                    </transition>
-                </state>
-                <state id="selected" initial="not_dragging">
-                    <onentry>
-                        <script>
-                            this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
-                        </script>
-                    </onentry>
-                    <transition event="unselect" target="../not_selected" cond="this.widget.tag != except_tag">
-                        <parameter type="int" name="except_tag"/>
-                        <script>
-                            this.widget.resetColor();
-                        </script>
+
+                <state id="default" initial="not_selected">
+
+                    <!-- Signal the start of the creation of an edge -->
+
+                    <transition event="right-mouse-down" port="input" cond="tag == this.widget.tag" target="../edge_creation">
+                        <parameter name="tag" type="int"/>
+                        <parameter type="Vector2" name="position"/>
+                        <raise event="create_edge" target='"canvas"'>
+                            <parameter expr='this.widget'/>
+                            <parameter expr="position"/>
+                        </raise>
                     </transition>
                     
-                    <state id="not_dragging">
-                        <transition target="../dragging" port="input" event="left-mouse-drag">
-                            <parameter type="int" name="tag"/>
-                            <parameter type="Vector2" name="position"/>
-                            <parameter type="Vector2" name="delta"/>
+                    <!-- Some other state initiated edge creation, nonetheless enter the EDGE CREATION state -->
+                    
+                    <transition event="enter_edge_creation" target="../edge_creation"/>
+                    
+                    <!-- NOT SELECTED STATE -->
+                    
+                    <state id="not_selected">
+                        <transition event="left-mouse-down" port="input"  cond="tag == this.widget.tag" target="../selected">
+                            <parameter name="tag" type="int"/>
+                            <raise event="unselect" target='"canvas"'>
+                                <parameter expr='this.widget.tag'/>
+                            </raise>
                             <script>
-                                this.widget.move(delta);
+                                this.widget.pushToFront();
                             </script>
                         </transition>
-                    </state>
-                    <state id="dragging">
-                        <transition target="." port="input" event="left-mouse-drag">
-                            <parameter type="int" name="tag"/>
-                            <parameter type="Vector2" name="position"/>
-                            <parameter type="Vector2" name="delta"/>
-                            <script>
-                                this.widget.move(delta);
-                            </script>
+                        <transition event="middle-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
+                            <parameter name="tag" type="int"/>
+                            <raise event="unselect" target='"canvas"'>
+                                <parameter expr='this.widget.tag'/>
+                            </raise>
                         </transition>
-                        <transition target="../drop" port="input" event="left-mouse-up"/>
                     </state>
-                    <state id="drop" initial="drop_window_creation">
-                        <state id="drop_window_creation">
-                            <onentry>
-                                <raise scope="cd" event="create_instance">
-                                    <parameter expr='"state_drop"' />
-                                    <parameter expr='"StateDrop"'/>
-                                    <parameter expr='this.widget' />
-                                </raise>
-                                <raise scope="cd" event="associate_instance">
-                                    <parameter expr='"."' />
-                                    <parameter expr='"state_drop/dropped_state"'/>
-                                </raise>
-                            </onentry>
+                    
+                    <!-- SELECTED STATE -->
+                    
+                    <state id="selected" initial="not_dragging">
+                        <onentry>
+                            <script>
+                                this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                            </script>
+                        </onentry>
+                        <onexit>
+                            <script>
+                                this.widget.resetColor();
+                            </script>
+                        </onexit>
+                        <transition event="unselect" target="../not_selected" cond="this.widget.tag != except_tag">
+                            <parameter type="int" name="except_tag"/>
+                        </transition>
+                        
+                        <!-- NOT DRAGGING STATE -->
+                        
+                        <state id="not_dragging">
+                        
+                            <!-- Left mouse drag causes state to be moved and the Dragging state to be entered -->
+                        
+                            <transition target="../dragging" port="input" event="left-mouse-drag">
+                                <parameter type="int" name="tag"/>
+                                <parameter type="Vector2" name="position"/>
+                                <parameter type="Vector2" name="delta"/>
+                                <script>
+                                    this.widget.move(delta);
+                                </script>
+                            </transition>
+                        </state>
+                        
+                        <!-- DRAGGING STATE -->
+                        
+                        <state id="dragging">
+                        
+                            <!-- For each left-mouse-drag event move the state -->
+                        
+                            <transition target="." port="input" event="left-mouse-drag">
+                                <parameter type="int" name="tag"/>
+                                <parameter type="Vector2" name="position"/>
+                                <parameter type="Vector2" name="delta"/>
+                                <script>
+                                    this.widget.move(delta);
+                                </script>
+                            </transition>
                             
-                            <transition event="instance_associated" target="../wait_for_drop_window">
-                                <parameter name="id" type="int"/>
-                                <parameter name="association_name" type="String"/>
-                                <raise scope="cd" event="start_instance">
-                                    <parameter expr='"state_drop"' />
-                                </raise>
-                            </transition>
+                            <!-- End dragging, enter drop state -->
+                            
+                            <transition target="../drop" port="input" event="left-mouse-up"/>
                         </state>
-                        <state id="wait_for_drop_window">
-                            <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
-                                <parameter type="bool" name="do_reconnect"/>
-                                <parameter type="GUICanvasElement" name="connection"/>
-                                <raise scope="cd" event="delete_instance">
-                                    <parameter expr='"state_drop"' />
-                                </raise>
-                                <raise target='"parent"' event="adjust_size"/>
-                            </transition>
-                            <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
-                                <parameter type="bool" name="do_reconnect"/>
-                                <parameter type="GUICanvasElement" name="connection"/>
-                                <raise event="disconnect_child" target='"parent"'>
-                                    <parameter expr="this.widget"/>
-                                </raise>
-                                <raise scope="cd" event="unassociate_instance">
-                                    <parameter expr='"parent"' />                          
-                                </raise>
-                                <raise event="connect_child_to_parent" target='"canvas"'>
-                                    <parameter expr="this.widget"/>
-                                    <parameter expr="connection"/>
-                                </raise>
-                                <raise scope="cd" event="delete_instance">
-                                    <parameter expr='"state_drop"' />
-                                </raise>
-                            </transition>
+                        
+                        <!-- DROP STATE -->
+                        
+                        <state id="drop" initial="drop_window_creation">
+                            <state id="drop_window_creation">
+                                <onentry>
+                                    <raise scope="cd" event="create_instance">
+                                        <parameter expr='"state_drop"' />
+                                        <parameter expr='"StateDrop"'/>
+                                        <parameter expr='this.widget' />
+                                    </raise>
+                                    <raise scope="cd" event="associate_instance">
+                                        <parameter expr='"."' />
+                                        <parameter expr='"state_drop/dropped_state"'/>
+                                    </raise>
+                                </onentry>
+                                
+                                <transition event="instance_associated" target="../wait_for_drop_window">
+                                    <parameter name="id" type="int"/>
+                                    <parameter name="association_name" type="String"/>
+                                    <raise scope="cd" event="start_instance">
+                                        <parameter expr='"state_drop"' />
+                                    </raise>
+                                </transition>
+                            </state>
+                            <state id="wait_for_drop_window">
+                                <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
+                                    <parameter type="bool" name="do_reconnect"/>
+                                    <parameter type="GUICanvasElement" name="connection"/>
+                                    <raise scope="cd" event="delete_instance">
+                                        <parameter expr='"state_drop"' />
+                                    </raise>
+                                    <raise target='"parent"' event="adjust_size"/>
+                                </transition>
+                                <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
+                                    <parameter type="bool" name="do_reconnect"/>
+                                    <parameter type="GUICanvasElement" name="connection"/>
+                                    <raise event="disconnect_child" target='"parent"'>
+                                        <parameter expr="this.widget"/>
+                                    </raise>
+                                    <raise scope="cd" event="unassociate_instance">
+                                        <parameter expr='"parent"' />                          
+                                    </raise>
+                                    <raise event="connect_child_to_parent" target='"canvas"'>
+                                        <parameter expr="this.widget"/>
+                                        <parameter expr="connection"/>
+                                    </raise>
+                                    <raise scope="cd" event="delete_instance">
+                                        <parameter expr='"state_drop"' />
+                                    </raise>
+                                </transition>
+                            </state>
                         </state>
                     </state>
-                </state>           
+                </state>
+                
+                <!-- EDGE CREATION MODE. IS ENTERED WHENEVER AN EDGE IS BEING CREATED. -->
+                
+                <state id="edge_creation">
+                    
+                    <!-- Signal that this is a valid end connection for the edge being created. -->
+                    
+                    <transition event="right-mouse-up" port="input" cond="tag == this.widget.tag" target="../default">
+                        <parameter name="tag" type="int"/>
+                        <parameter name="position" type="Vector2"/>
+                        <raise event="edge_end" target='"canvas"'>
+                            <parameter expr="this.widget"/>
+                            <parameter expr="position"/>
+                        </raise>
+                    </transition>
+                    
+                    <!-- Signal that a possible end connection is targeted. -->
+                    
+                    <transition event="right-mouse-drag" port="input" cond="tag == this.widget.tag" target=".">
+                        <parameter name="tag" type="int"/>
+                        <parameter name="position" type="Vector2"/>
+                        <raise event="over_edge_end" target='"canvas"'>
+                            <parameter expr="this.widget"/>
+                            <parameter expr="position"/>
+                        </raise>
+                    </transition>
+                    
+                    <!-- Edge creation terminated. Return to default. -->
+                    
+                    <transition event="edge_creation_stopped" target="../default"/>
+
+                </state>
             </state>
         </parallel>
     </scxml>

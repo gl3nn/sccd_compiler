@@ -1,16 +1,19 @@
 using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
 
 namespace SCCDEditor
 {
-    public class GUIButton: GUIWidget
+    public class SGUIButton: SGUIWidget
     {
-        public GUIButtonInformation properties { get; private set; }
+        public SGUIButtonInformation properties { get; private set; }
         public bool is_on = false;
+        public bool is_toggle { get; private set; }
 
-        public GUIButton(GUIButtonInformation button_information)
+        public SGUIButton(SGUIButtonInformation button_information, bool is_toggle_button)
         {
             this.properties = button_information;
+            this.is_toggle = is_toggle_button;
         }
         
         protected override void OnGUI()
@@ -49,12 +52,12 @@ namespace SCCDEditor
 
     }
 
-    public class GUIButtonInformation
+    public class SGUIButtonInformation
     {
         public string label         { private set; get; }
         public string action        { private set; get; }
 
-        public GUIButtonInformation(string label, string action)
+        public SGUIButtonInformation(string label, string action)
         {
             this.label = label;
             this.action = action;

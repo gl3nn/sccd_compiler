@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="BasicState">
+<class name="State">
     <relationships>
-        <inheritance class="State"/>
         <association class="State" name="children"/>
         <association class="IRuntimeClass" name="parent" max="1"/>
         <association class="Canvas" name="canvas" max="1"/>
         <association class="StateDrop" name="state_drop" max="1"/>
     </relationships>
+    <attribute type="SGUICanvasElement" name="widget"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <constructor>
-        <parameter type="GUICanvasElement" name="widget"/>
-        <super>
-            <parameter expr="widget"/>
-        </super>
+        <parameter type="SGUICanvasElement" name="widget"/>
         <body>
             <![CDATA[
+            this.widget = widget;
             this.children_map = new Dictionary<int,int>();
             ]]>
         </body>
@@ -27,11 +25,11 @@
             <state id="state_independent_actions" initial="listening">
                 <state id="listening">
                 
-                    <!-- Set state creation type (toolbar event) -->
+                    <!--  -->
 
                     <transition event="new_child" target=".">
                         <parameter type="int" name="id"/>
-                        <parameter type="GUICanvasElement" name="child"/>
+                        <parameter type="SGUICanvasElement" name="child"/>
                         <script>
                             this.widget.addElement(child);
                             this.children_map[child.tag] = id;
@@ -46,7 +44,7 @@
                     </transition>
 
                     <transition event="disconnect_child" target=".">
-                        <parameter name="child" type="GUICanvasElement"/>
+                        <parameter name="child" type="SGUICanvasElement"/>
                         <raise scope="cd" event="unassociate_instance">
                             <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
                         </raise>
@@ -61,7 +59,7 @@
             
             <!-- STATE DEPENDENT ACTIONS -->
             
-            <state id="state_dependent_actions" initial="default">
+            <state id="state_dependent_actions" initial="setup">
                     
                 <!-- Only on initial creation of the state we want to enter the drop state as default. -->
 
@@ -186,7 +184,7 @@
                             <state id="wait_for_drop_window">
                                 <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
                                     <parameter type="bool" name="do_reconnect"/>
-                                    <parameter type="GUICanvasElement" name="connection"/>
+                                    <parameter type="SGUICanvasElement" name="connection"/>
                                     <raise scope="cd" event="delete_instance">
                                         <parameter expr='"state_drop"' />
                                     </raise>
@@ -194,7 +192,7 @@
                                 </transition>
                                 <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
                                     <parameter type="bool" name="do_reconnect"/>
-                                    <parameter type="GUICanvasElement" name="connection"/>
+                                    <parameter type="SGUICanvasElement" name="connection"/>
                                     <raise event="disconnect_child" target='"parent"'>
                                         <parameter expr="this.widget"/>
                                     </raise>

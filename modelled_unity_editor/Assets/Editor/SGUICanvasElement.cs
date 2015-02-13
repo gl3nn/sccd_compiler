@@ -1,19 +1,20 @@
 ﻿using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
 
 namespace SCCDEditor{
-    public class GUICanvasElement : GUICanvasBase
+    public class SGUICanvasElement : SGUICanvasBase
     {
         public static float DEFAULT_WIDTH = 100;
         public static float DEFAULT_HEIGHT = 100;
         public static float MARGIN = 5;
 
         public string                       label       { get; set; }
-        public GUICanvasBase                parent      { get; private set; }
+        public SGUICanvasBase                parent      { get; private set; }
 
         private Color?                      color       = null;
 
-        public GUICanvasElement (GUICanvasBase parent, Vector2 center)
+        public SGUICanvasElement(SGUICanvasBase parent, Vector2 center)
         {
             Rect rect = new Rect(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT); 
             rect.center = center;
@@ -25,7 +26,7 @@ namespace SCCDEditor{
             //this.setDefaultConnectionPoints();
         }
 
-        public void setParent(GUICanvasBase parent)
+        public void setParent(SGUICanvasBase parent)
         {
             this.parent = parent;
         }
@@ -46,13 +47,13 @@ namespace SCCDEditor{
                 this.parent.pushChildToFront(this);
         }
 
-        public bool isAncestorOf(GUICanvasElement element)
+        public bool isAncestorOf(SGUICanvasElement element)
         {
             while (element.parent != this.canvas)
             {
                 if (element.parent == this)
                     return true;
-                element = (GUICanvasElement) element.parent;
+                element = (SGUICanvasElement) element.parent;
             }
             return false;
         }
@@ -66,28 +67,29 @@ namespace SCCDEditor{
         protected override void OnGUI()
         {
             this.catchMouseDefault();
-            if (Event.current.type == EventType.Repaint)
+            if (this.color != null)
             {
-                if (this.color != null)
-                {
-                    Color old_color = GUI.backgroundColor;
-                    GUI.backgroundColor = Color.Lerp(GUI.backgroundColor, Color.green, 0.5f);
-                    GUI.Box(this.position, this.label);
-                    GUI.backgroundColor = old_color;
-                } else
-                {
-                    GUI.Box(this.position, this.label);
-                }
+                Color old_color = GUI.backgroundColor;
+                GUI.backgroundColor = Color.Lerp(GUI.backgroundColor, Color.green, 0.5f);
+                GUILayout.BeginArea(this.position, "", "button");
+                EditorGUILayout.LabelField(this.label);
+                GUILayout.EndArea();
+                GUI.backgroundColor = old_color;
+            } else
+            {
+                GUILayout.BeginArea(this.position, "", "button");
+                EditorGUILayout.LabelField(this.label);
+                GUILayout.EndArea();
             }
             base.OnGUI();
         }
 
-        public List<GUICanvasElement> getOverlappings() 
+        public List<SGUICanvasElement> getOverlappings() 
         {
             return this.canvas.getOverlappingsOf(this);
         }
         
-        public void getOverlappingsOf(List<GUICanvasElement> overlappings, GUICanvasElement element)
+        public void getOverlappingsOf(List<SGUICanvasElement> overlappings, SGUICanvasElement element)
         {
             if (this != element)
             {
@@ -102,7 +104,7 @@ namespace SCCDEditor{
             }
         }
 
-        public bool completelyContains(GUICanvasElement item)
+        public bool completelyContains(SGUICanvasElement item)
         {
             return this.position.Contains( new Vector2(item.position.xMin, item.position.yMin))
                 && this.position.Contains (new Vector2 (item.position.xMax, item.position.yMax));
@@ -124,7 +126,7 @@ namespace SCCDEditor{
             else if (id == 3)
                 return new Vector2(this.position.xMin, this.position.center.y);
             else
-                throw new GUIException("Invalid connection point position.");
+                throw new SGUIException("Invalid connection point position.");
         }
 
         public int getClosestConnectionPoint(Vector2 position)

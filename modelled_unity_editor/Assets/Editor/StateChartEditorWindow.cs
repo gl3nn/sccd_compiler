@@ -1,150 +1,54 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Xml.Linq;
 using System.Collections.Generic;
 
 namespace SCCDEditor{
-    public class StateChartEditorWindow : EditorWindow
+    public class StateChartEditorWindow : SGUIEditorWindow
     {
-		// Imported from compiled model.
-        private Controller      controller;
 
-        private double          update_time = 0;
+        private static Dictionary<XElement, StateChartEditorWindow> windows = new Dictionary<XElement, StateChartEditorWindow>();
+        public XElement statechart_xml {get; private set;}
 
-        //public  EditorCanvas    canvas { private set; get; }
-
-        private GUITopLevel  window_widget;
-
-
-		[MenuItem("SCCD/Open Editor")]
-        public static void Init()
+        public static StateChartEditorWindow getWindow(XElement statechart_xml)
         {
-            StateChartEditorWindow window = (StateChartEditorWindow) EditorWindow.GetWindow(typeof(StateChartEditorWindow), false);
-            //window.wantsMouseMove = true;
-            window.title = "StateChart Editor";
-            //UnityEngine.Object.DontDestroyOnLoad( window );
+            StateChartEditorWindow window;
+            StateChartEditorWindow.windows.TryGetValue(statechart_xml, out window);
+            return window;
         }
 
-        public StateChartEditorWindow()
+        public static StateChartEditorWindow createOrFocus(XElement statechart_xml)
         {
-            this.window_widget = new GUITopLevel(this);
-            this.controller = new Controller(this.window_widget);
+            StateChartEditorWindow window = StateChartEditorWindow.getWindow(statechart_xml);
+            if (window == null)
+            {
+                window = CreateInstance<StateChartEditorWindow>();
+                window.wantsMouseMove = true;
+                //window.title = title;
+                UnityEngine.Object.DontDestroyOnLoad(window);
+                StateChartEditorWindow.windows[statechart_xml] = window;
+                window.statechart_xml = statechart_xml;
+                window.init();
+                window.Show();
+            } else
+            {
+                window.Focus();
+            }
+            //StateChartEditorWindow window = EditorWindow.GetWindow<StateChartEditorWindow>(new System.Type[]{typeof(ClassDiagramEditorWindow)});
+            return window;
+        }
+
+        private void init()
+        {
+            this.window_widget = new SGUITopLevel(this);
+            this.controller = new StateChartEditor.Controller(this.window_widget, this.statechart_xml);
             this.controller.start();
         }
 
-        public void processEvent()
+        public void OnDestroy()
         {
-            if (Event.current.type == EventType.Layout)
-                return;
-            
-            if (Event.current.type == EventType.Repaint)
-            {
-                this.updateController();
-                return;
-            }
-            
-            sccdlib.Event input_event = null;
-
-            // NEXT ARE ALL EVENTS RELATED TO THE MOUSE WHICH SHOULD NOT BE GENERATED IF THE MOUSE IS NOT OVER THE WINDOW
-            if (GUIEvent.current == null)
-                return;
-
-            // PROCESS MOUSE DOWN EVENT
-            if (Event.current.type == EventType.MouseDown)
-            {
-                string event_name = "";
-
-                if (Event.current.button == 0)
-                    event_name = "left-mouse-down";
-                else if (Event.current.button == 1)
-                    event_name = "right-mouse-down";
-                else if (Event.current.button == 2)
-                    event_name = "middle-mouse-down";
-
-                if (event_name != "")
-                    input_event = new sccdlib.Event(event_name, "input", new object[] {
-                        GUIEvent.current.focus_tag,
-                        GUIEvent.current.mouse_position
-                    });
-            }
-            // PROCESS MOUSE UP EVENT
-            else if (Event.current.type == EventType.MouseUp)
-            {
-                string event_name = "";
-
-                if (Event.current.button == 0)
-                    event_name = "left-mouse-up";
-                else if (Event.current.button == 1)
-                    event_name = "right-mouse-up";
-                else if (Event.current.button == 2)
-                    event_name = "middle-mouse-up";
-
-                if (event_name != "")
-                    input_event = new sccdlib.Event(event_name, "input", new object[] {
-                        GUIEvent.current.focus_tag,
-                        GUIEvent.current.mouse_position
-                    });
-            }
-            // PROCESS MOUSE DRAG EVENT
-            else if (Event.current.type == EventType.MouseDrag)
-            {
-                string event_name = "";
-
-                if (Event.current.button == 0)
-                    event_name = "left-mouse-drag";
-                else if (Event.current.button == 1)
-                    event_name = "right-mouse-drag";
-                else if (Event.current.button == 2)
-                    event_name = "middle-mouse-drag";
-
-                if (event_name != "")
-                    input_event = new sccdlib.Event(event_name, "input", new object[] {
-                        GUIEvent.current.focus_tag,
-                        GUIEvent.current.mouse_position,
-                        Event.current.delta
-                    });
-            }
-            // PROCESS MOUSE MOVE EVENT
-            else if (Event.current.type == EventType.MouseMove)
-            {
-                input_event = new sccdlib.Event("mouse-move", "input", new object[] {
-                    GUIEvent.current.focus_tag,
-                    GUIEvent.current.mouse_position,
-                    Event.current.delta
-                });
-            }
-
-            if (input_event != null)
-            {
-                this.controller.addInput(input_event);
-                this.updateController();
-            }
-        }
-
-        private void updateController()
-        {
-            var stdOut = System.Console.Out;
-            var consoleOut = new StringWriter();
-            System.Console.SetOut(consoleOut);
-            this.controller.update(this.update_time);
-            string output = consoleOut.ToString();
-            if (output != "")
-                Debug.Log(output);
-            System.Console.SetOut(stdOut);
-            this.update_time = 0;
-        }
-
-        public void OnGUI()
-        {
-            GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
-
-            this.window_widget.doOnGUI();
-        }
-
-        public void Update()
-        {
-			this.update_time = Time.deltaTime;
-            this.Repaint ();
+            StateChartEditorWindow.windows.Remove(this.statechart_xml);
         }
     }
 }

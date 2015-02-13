@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Button">
     <relationships>
-        <association class="Toolbar" name="toolbar" max="1"/>
+        <association class="IRuntimeClass" name="event_receiver" max="1"/>
     </relationships>
-    <attribute type="GUIButton" name="button_widget"/>
+    <attribute type="SGUIButton" name="button_widget"/>
     <constructor>
-        <parameter type="GUIHorizontalGroup" name="toolbar_widget"/>
-        <parameter type="GUIButtonInformation" name="button_information"/>
+        <parameter type="SGUIButton" name="button_widget"/>
         <body>
             <![CDATA[
-            this.button_widget = new GUIButton(button_information);
-            toolbar_widget.addChild(this.button_widget);
+            this.button_widget = button_widget;
             ]]>
         </body>
     </constructor>
@@ -21,13 +19,18 @@
                     this.button_widget.is_on = false;
                 </script>
             </onentry>
-            <transition event="left-mouse-down" port="input" target="../on" cond="this.button_widget.tag == tag">
+            <transition event="left-mouse-down" port="input" target="../on" cond="this.button_widget.tag == tag &amp;&amp; this.button_widget.is_toggle">
                 <parameter name="tag" type="int"/>
-                <raise event="button_pressed" target='"toolbar"'>
-                    <parameter expr="this.button_widget.properties.action"/>
-                    <parameter expr="tag"/>
-                </raise>
             </transition>
+            <transition event="left-mouse-down" port="input" target="." cond="this.button_widget.tag == tag &amp;&amp; !this.button_widget.is_toggle">
+                <parameter name="tag" type="int"/>
+            </transition>
+            <onexit>
+                <raise event="button_pressed" target='"event_receiver"'>
+                    <parameter expr="this.button_widget.properties.action"/>
+                    <parameter expr="this.button_widget.tag"/>
+                </raise>
+            </onexit>
         </state>
         <state id="on">
             <onentry>

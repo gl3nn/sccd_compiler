@@ -4,23 +4,23 @@ using System;
 
 namespace SCCDEditor{
 
-    public class GUIModalWindow : GUIWidget
+    public class SGUIModalWindow : SGUIWidget
     {
-        public delegate void DrawFunction(GUIModalWindow window);
+        public delegate void DrawFunction(SGUIModalWindow window);
 
         public bool should_close { get; private set; }
         private DrawFunction draw_function;
         private string title;
 
-        private GUIWidget container;
+        private SGUIWidget container;
 
-        public GUIModalWindow(string title, GUIWidget container, DrawFunction draw_function)
+        public SGUIModalWindow(string title, SGUIWidget container, DrawFunction draw_function)
         {
             this.should_close = false;
             this.title = title;
             this.draw_function = draw_function;
             this.container = container;
-            GUITopLevel.current.setModalWindow(this);
+            SGUITopLevel.current.setModalWindow(this);
             Rect position = new Rect(0, 0, 200, 75);
             position.center = new Vector2(this.container.position.width/2, this.container.position.height/2);
             this.position = position;

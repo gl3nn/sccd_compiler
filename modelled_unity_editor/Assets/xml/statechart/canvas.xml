@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="Canvas">
     <relationships>
-        <association class="StateChartEditor" name="window" max="1"/>
+        <association class="Window" name="window" max="1"/>
         <association class="State" name="children"/>
         <association class="State" name="all_states"/>
         <association class="Edge" name="all_edges"/>
     </relationships>
-    <attribute type="GUICanvas" name="canvas_widget"/>
+    <attribute type="SGUICanvas" name="canvas_widget"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="all_states_map"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="all_edges_map"/>
-    <attribute type="GUICanvasElement" name="current_element"/>
-    <attribute type="GUICanvasEdge" name="current_edge"/>
+    <attribute type="SGUICanvasElement" name="current_element"/>
+    <attribute type="SGUICanvasEdge" name="current_edge"/>
     <attribute type="string" name="creation_type" init-value='"bla"'/>
     <constructor>
-        <parameter type="GUITopLevel" name="window_widget"/>
+        <parameter type="SGUITopLevel" name="window_widget"/>
         <body>
             <![CDATA[
-            this.canvas_widget = new GUICanvas();
-            window_widget.addChild(this.canvas_widget);
+            this.canvas_widget = new SGUICanvas();
+            ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.canvas_widget);
             this.children_map = new Dictionary<int,int>();
             this.all_states_map = new Dictionary<int,int>();
             this.all_edges_map = new Dictionary<int,int>();
@@ -80,11 +80,11 @@
                             <parameter expr='tag'/>
                         </raise>
                         <script>
-                            this.current_element = new GUICanvasElement(canvas_widget, position);
+                            this.current_element = new SGUICanvasElement(canvas_widget, position);
                         </script>
                         <raise scope="cd" event="create_instance">
                             <parameter expr='"./all_states"' />
-                            <parameter expr='"BasicState"'/>
+                            <parameter expr='"State"'/>
                             <parameter expr='this.current_element' />
                         </raise>
                     </transition>
@@ -102,7 +102,7 @@
                     
                     <transition event="new_child" target=".">
                         <parameter type="int" name="id"/>
-                        <parameter type="GUICanvasElement" name="child"/>
+                        <parameter type="SGUICanvasElement" name="child"/>
                         <script>
                             this.canvas_widget.addElement(child);
                             this.children_map[child.tag] = id;
@@ -112,7 +112,7 @@
                     <!-- Disconnection immediate child state from canvas -->
                     
                     <transition event="disconnect_child" target=".">
-                        <parameter name="child" type="GUICanvasElement"/>
+                        <parameter name="child" type="SGUICanvasElement"/>
                         <raise scope="cd" event="unassociate_instance">
                             <parameter expr='String.Format("children[{0}]", this.children_map[child.tag])' />                          
                         </raise>
@@ -125,8 +125,8 @@
                     <!-- Initiate state hierarchy connection -->
                     
                     <transition event="connect_child_to_parent" target="../hierarchy_connection">
-                        <parameter name="child" type="GUICanvasElement"/>
-                        <parameter name="parent" type="GUICanvasElement"/>
+                        <parameter name="child" type="SGUICanvasElement"/>
+                        <parameter name="parent" type="SGUICanvasElement"/>
                         <script>
                             this.current_element = child;
                             String parent_path = ".";
@@ -149,11 +149,11 @@
                     <!-- Element initiated edge creation -->
                     
                     <transition event="create_edge" target="../edge_creation">
-                        <parameter type="GUICanvasElement" name="source_element"/>
+                        <parameter type="SGUICanvasElement" name="source_element"/>
                         <parameter type="Vector2" name="position"/>
                         <raise event="enter_edge_creation" target='"all_states"'/>
                         <script>
-                            this.current_edge = new GUICanvasEdge(source_element, position);
+                            this.current_edge = new SGUICanvasEdge(source_element, position);
                         </script>
                         <raise scope="cd" event="create_instance">
                             <parameter expr='"./all_edges"' />
@@ -259,7 +259,7 @@
 
 
                         <transition event="edge_end" target=".">
-                            <parameter name="element" type="GUICanvasElement"/>
+                            <parameter name="element" type="SGUICanvasElement"/>
                             <parameter name="position" type="Vector2"/>
                             <script>
                                 String association_path = String.Format("all_edges[{0}]", this.all_edges_map[this.current_edge.tag]);
@@ -273,7 +273,7 @@
 
 
                         <transition event="over_edge_end" target=".">
-                            <parameter name="element" type="GUICanvasElement"/>
+                            <parameter name="element" type="SGUICanvasElement"/>
                             <parameter name="position" type="Vector2"/>
                             <script>
                                 String association_path = String.Format("all_edges[{0}]", this.all_edges_map[this.current_edge.tag]);

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Toolbar">
+    <relationships>
+        <association class="Window" name="window" max="1"/>
+        <association class="Canvas" name="canvas" max="1"/>
+        <association class="Button" name="buttons"/>
+    </relationships>
+    <attribute type="SGUIHorizontalGroup" name="toolbar_widget"/>
+    <attribute type="int" name="button_count" init-value='0'/>
+    <constructor>
+        <parameter type="SGUITopLevel" name="window_widget"/>
+        <body>
+            <![CDATA[
+            this.toolbar_widget = new SGUIHorizontalGroup("box");
+            ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.toolbar_widget);
+            
+            this.toolbar_widget.addChild(new SGUIButton(new SGUIButtonInformation("Basic", "set-basic"), true));
+            this.toolbar_widget.addChild(new SGUIButton(new SGUIButtonInformation("Parallel", "set-parallel"), true));
+            this.toolbar_widget.addChild(new SGUIButton(new SGUIButtonInformation("History", "set-history"), true));
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="buttons_creation_loop">
+        <state id="buttons_creation_loop">
+            <transition target="../button_activation" cond="this.button_count &lt; this.toolbar_widget.children_count">
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"buttons"' />
+                    <parameter expr='"Button"'/>
+                    <parameter expr='this.toolbar_widget.getChild(this.button_count)' />
+                </raise>
+            </transition>
+            <transition target="../listening" cond="this.button_count &gt;= this.toolbar_widget.children_count"/>
+        </state>
+        <state id="button_activation">
+            <transition event="instance_created" target="../buttons_creation_loop">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/event_receiver"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <script>
+                    this.button_count++;
+                </script>
+            </transition>
+        </state>
+        <state id="listening">
+            <transition event="button_pressed" target=".">
+                <parameter name="button_action" type="string"/>
+                <parameter name="button_tag" type="int"/>
+                <raise event="reset" target='"buttons"'>
+                    <parameter expr="button_tag"/>
+                </raise>
+                <raise event="toolbar_action" target='"canvas"'>
+                    <parameter expr="button_action"/>
+                </raise>
+            </transition>
+        </state>
+    </scxml>
+</class>

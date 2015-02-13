@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 
 namespace SCCDEditor{
-    public abstract class GUICanvasBase : GUIWidget
+    public abstract class SGUICanvasBase : SGUIWidget
     {
-        public    GUICanvas                 canvas      { get; protected set; }
-        protected List<GUICanvasElement>    elements    { get; private set; }
+        public    SGUICanvas                canvas      { get; protected set; }
+        protected List<SGUICanvasElement>   elements    { get; private set; }
 
-        public GUICanvasBase()
+        public SGUICanvasBase()
         {
-            this.elements = new List<GUICanvasElement>();
+            this.elements = new List<SGUICanvasElement>();
         }
 
-        public void addElement(GUICanvasElement element)
+        public void addElement(SGUICanvasElement element)
         {
             if (!this.elements.Contains(element))
             {
@@ -21,13 +21,13 @@ namespace SCCDEditor{
             }
         }
         
-        public void removeElement(GUICanvasElement element)
+        public void removeElement(SGUICanvasElement element)
         {
             this.elements.Remove(element);
             element.setParent(null);
         }
 
-        public void pushChildToFront(GUICanvasElement element) 
+        public void pushChildToFront(SGUICanvasElement element) 
         {
             if (this.elements.Remove(element))
                 this.elements.Add(element);
@@ -55,7 +55,7 @@ namespace SCCDEditor{
             float y_min = minimum.yMin + margin;
             float x_max = minimum.xMax - margin;
             float y_max = minimum.yMax - margin;
-            foreach(GUIWidget element in this.elements)
+            foreach(SGUIWidget element in this.elements)
             {
                 if (element.position.xMin < x_min) x_min = element.position.xMin;
                 if (element.position.yMin < y_min) y_min = element.position.yMin;

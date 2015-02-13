@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PropertiesPanel">
+    <relationships>
+        <association class="Canvas" name="canvas" max="1"/>
+        <association class="IRuntimeClass" name="active_panel" max="1"/>
+    </relationships>
+    <attribute type="SGUIVerticalGroup" name="panel_widget"/>
+    <constructor>
+        <parameter type="SGUITopLevel" name="window_widget"/>
+        <body>
+            <![CDATA[
+            this.panel_widget = new SGUIVerticalGroup("box");
+            window_widget.addChild(this.panel_widget);
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="main">
+        <state id="main">
+            <transition event="set_class_properties" target="../activation">
+                <parameter name="xml" type="XElement"/>
+                <parameter name="class_widget" type="SGUICanvasElement"/>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"active_panel"' />
+                    <parameter expr='"ClassProperties"'/>
+                    <parameter expr='this.panel_widget'/>
+                    <parameter expr='xml' />
+                    <parameter expr='class_widget' />
+                </raise>
+            </transition>
+        </state>
+        <state id="activation">
+            <transition event="instance_created" target="../main">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."'/>
+                    <parameter expr='association_path + "/panel"' />
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+            </transition>
+        </state>
+    </scxml>
+</class>

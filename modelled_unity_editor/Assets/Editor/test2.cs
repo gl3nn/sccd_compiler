@@ -9,7 +9,7 @@ namespace SCCDEditor{
         public int selected = 0;
         public string[] strings = new string[] {"Grid 1", "Grid 2", "Grid 3", "Grid 4"};
 
-        [MenuItem("SCCD/Open Test")]
+        //[MenuItem("SCCD/Open Test")]
         public static void Init()
         {
             Test2Window window = (Test2Window) EditorWindow.GetWindow(typeof(Test2Window), false);

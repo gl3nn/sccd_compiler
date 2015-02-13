@@ -3,17 +3,17 @@
     <relationships>
         <association class="State" name="dropped_state" max="1"/>
     </relationships>
-    <attribute type="List&lt;GUICanvasElement&gt;" name="connection_options"/>
+    <attribute type="List&lt;SGUICanvasElement&gt;" name="connection_options"/>
     <attribute type="string[]" name="connection_options_strings"/>
     <attribute type="int" name="selected_option" init-value="0"/>
-    <attribute type="GUICanvasElement" name="canvas_member" />
+    <attribute type="SGUICanvasElement" name="canvas_member" />
     <constructor>
-        <parameter type="GUICanvasElement" name="canvas_member"/>
+        <parameter type="SGUICanvasElement" name="canvas_member"/>
         <body>
         <![CDATA[
             this.canvas_member = canvas_member;
-            this.connection_options = new List<GUICanvasElement>();
-            List<GUICanvasElement> overlappings = canvas_member.getOverlappings();
+            this.connection_options = new List<SGUICanvasElement>();
+            List<SGUICanvasElement> overlappings = canvas_member.getOverlappings();
             if (overlappings.Count == 0)
             {
             	if (this.canvas_member.parent != this.canvas_member.canvas)
@@ -34,7 +34,7 @@
         </body>
     </constructor>
     <method access="public" type="void" name="drawModalWindow">
-    	<parameter name="modal_window" type="GUIModalWindow"/>
+    	<parameter name="modal_window" type="SGUIModalWindow"/>
         <body>
         <![CDATA[
             EditorGUILayout.Space();
@@ -60,7 +60,7 @@
         <state id="root">
             <transition target="../final" cond="this.connection_options.Count == 0 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] != null)">
                 <script>
-                    GUICanvasElement connection = null;
+                    SGUICanvasElement connection = null;
                     bool do_reconnect = false;
                     if (this.connection_options.Count == 1)
                     {
@@ -88,13 +88,13 @@
                         else
                             this.connection_options_strings[i] = "Canvas(disconnecting)";
                     }
-                    new GUIModalWindow("State Drop", this.canvas_member.canvas, this.drawModalWindow);
+                    new SGUIModalWindow("State Drop", this.canvas_member.canvas, this.drawModalWindow);
                 ]]>
                 </script>
             </onentry>
             <transition port="" event="state_drop_popup_response" target="../final">
                 <parameter type="bool" name="do_reconnect"/>
-                <parameter type="GUICanvasElement" name="connection"/>
+                <parameter type="SGUICanvasElement" name="connection"/>
                 <raise target='"dropped_state"' event="state_drop_response">
                     <parameter expr="do_reconnect"/>
                     <parameter expr="connection"/>

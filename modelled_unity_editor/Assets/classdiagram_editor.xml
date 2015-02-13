@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="ClassDiagramEditor">
+    <description>
+        SCCD visual editor for Unity.
+    </description>
+    
+    <top>
+        using UnityEditor;
+        using UnityEngine;
+        using SCCDEditor;
+        using System.Xml.Linq;
+        using Event = sccdlib.Event;
+        #pragma warning disable 0219 // variable assigned but not used.
+        #pragma warning disable 0414 // private field assigned but not used.
+    </top>
+    
+    <inport name="input" />
+    
+    <class name="Window" default="true" src="xml/classdiagram/window.xml"/>
+    <class name="Toolbar" src="xml/classdiagram/toolbar.xml"/>
+    <class name="PropertiesPanel" src="xml/classdiagram/properties_panel.xml"/>
+    <class name="DiagramProperties" src="xml/classdiagram/diagram_properties.xml"/>
+    <class name="ClassProperties" src="xml/classdiagram/class_properties.xml"/>
+
+    <class name="Canvas" src="xml/classdiagram/canvas.xml"/>
+    <class name="Class" src="xml/classdiagram/class.xml"/>
+    <class name="Edge" src="xml/common/edge.xml"/>
+    <class name="Button" src="xml/common/button.xml"/>
+</diagram>

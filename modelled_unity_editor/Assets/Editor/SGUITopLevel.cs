@@ -2,33 +2,33 @@ using UnityEngine;
 
 namespace SCCDEditor
 {
-    public class GUITopLevel : GUIVerticalGroup
+    public class SGUITopLevel : SGUIHorizontalGroup
     {
-        private GUIModalWindow modal_window = null;
+        private SGUIModalWindow modal_window = null;
 
-        private StateChartEditorWindow window;
+        private SGUIEditorWindow window;
 
-        public static GUITopLevel current { get; private set; }
+        public static SGUITopLevel current { get; private set; }
         
-        public GUITopLevel(StateChartEditorWindow window)
+        public SGUITopLevel(SGUIEditorWindow window)
         {
             this.window = window;
         }
 
-        public void setModalWindow(GUIModalWindow modal_window)
+        public void setModalWindow(SGUIModalWindow modal_window)
         {
             this.modal_window = modal_window;
         }
 
         protected override void OnGUI()
         {
-            GUITopLevel.current = this;
+            SGUITopLevel.current = this;
 
             if (Event.current.type != EventType.Layout)
             {
                 this.position = this.window.position;
                 if (Event.current.type != EventType.Repaint)
-                    GUIEvent.current = null;
+                    SGUIEvent.current = null;
             }
 
             GUI.enabled = this.modal_window == null;
@@ -48,7 +48,7 @@ namespace SCCDEditor
                 this.window.EndWindows();
             }
 
-            GUITopLevel.current = null;
+            SGUITopLevel.current = null;
         }
     }
 }

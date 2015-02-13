@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Class">
+    <relationships>
+        <association class="Canvas" name="canvas" max="1"/>
+    </relationships>
+    <attribute type="SGUICanvasElement" name="widget" access="private"/>
+    <attribute type="XElement" name="xml" access="private"/>
+    <constructor>
+        <parameter type="SGUICanvasElement" name="widget"/>
+        <parameter type="XElement" name="xml_diagram"/>
+        <body>
+            <![CDATA[
+            this.widget = widget;
+            this.xml = new XElement("class");
+            xml_diagram.Add(this.xml);
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="main">            
+        <parallel id="main">
+        
+            <!-- STATE INDEPENDENT ACTIONS -->
+            
+            <state id="state_independent_actions" initial="listening">
+                <state id="listening">
+                
+                    <!-- Set state creation type (toolbar event) -->
+
+                    <transition event="adjust_size" target=".">
+                        <script>
+                            this.widget.adjustSize();
+                        </script>
+                    </transition>
+ 
+                </state>
+            </state>
+            
+            <!-- STATE DEPENDENT ACTIONS -->
+            
+            <state id="state_dependent_actions" initial="setup">
+
+                <state id="setup">
+                    <transition target="../default/selected/"/>
+                </state>
+
+                <state id="default" initial="not_selected">
+
+                    <!-- Signal the start of the creation of an edge -->
+
+                    <transition event="right-mouse-down" port="input" cond="tag == this.widget.tag" target="../edge_creation">
+                        <parameter name="tag" type="int"/>
+                        <parameter type="Vector2" name="position"/>
+                        <raise event="create_edge" target='"canvas"'>
+                            <parameter expr='this.widget'/>
+                            <parameter expr="position"/>
+                        </raise>
+                    </transition>
+                    
+                    <!-- Some other class initiated edge creation, nonetheless enter the EDGE CREATION state -->
+                    
+                    <transition event="enter_edge_creation" target="../edge_creation"/>
+                    
+                    <!-- NOT SELECTED STATE -->
+                    
+                    <state id="not_selected">
+                        <transition event="left-mouse-down" port="input"  cond="tag == this.widget.tag" target="../selected">
+                            <parameter name="tag" type="int"/>
+                            <raise event="unselect" target='"canvas"'>
+                                <parameter expr='this.widget.tag'/>
+                            </raise>
+                            <script>
+                                this.widget.pushToFront();
+                            </script>
+                        </transition>
+                        <transition event="middle-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
+                            <parameter name="tag" type="int"/>
+                            <raise event="unselect" target='"canvas"'>
+                                <parameter expr='this.widget.tag'/>
+                            </raise>
+                        </transition>
+                    </state>
+                    
+                    <!-- SELECTED STATE -->
+                    
+                    <state id="selected" initial="listening">
+                        <onentry>
+                            <script>
+                                this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                            </script>
+                            <raise event="set_class_properties" target='"canvas/window/properties_panel"'>
+                                <parameter expr='this.xml' />
+                                <parameter expr='this.widget' />
+                            </raise>
+                        </onentry>
+                        <onexit>
+                            <script>
+                                this.widget.resetColor();
+                            </script>
+                        </onexit>
+                        <transition event="unselect" target="../not_selected" cond="this.widget.tag != except_tag">
+                            <parameter type="int" name="except_tag"/>
+                        </transition>
+                        
+                        <state id="listening">
+                            <!-- Left mouse drag causes state to be moved -->
+                        
+                            <transition target="." port="input" event="left-mouse-drag" cond="tag == this.widget.tag || tag == this.widget.canvas.tag">
+                                <parameter type="int" name="tag"/>
+                                <parameter type="Vector2" name="position"/>
+                                <parameter type="Vector2" name="delta"/>
+                                <script>
+                                    this.widget.move(delta);
+                                </script>
+                            </transition>
+                        </state>
+                    </state>
+                </state>
+                
+                <!-- EDGE CREATION MODE. IS ENTERED WHENEVER AN EDGE IS BEING CREATED. -->
+                
+                <state id="edge_creation">
+                    
+                    <!-- Signal that this is a valid end connection for the edge being created. -->
+                    
+                    <transition event="right-mouse-up" port="input" cond="tag == this.widget.tag" target="../default">
+                        <parameter name="tag" type="int"/>
+                        <parameter name="position" type="Vector2"/>
+                        <raise event="edge_end" target='"canvas"'>
+                            <parameter expr="this.widget"/>
+                            <parameter expr="position"/>
+                        </raise>
+                    </transition>
+                    
+                    <!-- Signal that a possible end connection is targeted. -->
+                    
+                    <transition event="right-mouse-drag" port="input" cond="tag == this.widget.tag" target=".">
+                        <parameter name="tag" type="int"/>
+                        <parameter name="position" type="Vector2"/>
+                        <raise event="over_edge_end" target='"canvas"'>
+                            <parameter expr="this.widget"/>
+                            <parameter expr="position"/>
+                        </raise>
+                    </transition>
+                    
+                    <!-- Edge creation terminated. Return to default. -->
+                    
+                    <transition event="edge_creation_stopped" target="../default"/>
+
+                </state>
+            </state>
+        </parallel>
+    </scxml>
+</class>

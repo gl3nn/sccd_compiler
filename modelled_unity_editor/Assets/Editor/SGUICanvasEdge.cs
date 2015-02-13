@@ -3,18 +3,18 @@ using UnityEditor;
 using System.Collections.Generic;
 
 namespace SCCDEditor{
-    public class GUICanvasConnectionPoint
+    public class SGUICanvasConnectionPoint
     {
-        public GUICanvasElement   canvas_element { get; private set;}
+        public SGUICanvasElement   canvas_element { get; private set;}
         public int          point_id { get; set;}
 
-        public GUICanvasConnectionPoint(GUICanvasElement canvas_element, int point_id)
+        public SGUICanvasConnectionPoint(SGUICanvasElement canvas_element, int point_id)
         {
             this.canvas_element = canvas_element;
             this.point_id = point_id;
         }
 
-        public GUICanvasConnectionPoint(GUICanvasElement canvas_element, Vector2 closest_to)
+        public SGUICanvasConnectionPoint(SGUICanvasElement canvas_element, Vector2 closest_to)
         {
             this.canvas_element = canvas_element;
             this.setClosest(closest_to);
@@ -37,18 +37,18 @@ namespace SCCDEditor{
         }
     }
 
-    public class GUICanvasEdge : GUIWidget
+    public class SGUICanvasEdge : SGUIWidget
     {
-        GUICanvasConnectionPoint start = null;
-        GUICanvasConnectionPoint end = null;
+        SGUICanvasConnectionPoint start = null;
+        SGUICanvasConnectionPoint end = null;
         public List<Vector2> control_points = new List<Vector2>();
 
-        public GUICanvas canvas    { get; private set; }
+        public SGUICanvas canvas    { get; private set; }
         
-        public GUICanvasEdge(GUICanvasElement start_element, Vector2 closest_to)
+        public SGUICanvasEdge(SGUICanvasElement start_element, Vector2 closest_to)
         {
-            this.start = new GUICanvasConnectionPoint(start_element, closest_to);
-            this.end = new GUICanvasConnectionPoint(start_element, closest_to);
+            this.start = new SGUICanvasConnectionPoint(start_element, closest_to);
+            this.end = new SGUICanvasConnectionPoint(start_element, closest_to);
             this.canvas = start_element.canvas;
             this.canvas.addEdge(this);
         }
@@ -58,9 +58,9 @@ namespace SCCDEditor{
             this.end.setClosest(closest_to);
         }
 
-        public void createEndPoint(GUICanvasElement end_item, Vector2 closest_to)
+        public void createEndPoint(SGUICanvasElement end_item, Vector2 closest_to)
         {
-            this.end = new GUICanvasConnectionPoint(end_item, closest_to);
+            this.end = new SGUICanvasConnectionPoint(end_item, closest_to);
         }
 
         public void removeEndPoint()
@@ -99,15 +99,17 @@ namespace SCCDEditor{
         
         public static void drawLine(Vector2 start_pos, Vector2 end_pos)
         {       
-            /*if ( start_pos.x > end_pos.x ){
+            if ( start_pos.x > end_pos.x ){
                 Vector2 temp = start_pos;
                 start_pos = end_pos;
                 end_pos = temp;
             }
             
             var distance_between_nodes = end_pos.x - start_pos.x;
+
+            //float rico = (end_pos.y - start_pos.y) / (end_pos.x - start_pos.x);
             
-            Handles.DrawBezier( 
+            /*Handles.DrawBezier( 
                new Vector3(start_pos.x, start_pos.y),
                new Vector3(end_pos.x, end_pos.y),
                new Vector3(start_pos.x + (distance_between_nodes / 2.0f) + 10.0f, start_pos.y),
@@ -117,10 +119,21 @@ namespace SCCDEditor{
                3.25f
             );*/
 
-            Handles.DrawLine(
+            Handles.DrawBezier( 
+               new Vector3(start_pos.x, start_pos.y),
+               new Vector3(end_pos.x, end_pos.y),
+               new Vector3(start_pos.x, start_pos.y),
+               new Vector3(end_pos.x, end_pos.y),
+               Color.black,
+               null,
+               3.25f
+            );
+
+            /*Handles.DrawLine(
                 new Vector3(start_pos.x, start_pos.y),
                 new Vector3(end_pos.x, end_pos.y)
-            );
+            );*/
+
         }
 
         public void popControlPoint()
@@ -135,7 +148,7 @@ namespace SCCDEditor{
 
         public bool hasControlPoints()
         {
-            return this.control_points.Count != 0;
+            return this.control_points.Count > 1;
         }
 
         protected override void OnGUI()
@@ -145,11 +158,11 @@ namespace SCCDEditor{
             for (int i = 0; i < this.control_points.Count; i++)
             {
                 next_point = this.control_points[i];
-                GUICanvasEdge.drawLine(begin_point, next_point);
+                SGUICanvasEdge.drawLine(begin_point, next_point);
                 begin_point = next_point;
             }
             if (this.end != null)
-                GUICanvasEdge.drawLine(begin_point, this.end.getPosition());
+                SGUICanvasEdge.drawLine(begin_point, this.end.getPosition());
         }
     }
 }

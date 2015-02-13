@@ -3,16 +3,16 @@ using System.Collections.Generic;
 
 namespace SCCDEditor
 {
-    public class GUIWidget
+    public class SGUIWidget
     {
         public Rect                         position    { get; protected set; }
         public int                          tag         { get; private set; }
 
         private static int                  tag_counter = 0;
 
-        public GUIWidget()
+        public SGUIWidget()
         {
-            this.tag = GUIWidget.tag_counter++;
+            this.tag = SGUIWidget.tag_counter++;
         }
 
         protected void catchMouseDefault()
@@ -20,7 +20,7 @@ namespace SCCDEditor
             if (Event.current.type != EventType.Repaint && Event.current.type != EventType.Layout)
             {
                 if (this.position.Contains(Event.current.mousePosition))
-                    GUIEvent.current = new GUIEvent(this.tag, Event.current.mousePosition);
+                    SGUIEvent.current = new SGUIEvent(this.tag, Event.current.mousePosition);
             }
         }
 

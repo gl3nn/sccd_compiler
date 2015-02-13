@@ -2,18 +2,18 @@ using System;
 
 namespace SCCDEditor
 {
-    public class GUIException : Exception
+    public class SGUIException : Exception
     {
-        public GUIException ()
+        public SGUIException ()
         {
         }
         
-        public GUIException(string message)
+        public SGUIException(string message)
             : base(message)
         {
         }
         
-        public GUIException(string message, Exception inner)
+        public SGUIException(string message, Exception inner)
             : base(message, inner)
         {
         }

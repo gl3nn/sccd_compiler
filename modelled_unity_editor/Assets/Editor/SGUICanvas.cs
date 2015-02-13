@@ -2,27 +2,27 @@ using UnityEngine;
 using System.Collections.Generic;
 
 namespace SCCDEditor{
-   public class GUICanvas : GUICanvasBase {
+   public class SGUICanvas : SGUICanvasBase {
 
         public Rect                     view_rect { get; private set; }
 
         private Vector2                 scroll_position = Vector2.zero;
 
-        protected List<GUICanvasEdge>   edges    { get; private set; }
+        protected List<SGUICanvasEdge>  edges    { get; private set; }
 
-        public GUICanvas()
+        public SGUICanvas()
         {
-            this.edges = new List<GUICanvasEdge>();
+            this.edges = new List<SGUICanvasEdge>();
             this.view_rect = new Rect(0, 0, 0, 0);
             this.canvas = this;
         }
 
-        public void addEdge(GUICanvasEdge edge)
+        public void addEdge(SGUICanvasEdge edge)
         {
             this.edges.Add(edge);
         }
         
-        public void removeEdge(GUICanvasEdge edge)
+        public void removeEdge(SGUICanvasEdge edge)
         {
             this.edges.Remove(edge);
         }
@@ -42,7 +42,7 @@ namespace SCCDEditor{
             }
             this.scroll_position = GUI.BeginScrollView (this.position, this.scroll_position, this.view_rect);
             if (get_mouse)
-                GUIEvent.current = new GUIEvent(this.tag, Event.current.mousePosition);
+                SGUIEvent.current = new SGUIEvent(this.tag, Event.current.mousePosition);
             base.OnGUI();
             for (int i=0; i < this.edges.Count; i++)
             {
@@ -51,9 +51,9 @@ namespace SCCDEditor{
             GUI.EndScrollView();
         }
         
-        public List<GUICanvasElement> getOverlappingsOf(GUICanvasElement item)
+        public List<SGUICanvasElement> getOverlappingsOf(SGUICanvasElement item)
         {
-            List<GUICanvasElement> overlappings = new List<GUICanvasElement>(); 
+            List<SGUICanvasElement> overlappings = new List<SGUICanvasElement>(); 
             for (int i =0; i < this.elements.Count; i++)
             {
                 this.elements[i].getOverlappingsOf(overlappings, item);

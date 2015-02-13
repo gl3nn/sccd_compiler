@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.20506</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{A67A9BE1-0617-02DF-46CA-52717CFC5151}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <AssemblyName>Assembly-CSharp-Editor</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <BaseDirectory>Assets</BaseDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>True</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>False</Optimize>
+    <OutputPath>Temp\bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;UNITY_4_6_0;UNITY_4_6;UNITY_STANDALONE_WIN;ENABLE_MICROPHONE;ENABLE_TEXTUREID_MAP;ENABLE_UNITYEVENTS;ENABLE_NEW_HIERARCHY ;ENABLE_AUDIO_FMOD;UNITY_STANDALONE;ENABLE_MONO;ENABLE_TERRAIN;ENABLE_SUBSTANCE;ENABLE_GENERICS;INCLUDE_WP8SUPPORT;ENABLE_MOVIES;ENABLE_WWW;ENABLE_IMAGEEFFECTS;ENABLE_4_6_FEATURES;INCLUDE_WP_BLUE_SUPPORT;ENABLE_WEBCAM;INCLUDE_METROSUPPORT;RENDER_SOFTWARE_CURSOR;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_2D_PHYSICS;ENABLE_SHADOWS;ENABLE_AUDIO;ENABLE_NAVMESH_CARVING;ENABLE_DUCK_TYPING;ENABLE_SINGLE_INSTANCE_BUILD_SETTING;ENABLE_PROFILER;UNITY_EDITOR;UNITY_EDITOR_WIN</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>0169</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>True</Optimize>
+    <OutputPath>Temp\bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoWarn>0169</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="UnityEngine">
+      <HintPath>C:\Program Files %28x86%29\Unity\Editor\Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor">
+      <HintPath>C:\Program Files %28x86%29\Unity\Editor\Data\Managed\UnityEditor.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Assets\Editor\ClassDiagramEditorWindow.cs" />
+    <Compile Include="Assets\Editor\Compile.cs" />
+    <Compile Include="Assets\Editor\MyPopupWindow.cs" />
+    <Compile Include="Assets\Editor\SGUIButton.cs" />
+    <Compile Include="Assets\Editor\SGUICanvas.cs" />
+    <Compile Include="Assets\Editor\SGUICanvasBase.cs" />
+    <Compile Include="Assets\Editor\SGUICanvasEdge.cs" />
+    <Compile Include="Assets\Editor\SGUICanvasElement.cs" />
+    <Compile Include="Assets\Editor\SGUIEditorWindow.cs" />
+    <Compile Include="Assets\Editor\SGUIEvent.cs" />
+    <Compile Include="Assets\Editor\SGUIException.cs" />
+    <Compile Include="Assets\Editor\SGUIGroupWidget.cs" />
+    <Compile Include="Assets\Editor\SGUIHorizontalGroup.cs" />
+    <Compile Include="Assets\Editor\SGUIModalWindow.cs" />
+    <Compile Include="Assets\Editor\SGUITextArea.cs" />
+    <Compile Include="Assets\Editor\SGUITextField.cs" />
+    <Compile Include="Assets\Editor\SGUITopLevel.cs" />
+    <Compile Include="Assets\Editor\SGUIVerticalGroup.cs" />
+    <Compile Include="Assets\Editor\SGUIWidget.cs" />
+    <Compile Include="Assets\Editor\StateChartEditorWindow.cs" />
+    <Compile Include="Assets\Editor\TestEditorWindow.cs" />
+    <Compile Include="Assets\Editor\classdiagram_editor.cs" />
+    <Compile Include="Assets\Editor\get_editor_skin.cs" />
+    <Compile Include="Assets\Editor\statechart_editor.cs" />
+    <Compile Include="Assets\Editor\test2.cs" />
+    <Compile Include="Assets\Editor\test3.cs" />
+    <None Include="Assets\xml\common\button.xml" />
+    <None Include="Assets\xml\classdiagram\toolbar.xml" />
+    <None Include="Assets\xml\classdiagram\class.xml" />
+    <None Include="Assets\xml\classdiagram\properties_panel.xml" />
+    <None Include="Assets\classdiagram_editor.xml" />
+    <None Include="Assets\mklink command.txt" />
+    <None Include="Assets\xml\classdiagram\window.xml" />
+    <None Include="Assets\xml\statechart\properties_panel.xml" />
+    <None Include="Assets\xml\statechart\state.xml" />
+    <None Include="Assets\xml\classdiagram\class_properties.xml" />
+    <None Include="Assets\xml\statechart\window.xml" />
+    <None Include="Assets\xml\common\edge.xml" />
+    <None Include="Assets\statechart_editor.xml" />
+    <None Include="Assets\xml\statechart\toolbar.xml" />
+    <None Include="Assets\xml\statechart\canvas.xml" />
+    <None Include="Assets\xml\classdiagram\canvas.xml" />
+    <None Include="Assets\xml\statechart\state_properties.xml" />
+    <None Include="Assets\xml\classdiagram\diagram_properties.xml" />
+    <None Include="Assets\xml\statechart\state_drop.xml" />
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:\Program Files %28x86%29\Unity\Editor\Data\UnityExtensions\Unity\GUISystem\4.6.0\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.UI">
+      <HintPath>C:\Program Files %28x86%29\Unity\Editor\Data\UnityExtensions\Unity\GUISystem\4.6.0\Editor\UnityEditor.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="csharp_sccd_compiler">
+      <HintPath>C:\Users\gl3nn\Documents\sccd_compiler\modelled_unity_editor\Assets\csharp_sccd_compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="sccdlib">
+      <HintPath>C:\Users\gl3nn\Documents\sccd_compiler\modelled_unity_editor\Assets\sccdlib.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEditor.Graphs">
+      <HintPath>C:\Program Files %28x86%29\Unity\Editor\Data\Managed\UnityEditor.Graphs.dll</HintPath>
+    </Reference>
+    <Compile Include="Assets\Editor\SGUILabel.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+	   Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

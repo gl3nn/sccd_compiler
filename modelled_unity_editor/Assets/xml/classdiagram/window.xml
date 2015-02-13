@@ -1,18 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="StateChartWindow">
+<class name="ClassDiagramWindow">
     <relationships>
         <association class="Toolbar" name="toolbar" max="1"/>
         <association class="Canvas" name="canvas" max="1"/>
+        <association class="PropertiesPanel" name="properties_panel" max="1"/>
     </relationships>
-    <attribute type="GUITopLevel" name="window_widget"/>
+    <attribute type="SGUITopLevel" name="window_widget"/>
+    <attribute type="XDocument" name="xml_document"/>
+    <attribute type="XElement" name="xml_diagram"/>
     <constructor>
-        <parameter type="GUITopLevel" name="window_widget"/>
+        <parameter type="SGUITopLevel" name="window_widget"/>
         <body>
             <![CDATA[
             this.window_widget = window_widget;
+            this.window_widget.addChild(new SGUIVerticalGroup());
+            this.newXMLFile();
             ]]>
         </body>
     </constructor>
+    <method type="void" name="newXMLFile">
+        <body>
+            this.xml_diagram = new XElement("diagram",
+                new XAttribute("name", "name"),
+                new XElement("description", "description"),
+                new XElement("top", "using UnityEngine;")
+            );
+            this.xml_document = new XDocument(
+                new XDeclaration("1.0", "utf-8", "yes"),
+                this.xml_diagram
+            );
+        </body>
+    </method>
     <scxml initial="toolbar_creation">
         <state id="toolbar_creation">
             <transition target="../toolbar_activation">
@@ -40,11 +58,12 @@
                     <parameter expr='"canvas"' />
                     <parameter expr='"Canvas"'/>
                     <parameter expr='this.window_widget' />
+                    <parameter expr='this.xml_diagram' />
                 </raise>
             </transition>
         </state>
         <state id="canvas_activation">
-            <transition event="instance_created" target="../main">
+            <transition event="instance_created" target="../properties_panel_creation">
                 <raise scope="cd" event="associate_instance">
                     <parameter expr='"."' />
                     <parameter expr='"canvas/window"'/>
@@ -55,6 +74,27 @@
                 </raise>
                 <raise scope="cd" event="start_instance">
                     <parameter expr='"canvas"' />
+                </raise>
+            </transition>
+        </state>
+        <state id="properties_panel_creation">
+            <transition target="../properties_panel_activation">
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"properties_panel"' />
+                    <parameter expr='"PropertiesPanel"'/>
+                    <parameter expr='this.window_widget' />
+                    <parameter expr='this.xml_diagram' />
+                </raise>
+            </transition>
+        </state>
+        <state id="properties_panel_activation">
+            <transition event="instance_created" target="../main">
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"canvas"' />
+                    <parameter expr='"properties_panel/canvas"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='"properties_panel"' />
                 </raise>
             </transition>
         </state>

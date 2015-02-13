@@ -13,10 +13,6 @@ namespace sccdlib
         protected List<string> output_ports = new List<string>();
         protected List<IOutputListener> output_listeners = new List<IOutputListener>();
 
-        public ControllerBase ()
-        {
-        }
-
         protected void addInputPort(string port_name)
         {
             this.input_ports.Add(port_name);

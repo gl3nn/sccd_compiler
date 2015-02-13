@@ -253,8 +253,7 @@ namespace sccdlib
                             {
                                 foreach (InstanceWrapper stop_instance_wrapper in association.getAllInstances())
                                 {
-                                    this.instances_map.Remove(stop_instance_wrapper.getInstance());
-                                    stop_instance_wrapper.getInstance().stop();
+                                    this.stopInstance(stop_instance_wrapper.getInstance());
                                 }
                             }
                             association.removeAllInstances();
@@ -264,9 +263,7 @@ namespace sccdlib
                             //Only remove the instance from the association with the specified id
                             if (is_delete_event)
                             {
-                                IRuntimeClass stop_instance = association.getInstance(last_tuple.Value).getInstance();
-                                stop_instance.stop();
-                                this.instances_map.Remove(stop_instance);
+                                this.stopInstance(association.getInstance(last_tuple.Value).getInstance());
                             }
                             association.removeInstance (last_tuple.Value);
                         }
@@ -277,6 +274,13 @@ namespace sccdlib
                     }
                 }
             }
+        }
+
+        private void stopInstance(IRuntimeClass stop_instance)
+        {
+            stop_instance.stop();
+            stop_instance.user_defined_destructor();
+            this.instances_map.Remove(stop_instance);
         }
                 
         private void handleAssociateEvent (object[] parameters)

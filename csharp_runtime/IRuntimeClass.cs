@@ -11,7 +11,7 @@ namespace sccdlib
         void step(double delta);
         void start();
         void stop();
-        
+        void user_defined_destructor();
     }
 }
 

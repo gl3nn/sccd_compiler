@@ -86,7 +86,8 @@ namespace csharp_sccd_compiler
                 if (this.constructors.Count == 0)
                     this.constructors.Add(new Constructor(this));
             }
-
+            if (this.destructors.Count == 0)
+                this.destructors.Add(new Destructor(this));
         }
 
         private void processMethod(XElement method_xml)

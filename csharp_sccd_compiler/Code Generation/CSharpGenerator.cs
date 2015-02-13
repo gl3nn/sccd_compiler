@@ -48,7 +48,13 @@ namespace csharp_sccd_compiler
             if (class_diagram.top_section != null)
                 this.writeCorrectIndent(class_diagram.top_section);
             this.output_file.write();
-            
+
+            //Namespace declaration
+            this.output_file.write();
+            this.output_file.write(string.Format("namespace {0}", class_diagram.model_name));
+            this.output_file.write("{");
+            this.output_file.indent();
+
             //visit children
             foreach (Class c in class_diagram.classes)
                 c.accept(this);
@@ -91,7 +97,7 @@ namespace csharp_sccd_compiler
             this.output_file.write("return new InstanceWrapper(instance, associations);");
             this.output_file.dedent();
             this.output_file.write("}");
-            this.output_file.write("return null;");
+            this.output_file.write("throw new RunTimeException(string.Format(\"Tried to instantiate class '{0}', which is not part of the class diagram.\", class_name));");
             this.output_file.dedent();
             this.output_file.write("}");
             this.output_file.dedent();
@@ -104,7 +110,7 @@ namespace csharp_sccd_compiler
                 controller_sub_class = "ThreadsControllerBase";
             else if (this.current_platform == Platform.GAMELOOP)
                 controller_sub_class = "GameLoopControllerBase";
-            this.output_file.write("public class Controller : " + controller_sub_class);
+            this.output_file.write(string.Format("public class Controller : {0}", controller_sub_class));
             this.output_file.write("{");
             this.output_file.indent();
         
@@ -115,6 +121,8 @@ namespace csharp_sccd_compiler
             else
                 this.writeControllerConstructor(class_diagram, new List<FormalParameter>());
             
+            this.output_file.dedent();
+            this.output_file.write("}");
             this.output_file.dedent();
             this.output_file.write("}");
             this.output_file.write();
@@ -240,11 +248,8 @@ namespace csharp_sccd_compiler
                 this.output_file.dedent();
                 this.output_file.write("}");
                 this.output_file.write();
-            }
-            //End of common constructor
+                //End of common constructor
 
-            if (class_node.statechart != null)
-            {
                 //Begin of start method
                 this.output_file.write("public void start()");
                 this.output_file.write("{");
@@ -269,6 +274,21 @@ namespace csharp_sccd_compiler
                 this.output_file.dedent();
                 this.output_file.write("}");
                 //End of start() method
+
+                //Begin of cast methods
+                this.output_file.write("private void narrowCast(string parent_path, Event send_event){");
+                this.output_file.indent();
+                this.output_file.write("this.object_manager.addEvent(new Event(\"narrow_cast\", \"\", new object[] {this, parent_path, send_event}));");
+                this.output_file.dedent();
+                this.output_file.write("}");
+                this.output_file.write();
+                this.output_file.write("private void broadCast(Event send_event){");
+                this.output_file.indent();
+                this.output_file.write("this.object_manager.addEvent(new Event(\"broad_cast\", \"\", new object[] {send_event}));");
+                this.output_file.dedent();
+                this.output_file.write("}");
+                this.output_file.write();
+
             }
             //visit children
             foreach( var i in class_node.constructors)
@@ -348,7 +368,7 @@ namespace csharp_sccd_compiler
         public override void visit(Destructor destructor)
         {
             this.output_file.write();
-            this.output_file.write("~" + destructor.parent_class.name + "()");
+            this.output_file.write("public void user_defined_destructor()");
             this.output_file.write("{");
             if (destructor.body != null)
             {
@@ -990,16 +1010,11 @@ namespace csharp_sccd_compiler
         public override void visit(RaiseEvent raise_event)
         {
             if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE)
-            {
-                this.output_file.write(
-                    "this.object_manager.addEvent(new Event(\"narrow_cast\", \"\", new object[] {this, " + raise_event.target + ", " + createEvent(raise_event.event_name));
-            }
+                this.output_file.write("this.narrowCast(" + raise_event.target + ", " + createEvent(raise_event.event_name));
             else if (raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
-            {
-                this.output_file.write("this.object_manager.addEvent(new Event(\"broad_cast\", \"\", new object[] {" + createEvent(raise_event.event_name));
-            }
+                this.output_file.write("this.broadCast(" + createEvent(raise_event.event_name));
             else if (raise_event.scope == RaiseEvent.Scope.LOCAL_SCOPE)
-                this.output_file.write("this.addEvent( new Event(\"" + raise_event.event_name + "\", \"\", new object[] {");
+                this.output_file.write("this.addEvent(" + createEvent(raise_event.event_name));
             else if (raise_event.scope == RaiseEvent.Scope.OUTPUT_SCOPE)
                 this.output_file.write("this.controller.outputEvent(new Event(\"" + raise_event.event_name + "\", \"" + raise_event.port + "\", new object[] {");
             else if (raise_event.scope == RaiseEvent.Scope.CD_SCOPE)
@@ -1014,10 +1029,7 @@ namespace csharp_sccd_compiler
                     this.output_file.extendWrite(",");
                 param.accept(this);
             }
-            if (raise_event.scope == RaiseEvent.Scope.NARROW_SCOPE || raise_event.scope == RaiseEvent.Scope.BROAD_SCOPE)
-                this.output_file.extendWrite("})}));");
-            else
-                this.output_file.extendWrite("}));");
+            this.output_file.extendWrite("}));");
         }
                 
         public override void visit(Script script)

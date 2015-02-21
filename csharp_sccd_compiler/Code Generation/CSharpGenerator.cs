@@ -671,7 +671,7 @@ namespace csharp_sccd_compiler
             {
                 //handle history
                 if (exit_method.parent.save_state_on_exit)
-                    this.output_file.write("this.history_state[Node." + exit_method.parent.full_name + "].AddRange(this.current_state[Node." + exit_method.parent.full_name + "]);");
+					this.output_file.write("this.history_state[Node." + exit_method.parent.full_name + "] = new List<Node>(this.current_state[Node." + exit_method.parent.full_name + "]);");
                 
                 //Take care of leaving children
                 if (exit_method.parent.is_parallel)

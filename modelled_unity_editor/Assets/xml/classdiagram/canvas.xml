@@ -13,12 +13,12 @@
     <attribute type="string" name="creation_type" init-value='"bla"'/>
     <attribute type="XElement" name="xml_diagram"/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIVerticalGroup" name="canvas_container"/>
         <parameter type="XElement" name="xml_diagram"/>
         <body>
             <![CDATA[
             this.canvas_widget = new SGUICanvas();
-            ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.canvas_widget);
+            canvas_container.addChild(this.canvas_widget);
             this.classes_map = new Dictionary<int,int>();
             this.edges_map = new Dictionary<int,int>();
             this.xml_diagram = xml_diagram;

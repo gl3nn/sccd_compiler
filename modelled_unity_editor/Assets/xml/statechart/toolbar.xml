@@ -14,9 +14,9 @@
             this.toolbar_widget = new SGUIHorizontalGroup("box");
             ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.toolbar_widget);
             
-            this.toolbar_widget.addChild(new SGUIButton(new SGUIButtonInformation("Basic", "set-basic"), true));
-            this.toolbar_widget.addChild(new SGUIButton(new SGUIButtonInformation("Parallel", "set-parallel"), true));
-            this.toolbar_widget.addChild(new SGUIButton(new SGUIButtonInformation("History", "set-history"), true));
+            this.toolbar_widget.addChild(new SGUIButton("Basic", "set-basic", true));
+            this.toolbar_widget.addChild(new SGUIButton("Parallel", "set-parallel", true));
+            this.toolbar_widget.addChild(new SGUIButton("History", "set-history", true));
             ]]>
         </body>
     </constructor>

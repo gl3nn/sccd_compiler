@@ -26,7 +26,7 @@
             <state id="button_creation">
                 <transition target="../button_activation">
                     <script>
-                        SGUIButton button_widget = new SGUIButton( new SGUIButtonInformation("Edit Statechart", "open_statechart_event"), false);
+                        SGUIButton button_widget = new SGUIButton("Edit Statechart", "open_statechart_event", false);
                         this.panel_widget.addChild(button_widget);
                     </script>
                     <raise scope="cd" event="create_instance">

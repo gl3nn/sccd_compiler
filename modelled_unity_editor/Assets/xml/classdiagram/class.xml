@@ -11,7 +11,7 @@
         <body>
             <![CDATA[
             this.widget = widget;
-            this.xml = new XElement("class");
+            this.xml = new XElement("class", XAttribute("name", ""));
             xml_diagram.Add(this.xml);
             ]]>
         </body>

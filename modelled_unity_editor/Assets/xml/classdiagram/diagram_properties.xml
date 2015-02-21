@@ -2,38 +2,66 @@
 <class name="DiagramProperties">
     <relationships>
         <association class="PropertiesPanel" name="panel" max="1"/>
-        <association class="Button" name="buttons"/>
+        <association class="IRuntimeClass" name="children"/>
     </relationships>
     <attribute type="SGUIVerticalGroup" name="panel_widget"/>
     <attribute type="XElement" name='diagram_xml'/>
+
+    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
+    <attribute type="List&lt;XElement&gt;" name="ports_to_load"/>
+    
     <attribute type="SGUITextField" name='author_field'/>
     <attribute type="SGUITextField" name='name_field'/>
     <attribute type="SGUITextArea" name='description_field'/>
     <attribute type="SGUITextArea" name='top_field'/>
-    <attribute type="SGUIButton" name="add_input_port_button"/>
-    <attribute type="SGUIVerticalGroup" name="input_ports"/>
+    <attribute type="SGUIVerticalGroup" name="input_ports_group_widget"/>
+    <attribute type="SGUIVerticalGroup" name="output_ports_group_widget"/>
+
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
         <parameter type="XElement" name='diagram_xml'/>
         <body>
             <![CDATA[
+            this.buttons_to_activate = new List<SGUIButton>();
             this.panel_widget = panel_widget;
             this.diagram_xml = diagram_xml;
-            this.author_field = new SGUITextField("author");
+            
+            //Simple properties setup
+            SCCDUtility.assureAttribute(this.diagram_xml, "author");
+            this.author_field = new SGUITextField("author", this.diagram_xml.Attribute("author").Value);
             this.panel_widget.addChild(this.author_field);
-            this.name_field = new SGUITextField("name");
+            SCCDUtility.assureAttribute(this.diagram_xml, "name");
+            this.name_field = new SGUITextField("diagram namespace", this.diagram_xml.Attribute("name").Value);
             this.panel_widget.addChild(this.name_field);
-            this.description_field = new SGUITextArea("description");
+            this.description_field = new SGUITextArea("description", this.diagram_xml.Element("description").Value);
             this.panel_widget.addChild(this.description_field);
-            this.top_field = new SGUITextArea("top");
+            this.top_field = new SGUITextArea("top", this.diagram_xml.Element("top").Value);
             this.panel_widget.addChild(this.top_field);
+            
+            //Input ports setup
             SGUIHorizontalGroup input_ports_heading = new SGUIHorizontalGroup();
             input_ports_heading.addChild(new SGUILabel("Input Ports:"));
-            this.add_input_port_button = new SGUIButton(new SGUIButtonInformation("Add", "add_input_port"), false);
-            input_ports_heading.addChild(this.add_input_port_button);
+            SGUIButton add_input_port_button = new SGUIButton("Add", "add_input_port", false);
+            this.buttons_to_activate.Add(add_input_port_button);
+            input_ports_heading.addChild(add_input_port_button);
             this.panel_widget.addChild(input_ports_heading);
-            this.input_ports = new SGUIVerticalGroup();
-            this.panel_widget.addChild(SGUIVerticalGroup());
+            this.input_ports_group_widget = new SGUIVerticalGroup();
+            this.panel_widget.addChild(this.input_ports_group_widget);
+            
+            //Output ports setup
+            SGUIHorizontalGroup output_ports_heading = new SGUIHorizontalGroup();
+            output_ports_heading.addChild(new SGUILabel("Output Ports:"));
+            SGUIButton add_output_port_button = new SGUIButton("Add", "add_output_port", false);
+            this.buttons_to_activate.Add(add_output_port_button);
+            output_ports_heading.addChild(add_output_port_button);
+            this.panel_widget.addChild(output_ports_heading);
+            this.output_ports_group_widget = new SGUIVerticalGroup();
+            this.panel_widget.addChild(this.output_ports_group_widget);
+            
+            //Ports loading
+            this.ports_to_load = this.diagram_xml.Elements("inport").ToList();
+            this.ports_to_load.AddRange(this.diagram_xml.Elements("outport"));
+            this.ports_to_load.Reverse();
             ]]>
         </body>
     </constructor>
@@ -42,43 +70,148 @@
             this.panel_widget.clearChildren();
         </body>
     </destructor>
-    <scxml initial="setup">
-        <state id="setup" initial="button_creation">
-            <state id="button_creation">
-                <transition target="../button_activation">
+    <scxml initial="main">
+        <state id="main" initial="setup">
+            <state id="setup" initial="buttons_creation_loop">
+                <state id="buttons_creation_loop">
+                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"children"' />
+                            <parameter expr='"Button"'/>
+                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
+                        </raise>
+                    </transition>
+                    <transition target="../ports_loading" cond="this.buttons_to_activate.Count == 0">
+                        <script>
+                            this.buttons_to_activate = null;
+                        </script>
+                    </transition>
+                </state>
+                <state id="button_activation">
+                    <transition event="instance_created" target="../buttons_creation_loop">
+                        <parameter name="id" type="int"/>
+                        <parameter name="association_name" type="String"/>
+                        <script>
+                            String association_path = String.Format("{0}[{1}]", association_name, id);
+                        </script>
+                        <raise scope="cd" event="associate_instance">
+                            <parameter expr='"."' />
+                            <parameter expr='association_path + "/event_receiver"'/>
+                        </raise>
+                        <raise scope="cd" event="start_instance">
+                            <parameter expr='association_path' />
+                        </raise>
+                        <script>
+                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
+                        </script>
+                    </transition>
+                </state>
+                <state id="ports_loading">
+                    <transition target="/default_activation" cond="this.ports_to_load.Count &gt; 0">
+                        <script>
+                            XElement port_xml = this.ports_to_load[this.ports_to_load.Count - 1];
+                            object group_widget;
+                            if (port_xml.Name.LocalName == "inport")
+                                group_widget = this.input_ports_group_widget;
+                            else
+                                group_widget = this.output_ports_group_widget;
+                        </script>
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"children"' />
+                            <parameter expr='"Port"'/>
+                            <parameter expr='port_xml' />
+                            <parameter expr='group_widget' />
+                        </raise>
+                        <script>
+                            this.ports_to_load.RemoveAt(this.ports_to_load.Count - 1);
+                        </script>
+                    </transition>
+                    <transition target="../../listening" cond="this.ports_to_load.Count == 0">
+                        <script>
+                            this.ports_to_load = null;
+                        </script>
+                    </transition>
+                </state>
+            </state>
+            <state id="listening">
+                <transition event="button_pressed" cond='button_action == "add_input_port" || button_action == "add_output_port"' target="../../default_activation">
+                    <parameter name="button_action" type="string"/>
                     <script>
-                        SGUIButton button_widget = new SGUIButton( new SGUIButtonInformation("Edit", "open_statechart_event"), false);
-                        this.panel_widget.addChild(button_widget);
+                        XElement port_xml;
+                        object group_widget;
+                        if (button_action == "add_input_port")
+                        {
+                            port_xml = new XElement("inport", new XAttribute("name", ""));
+                            group_widget = this.input_ports_group_widget;
+                        }
+                        else
+                        {
+                            port_xml = new XElement("outport", new XAttribute("name", ""));
+                            group_widget = this.output_ports_group_widget;
+                        }
+                        this.diagram_xml.Add(port_xml);
                     </script>
                     <raise scope="cd" event="create_instance">
-                        <parameter expr='"buttons"' />
-                        <parameter expr='"Button"'/>
-                        <parameter expr='button_widget' />
+                        <parameter expr='"children"' />
+                        <parameter expr='"Port"'/>
+                        <parameter expr='port_xml' />
+                        <parameter expr='group_widget' />
                     </raise>
                 </transition>
-            </state>
-            <state id="button_activation">
-                <transition event="instance_created" target="../../listening">
-                    <parameter name="id" type="int"/>
-                    <parameter name="association_name" type="String"/>
+                
+                <!-- Author field changed, edit @author -->
+                <transition event="changed" port="input" cond='this.author_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
                     <script>
-                        String association_path = String.Format("{0}[{1}]", association_name, id);
+                        this.diagram_xml.Attribute("author").Value = this.author_field.text;
                     </script>
-                    <raise scope="cd" event="associate_instance">
-                        <parameter expr='"."' />
-                        <parameter expr='association_path + "/event_receiver"'/>
-                    </raise>
-                    <raise scope="cd" event="start_instance">
-                        <parameter expr='association_path' />
-                    </raise>
+                </transition>
+                
+                <!-- Name field changed, edit @name -->
+                <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.diagram_xml.Attribute("name").Value = this.name_field.text;
+                    </script>
+                </transition>
+
+                <!-- Description field changed, edit <description> -->
+                <transition event="changed" port="input" cond='this.description_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.diagram_xml.Element("description").Value = this.description_field.text;
+                    </script>
+                </transition>
+
+                <!-- Top field changed, edit <top> -->
+                <transition event="changed" port="input" cond='this.top_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.diagram_xml.Element("top").Value = this.top_field.text;
+                    </script>
                 </transition>
             </state>
+            <history id="history" type="deep"/>
         </state>
-        <state id="listening">
-            <transition event="button_pressed" target=".">
-                <parameter name="button_action" type="string"/>
+        
+        
+        <state id="default_activation">
+            <transition event="instance_created" target="../main/history">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
                 <script>
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
                 </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/parent"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <raise target="association_path" event="set_child_id">
+                    <parameter expr='id' />
+                </raise>
             </transition>
         </state>
     </scxml>

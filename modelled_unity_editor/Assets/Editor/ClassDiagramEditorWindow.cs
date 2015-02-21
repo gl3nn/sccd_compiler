@@ -8,20 +8,32 @@ namespace SCCDEditor{
     {
 
 		[MenuItem("SCCD/Open Editor")]
-        public static void createOrFocus()
+        public static void open(string file_name = "")
         {
             ClassDiagramEditorWindow window = (ClassDiagramEditorWindow) EditorWindow.GetWindow(typeof(ClassDiagramEditorWindow), false);
             window.wantsMouseMove = true;
             window.title = "Class Diagram Editor";
             UnityEngine.Object.DontDestroyOnLoad( window );
+            window.start(file_name);
         }
 
         public ClassDiagramEditorWindow()
         {
+        }
+
+        public void start(string file_name)
+        {
             this.window_widget = new SGUITopLevel(this);
-            this.controller = new ClassDiagramEditor.Controller(this.window_widget);
+            this.controller = new ClassDiagramEditor.Controller(this.window_widget, file_name);
             this.controller.start();
         }
 
+        /*public void load_file(string file_name)
+        {
+            this.controller.addInput(
+                new sccdlib.Event("load_file", "input", new object[] {
+                file_name
+            }));
+        }*/
     }
 }

@@ -27,7 +27,7 @@
             </transition>
             <onexit>
                 <raise event="button_pressed" target='"event_receiver"'>
-                    <parameter expr="this.button_widget.properties.action"/>
+                    <parameter expr="this.button_widget.action"/>
                     <parameter expr="this.button_widget.tag"/>
                 </raise>
             </onexit>

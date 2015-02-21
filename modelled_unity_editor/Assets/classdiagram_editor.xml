@@ -9,6 +9,7 @@
         using UnityEngine;
         using SCCDEditor;
         using System.Xml.Linq;
+        using System.Linq;
         using Event = sccdlib.Event;
         #pragma warning disable 0219 // variable assigned but not used.
         #pragma warning disable 0414 // private field assigned but not used.
@@ -17,10 +18,13 @@
     <inport name="input" />
     
     <class name="Window" default="true" src="xml/classdiagram/window.xml"/>
+    <class name="MenuStrip" src="xml/classdiagram/menu_strip.xml"/>
     <class name="Toolbar" src="xml/classdiagram/toolbar.xml"/>
     <class name="PropertiesPanel" src="xml/classdiagram/properties_panel.xml"/>
     <class name="DiagramProperties" src="xml/classdiagram/diagram_properties.xml"/>
+    <class name="Port" src="xml/classdiagram/port.xml"/>
     <class name="ClassProperties" src="xml/classdiagram/class_properties.xml"/>
+    <class name="Attribute" src="xml/classdiagram/attribute.xml"/>
 
     <class name="Canvas" src="xml/classdiagram/canvas.xml"/>
     <class name="Class" src="xml/classdiagram/class.xml"/>

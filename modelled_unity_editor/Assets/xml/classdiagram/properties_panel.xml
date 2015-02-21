@@ -7,12 +7,13 @@
     <attribute type="SGUIVerticalGroup" name="panel_widget"/>
     <attribute type="XElement" name="diagram_xml"/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIGroupWidget" name="container_widget"/>
         <parameter type="XElement" name="diagram_xml"/>
         <body>
             <![CDATA[
             this.panel_widget = new SGUIVerticalGroup("box");
-            window_widget.addChild(this.panel_widget);
+            this.panel_widget.setMinWidth(400);
+            container_widget.addChild(this.panel_widget);
             this.diagram_xml = diagram_xml;
             ]]>
         </body>

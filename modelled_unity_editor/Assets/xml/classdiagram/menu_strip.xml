@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="MenuStrip">
+    <relationships>
+        <association class="Window" name="window" max="1"/>
+        <association class="Button" name="buttons"/>
+    </relationships>
+    <attribute type="SGUIHorizontalGroup" name="menu_strip"/>
+    <attribute type="int" name="button_count" init-value="0"/>
+    <constructor>
+        <parameter type="SGUITopLevel" name="window_widget"/>
+        <body>
+            <![CDATA[
+            this.menu_strip = new SGUIHorizontalGroup(EditorStyles.toolbar);
+            window_widget.addChild(this.menu_strip);
+            this.menu_strip.addChild(new SGUIButton("Save Diagram", "save_diagram", false, EditorStyles.toolbarButton));
+            this.menu_strip.addChild(new SGUIButton("Edit Diagram", "remove_port", false, EditorStyles.toolbarButton));
+            this.menu_strip.addChild(new SGUISpace());
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="setup">
+        <state id="setup" initial="buttons_creation_loop">
+            <state id="buttons_creation_loop">
+                <transition target="../button_activation" cond="this.button_count &lt; this.menu_strip.children_count -1">
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"buttons"' />
+                        <parameter expr='"Button"'/>
+                        <parameter expr='this.menu_strip.getChild(this.button_count)' />
+                    </raise>
+                </transition>
+                <transition target="../../listening" cond="this.button_count &gt;= this.menu_strip.children_count -1"/>
+            </state>
+            <state id="button_activation">
+                <transition event="instance_created" target="../buttons_creation_loop">
+                    <parameter name="id" type="int"/>
+                    <parameter name="association_name" type="String"/>
+                    <script>
+                        String association_path = String.Format("{0}[{1}]", association_name, id);
+                    </script>
+                    <raise scope="cd" event="associate_instance">
+                        <parameter expr='"."' />
+                        <parameter expr='association_path + "/event_receiver"'/>
+                    </raise>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='association_path' />
+                    </raise>
+                    <script>
+                        this.button_count++;
+                    </script>
+                </transition>
+            </state>
+        </state>
+        <state id="listening">
+            <transition event="button_pressed" cond='button_action == "save_diagram"' target=".">
+                <parameter name="button_action" type="string"/>
+                <raise event="save_diagram" target='"window"'/>
+            </transition>
+        </state>
+    </scxml>
+</class>

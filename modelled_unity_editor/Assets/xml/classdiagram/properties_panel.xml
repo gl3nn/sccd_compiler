@@ -18,62 +18,52 @@
             ]]>
         </body>
     </constructor>
-    <scxml initial="main">
-        <parallel id="main">
-            <state id="panel_state" initial="main_panel_active">
-                <state id="main_panel_active">
-                    <onentry>
-                        <!-- Create default panel - diagram editor. -->
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"active_panel"' />
-                            <parameter expr='"DiagramProperties"'/>
-                            <parameter expr='this.panel_widget'/>
-                            <parameter expr='this.diagram_xml' />
-                        </raise>
-                    </onentry>
-                    
-                    <!-- Class selected, create its panel. -->
-                    <transition event="set_class_properties" target="../other_panel_active">
-                        <parameter name="xml" type="XElement"/>
-                        <parameter name="class_widget" type="SGUICanvasElement"/>
-                        <raise scope="cd" event="delete_instance">
-                            <parameter expr='"active_panel"' />
-                        </raise>
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"active_panel"' />
-                            <parameter expr='"ClassProperties"'/>
-                            <parameter expr='this.panel_widget'/>
-                            <parameter expr='xml' />
-                            <parameter expr='class_widget' />
-                        </raise>
-                    </transition>
-                </state>
-                <state id="other_panel_active">
-                    <transition event="reset_panel" target="../main_panel_active">
-                        <raise scope="cd" event="delete_instance">
-                            <parameter expr='"active_panel"' />
-                        </raise>
-                    </transition>
-                </state>
-            </state>
-            <state id="panel_activation">
-                <state id="listening">
-                    <transition event="instance_created" target=".">
-                        <parameter name="id" type="int"/>
-                        <parameter name="association_name" type="String"/>
-                        <script>
-                            String association_path = String.Format("{0}[{1}]", association_name, id);
-                        </script>
-                        <raise scope="cd" event="associate_instance">
-                            <parameter expr='"."'/>
-                            <parameter expr='association_path + "/panel"' />
-                        </raise>
-                        <raise scope="cd" event="start_instance">
-                            <parameter expr='association_path' />
-                        </raise>
-                    </transition>
-                </state>
-            </state>
-        </parallel>
+    <scxml initial="setup">
+        <state id="setup">
+            <transition target="../listening">
+                <raise event="reset_panel"/>
+            </transition>
+        </state>
+        <state id="listening">
+            <!-- Create default panel - diagram editor. -->
+            <transition event="reset_panel" target="../panel_activation">
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='"active_panel"' />
+                </raise>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"active_panel"' />
+                    <parameter expr='"DiagramProperties"'/>
+                    <parameter expr='this.panel_widget'/>
+                    <parameter expr='this.diagram_xml' />
+                </raise>
+            </transition>
+            
+            <!-- Class selected, create its panel. -->
+            <transition event="set_class_properties" target="../panel_activation">
+                <parameter name="xml" type="XElement"/>
+                <parameter name="class_widget" type="SGUICanvasElement"/>
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='"active_panel"' />
+                </raise>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"active_panel"' />
+                    <parameter expr='"ClassProperties"'/>
+                    <parameter expr='this.panel_widget'/>
+                    <parameter expr='xml' />
+                    <parameter expr='class_widget' />
+                </raise>
+            </transition>
+        </state>
+        <state id="panel_activation">
+            <transition event="instance_created" target="../listening">
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."'/>
+                    <parameter expr='"active_panel/panel"' />
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='"active_panel"' />
+                </raise>
+            </transition>
+        </state>
     </scxml>
 </class>

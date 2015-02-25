@@ -4,18 +4,54 @@
         <association class="Canvas" name="canvas" max="1"/>
     </relationships>
     <attribute type="SGUICanvasElement" name="widget" access="private"/>
-    <attribute type="XElement" name="xml" access="private"/>
+    <attribute type="XElement" name="class_xml" access="private"/>
     <constructor>
         <parameter type="SGUICanvasElement" name="widget"/>
-        <parameter type="XElement" name="xml_diagram"/>
+        <parameter type="XElement" name="xml"/>
+        <parameter type="bool" name="is_loading"/>
         <body>
             <![CDATA[
             this.widget = widget;
-            this.xml = new XElement("class", XAttribute("name", ""));
-            xml_diagram.Add(this.xml);
+            if (is_loading)
+            {
+                this.class_xml = xml;
+                // set position
+                this.widget.setPosition(
+                    float.Parse(this.class_xml.Attribute("x").Value),
+                    float.Parse(this.class_xml.Attribute("y").Value),
+                    float.Parse(this.class_xml.Attribute("w").Value),
+                    float.Parse(this.class_xml.Attribute("h").Value)
+                );
+            }
+            else
+            {
+                //xml is parent, create XElement for class
+                this.class_xml = new XElement("class", 
+                    new XAttribute("name", ""),
+                    new XAttribute("x", this.widget.position.x.ToString()),
+                    new XAttribute("y", this.widget.position.y.ToString()),
+                    new XAttribute("w", this.widget.position.width.ToString()),
+                    new XAttribute("h", this.widget.position.height.ToString())
+                );
+                xml.Add(this.class_xml);
+            }
+            
+            
             ]]>
         </body>
     </constructor>
+    <method type="void" name="updateXMLPosition">
+        <body>
+            this.class_xml.Attribute("x").Value = this.widget.position.x.ToString();
+            this.class_xml.Attribute("y").Value = this.widget.position.y.ToString();
+        </body>
+    </method>
+    <method type="void" name="updateXMLSize">
+        <body>
+            this.class_xml.Attribute("w").Value = this.widget.position.width.ToString();
+            this.class_xml.Attribute("h").Value = this.widget.position.height.ToString();
+        </body>
+    </method>
     <scxml initial="main">            
         <parallel id="main">
         
@@ -78,6 +114,7 @@
                                 <parameter expr='this.widget.tag'/>
                             </raise>
                         </transition>
+                        
                     </state>
                     
                     <!-- SELECTED STATE -->
@@ -88,7 +125,7 @@
                                 this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
                             </script>
                             <raise event="set_class_properties" target='"canvas/window/properties_panel"'>
-                                <parameter expr='this.xml' />
+                                <parameter expr='this.class_xml' />
                                 <parameter expr='this.widget' />
                             </raise>
                         </onentry>
@@ -110,6 +147,7 @@
                                 <parameter type="Vector2" name="delta"/>
                                 <script>
                                     this.widget.move(delta);
+                                    this.updateXMLPosition();
                                 </script>
                             </transition>
                         </state>

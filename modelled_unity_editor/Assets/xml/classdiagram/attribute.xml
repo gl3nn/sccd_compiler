@@ -12,12 +12,15 @@
     <attribute type="SGUIButton" name="remove_button_widget"/>
     <attribute type="int" name="child_id"/>
     <constructor>
-        <parameter type="XElement" name="class_xml"/>
+        <parameter type="XElement" name="attribute_xml"/>
         <parameter type="SGUIGroupWidget" name="container_widget"/>
         <body>
             <![CDATA[
-            this.attribute_xml = new XElement("attribute", new XAttribute("type", ""), new XAttribute("name", ""), new XAttribute("init-value", ""));
-            this.class_xml.Add(this.attribute_xml);
+            this.attribute_xml = attribute_xml;
+            SCCDUtility.assureAttribute(this.attribute_xml, "type");
+            SCCDUtility.assureAttribute(this.attribute_xml, "name");
+            SCCDUtility.assureAttribute(this.attribute_xml, "init-value");
+            
             this.horizontal_widget = new SGUIHorizontalGroup();
             container_widget.addChild(this.horizontal_widget);
             
@@ -27,14 +30,15 @@
             vertical_widget_1.addChild(this.type_text_widget);
             this.initial_value_text_widget = new SGUITextField("Initial value", this.attribute_xml.Attribute("init-value").Value);
             vertical_widget_1.addChild(this.initial_value_text_widget);
+            this.horizontal_widget.addChild(vertical_widget_1);
             
             //Right vertical group
             SGUIVerticalGroup vertical_widget_2 = new SGUIVerticalGroup();
             this.name_text_widget = new SGUITextField("Name", this.attribute_xml.Attribute("name").Value);
             vertical_widget_2.addChild(this.name_text_widget);
             this.remove_button_widget = new SGUIButton("Remove", "remove_attribute", false);
-            vertical_widget_2.addChild(button_widget);
-            
+            vertical_widget_2.addChild(this.remove_button_widget);
+            this.horizontal_widget.addChild(vertical_widget_2);
             
             ]]>
         </body>
@@ -86,10 +90,31 @@
                     <parameter expr='target_path'/>
                 </raise>
             </transition>
-            <transition event="changed" port="input" cond='this.text_widget.tag == tag' target=".">
+            
+            <!-- Type field changed, edit @type -->
+            
+            <transition event="changed" port="input" cond='this.type_text_widget.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
-                    this.port_xml.Attribute("name").Value = this.text_widget.text;
+                    this.attribute_xml.Attribute("type").Value = this.type_text_widget.text;
+                </script>
+            </transition>
+            
+            <!-- Name field changed, edit @name -->
+            
+            <transition event="changed" port="input" cond='this.name_text_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.attribute_xml.Attribute("name").Value = this.name_text_widget.text;
+                </script>
+            </transition>
+            
+            <!-- Initial value field changed, edit @init-value -->
+            
+            <transition event="changed" port="input" cond='this.initial_value_text_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.attribute_xml.Attribute("init-value").Value = this.initial_value_text_widget.text;
                 </script>
             </transition>
         </state>

@@ -14,6 +14,7 @@
         <body>
             <![CDATA[
             this.port_xml = port_xml;
+            
             SCCDUtility.assureAttribute(this.port_xml, "name");
             this.horizontal_widget = new SGUIHorizontalGroup();
             container_widget.addChild(this.horizontal_widget);

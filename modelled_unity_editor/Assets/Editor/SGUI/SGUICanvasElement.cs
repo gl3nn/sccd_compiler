@@ -14,16 +14,25 @@ namespace SCCDEditor{
 
         private Color?                      color       = null;
 
-        public SGUICanvasElement(SGUICanvasBase parent, Vector2 center)
+        public SGUICanvasElement(SGUICanvasBase parent, Vector2 center) : this(parent)
         {
-            Rect rect = new Rect(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT); 
-            rect.center = center;
-            this.position = rect;
+            this.setCenter(center);
+        }
 
+        public SGUICanvasElement(SGUICanvasBase parent)
+        {
+            this.position = new Rect(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT); 
             this.label = string.Format("state {0}", this.tag);
             parent.addElement(this);
             this.canvas = this.parent.canvas;
             //this.setDefaultConnectionPoints();
+        }
+
+        public void setCenter(Vector2 center)
+        {
+            Rect rect = this.position;
+            rect.center = center;
+            this.position = rect;
         }
 
         public void setParent(SGUICanvasBase parent)

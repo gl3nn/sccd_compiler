@@ -34,6 +34,11 @@ namespace SCCDEditor
         {
         }
 
+        public void setPosition(float x, float y, float w, float h)
+        {
+            this.position = new Rect(x, y, w, h);
+        }
+
         protected void generateEvent(string event_name, string port, params object[] parameters)
         {
             SGUITopLevel.current.window.generateEvent(event_name, port, parameters);

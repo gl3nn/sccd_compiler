@@ -2,22 +2,53 @@
 <class name="ClassProperties">
     <relationships>
         <association class="PropertiesPanel" name="panel" max="1"/>
-        <association class="Button" name="buttons"/>
+        <association class="IRuntimeClass" name="children"/>
     </relationships>
     <attribute type="SGUIVerticalGroup" name="panel_widget"/>
-    <attribute type="XElement" name='xml'/>
+    <attribute type="XElement" name='class_xml'/>
     <attribute type="SGUICanvasElement" name='class_widget'/>
+
+    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
+    <attribute type="List&lt;XElement&gt;" name="attributes_to_load"/>
+    
+    <attribute type="SGUITextField" name='name_field'/>
+
+    <attribute type="SGUIVerticalGroup" name="attributes_group_widget"/>
+    
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
-        <parameter type="XElement" name='xml'/>
+        <parameter type="XElement" name='class_xml'/>
         <parameter type="SGUICanvasElement" name='class_widget'/>
         <body>
             <![CDATA[
             this.panel_widget = panel_widget;
-            this.xml = xml;
+            this.class_xml = class_xml;
             this.class_widget = class_widget;
-            this.panel_widget.addChild(new SGUITextField("label"));
-            this.panel_widget.addChild(new SGUITextArea("meh"));
+            this.buttons_to_activate = new List<SGUIButton>();
+            
+            //Name property setup
+            SCCDUtility.assureAttribute(this.class_xml, "name");
+            this.name_field = new SGUITextField("name", this.class_xml.Attribute("name").Value);
+            this.panel_widget.addChild(this.name_field);
+            
+            //Statechart
+            SGUIButton open_statechart_button = new SGUIButton("Edit Statechart", "open_statechart", false);
+            this.panel_widget.addChild(open_statechart_button);
+            this.buttons_to_activate.Add(open_statechart_button);
+            
+            //Attributes setup
+            SGUIHorizontalGroup attributes_heading = new SGUIHorizontalGroup();
+            attributes_heading.addChild(new SGUILabel("Attributes:"));
+            SGUIButton add_attribute_button = new SGUIButton("Add", "add_attribute", false);
+            this.buttons_to_activate.Add(add_attribute_button);
+            attributes_heading.addChild(add_attribute_button);
+            this.panel_widget.addChild(attributes_heading);
+            this.attributes_group_widget = new SGUIVerticalGroup();
+            this.panel_widget.addChild(this.attributes_group_widget);
+            
+            //Attributes loading
+            this.attributes_to_load = this.class_xml.Elements("attribute").ToList();
+            this.attributes_to_load.Reverse();
             ]]>
         </body>
     </constructor>
@@ -26,44 +57,114 @@
             this.panel_widget.clearChildren();
         </body>
     </destructor>
-    <scxml initial="setup">
-        <state id="setup" initial="button_creation">
-            <state id="button_creation">
-                <transition target="../button_activation">
+    <scxml initial="main">
+        <state id="main" initial="setup">
+            <state id="setup" initial="buttons_creation_loop">
+                <state id="buttons_creation_loop">
+                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"children"' />
+                            <parameter expr='"Button"'/>
+                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
+                        </raise>
+                    </transition>
+                    <transition target="../attributes_loading" cond="this.buttons_to_activate.Count == 0">
+                        <script>
+                            this.buttons_to_activate = null;
+                        </script>
+                    </transition>
+                </state>
+                <state id="button_activation">
+                    <transition event="instance_created" target="../buttons_creation_loop">
+                        <parameter name="id" type="int"/>
+                        <parameter name="association_name" type="String"/>
+                        <script>
+                            String association_path = String.Format("{0}[{1}]", association_name, id);
+                        </script>
+                        <raise scope="cd" event="associate_instance">
+                            <parameter expr='"."' />
+                            <parameter expr='association_path + "/event_receiver"'/>
+                        </raise>
+                        <raise scope="cd" event="start_instance">
+                            <parameter expr='association_path' />
+                        </raise>
+                        <script>
+                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
+                        </script>
+                    </transition>
+                </state>
+                <state id="attributes_loading">
+                    <transition target="/default_activation" cond="this.attributes_to_load.Count &gt; 0">
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"children"' />
+                            <parameter expr='"Attribute"'/>
+                            <parameter expr='this.attributes_to_load[this.attributes_to_load.Count - 1]' />
+                            <parameter expr='this.attributes_group_widget' />
+                        </raise>
+                        <script>
+                            this.attributes_to_load.RemoveAt(this.attributes_to_load.Count - 1);
+                        </script>
+                    </transition>
+                    <transition target="../../listening" cond="this.attributes_to_load.Count == 0">
+                        <script>
+                            this.attributes_to_load = null;
+                        </script>
+                    </transition>
+                </state>
+            </state>
+            <state id="listening">
+                <transition event="button_pressed" cond='button_action == "add_attribute"' target="../../default_activation">
+                    <parameter name="button_action" type="string"/>
                     <script>
-                        SGUIButton button_widget = new SGUIButton("Edit Statechart", "open_statechart_event", false);
-                        this.panel_widget.addChild(button_widget);
+                        XElement attribute_xml = new XElement("attribute");
+                        this.class_xml.Add(attribute_xml);
                     </script>
                     <raise scope="cd" event="create_instance">
-                        <parameter expr='"buttons"' />
-                        <parameter expr='"Button"'/>
-                        <parameter expr='button_widget' />
+                        <parameter expr='"children"' />
+                        <parameter expr='"Attribute"'/>
+                        <parameter expr='attribute_xml' />
+                        <parameter expr='this.attributes_group_widget' />
                     </raise>
                 </transition>
-            </state>
-            <state id="button_activation">
-                <transition event="instance_created" target="../../listening">
-                    <parameter name="id" type="int"/>
-                    <parameter name="association_name" type="String"/>
+                
+                <!-- Edit statechart button pressed -->
+                <transition event="button_pressed" cond='button_action == "open_statechart"' target=".">
+                    <parameter name="button_action" type="string"/>
                     <script>
-                        String association_path = String.Format("{0}[{1}]", association_name, id);
+                        StateChartEditorWindow.createOrFocus(this.class_xml);
                     </script>
-                    <raise scope="cd" event="associate_instance">
-                        <parameter expr='"."' />
-                        <parameter expr='association_path + "/event_receiver"'/>
-                    </raise>
-                    <raise scope="cd" event="start_instance">
-                        <parameter expr='association_path' />
-                    </raise>
                 </transition>
+                
+                <!-- Name field changed, edit @name -->
+                <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.class_xml.Attribute("name").Value = this.name_field.text;
+                    </script>
+                </transition>
+
             </state>
+            <history id="history" type="deep"/>
         </state>
-        <state id="listening">
-            <transition event="button_pressed" target=".">
-                <parameter name="button_action" type="string"/>
+        
+        
+        <state id="default_activation">
+            <transition event="instance_created" target="../main/history">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
                 <script>
-                    StateChartEditorWindow.createOrFocus(this.xml);
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
                 </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/parent"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <raise target="association_path" event="set_child_id">
+                    <parameter expr='id' />
+                </raise>
             </transition>
         </state>
     </scxml>

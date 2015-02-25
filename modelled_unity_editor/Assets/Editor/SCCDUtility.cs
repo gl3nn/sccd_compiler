@@ -11,5 +11,10 @@ namespace SCCDEditor{
                 element.Add(new XAttribute(attribute_name, initial_value));
             }
         }
+
+        public static bool hasName(XElement element, string name)
+        {
+            return element.Name.LocalName == name;
+        }
     }
 }

@@ -6,12 +6,16 @@
         <association class="Edge" name="edges"/>
     </relationships>
     <attribute type="SGUICanvas" name="canvas_widget"/>
+    <attribute type="XElement" name="xml_diagram"/>
+    
+    <attribute type="List&lt;XElement&gt;" name="classes_to_load"/>
+                
     <attribute type="Dictionary&lt;int, int&gt;" name="classes_map"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="edges_map"/>
     <attribute type="SGUICanvasElement" name="current_class"/>
     <attribute type="SGUICanvasEdge" name="current_edge"/>
-    <attribute type="string" name="creation_type" init-value='"bla"'/>
-    <attribute type="XElement" name="xml_diagram"/>
+    <attribute type="string" name="creation_type" init-value='""'/>
+
     <constructor>
         <parameter type="SGUIVerticalGroup" name="canvas_container"/>
         <parameter type="XElement" name="xml_diagram"/>
@@ -22,6 +26,9 @@
             this.classes_map = new Dictionary<int,int>();
             this.edges_map = new Dictionary<int,int>();
             this.xml_diagram = xml_diagram;
+            
+            //load classes from xml
+            this.classes_to_load = this.xml_diagram.Elements("class").ToList();
             ]]>
         </body>
     </constructor>
@@ -56,82 +63,199 @@
             
             <!-- STATE DEPENDENT ACTIONS -->
             
-            <state id="state_dependent_actions" initial="default">
-            
-                <!-- DEFAULT STATE-->
+            <state id="state_dependent_actions" initial="saving_history">
+                <state id="saving_history" initial="setup">
+
+                    <!-- SETUP STATE -->
+                    
+                    <state id="setup">
+                        <transition target="../../class_creation" cond="this.classes_to_load.Count &gt; 0">
+                            <script>
+                                this.current_class = new SGUICanvasElement(canvas_widget);
+                            </script>
+                            <raise scope="cd" event="create_instance">
+                                <parameter expr='"./classes"' />
+                                <parameter expr='"Class"'/>
+                                <parameter expr='this.current_class' />
+                                <parameter expr='this.classes_to_load[this.classes_to_load.Count - 1]' />
+                                <parameter expr='true' />
+                            </raise>
+                            <script>
+                                this.classes_to_load.RemoveAt(this.classes_to_load.Count - 1);
+                            </script>
+                        </transition>
+                        <transition target="../default" cond="this.classes_to_load.Count == 0">
+                            <script>
+                                this.classes_to_load = null;
+                            </script>
+                            <raise event="unselect" target='"./classes"'>
+                                <parameter expr='-1'/>
+                            </raise>
+                            <raise event="reset_panel" target='"window/properties_panel"'/>
+                        </transition>
+                        
+                    </state>
                 
-                <state id="default">
- 
-                    <!-- Left mouse down : unselect -->
-
-                    <transition event="left-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
-                        <parameter name="tag" type="int"/>
-                        <raise event="unselect" target='"./classes"'>
-                            <parameter expr='tag'/>
-                        </raise>
-                        <raise event="reset_panel" target='"window/properties_panel"'/>
-                    </transition>
-
-                    <!-- Right mouse down : unselect + create state -->
-
-                    <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../class_creation">
-                        <parameter name="tag" type="int"/>
-                        <parameter type="Vector2" name="position"/>
-                        <raise event="unselect" target='"./classes"'>
-                            <parameter expr='tag'/>
-                        </raise>
-                        <script>
-                            this.current_class = new SGUICanvasElement(canvas_widget, position);
-                        </script>
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"./classes"' />
-                            <parameter expr='"Class"'/>
-                            <parameter expr='this.current_class' />
-                            <parameter expr='this.xml_diagram' />
-                        </raise>
-                    </transition>
-
-                    <!-- Middle mouse down : unselect -->
-
-                    <transition event="middle-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
-                        <parameter name="tag" type="int"/>
-                        <raise event="unselect" target='"./classes"'>
-                            <parameter expr='tag'/>
-                        </raise>
-                        <raise event="reset_panel" target='"window/properties_panel"'/>
-                    </transition>
+                    <!-- DEFAULT STATE-->
                     
-                    <!-- Remove class from canvas -->
-                    
-                    <transition event="remove_class" target=".">
-                        <parameter name="remove_class" type="SGUICanvasElement"/>
-                        <raise scope="cd" event="delete_instance">
-                            <parameter expr='String.Format("classes[{0}]", this.classes_map[remove_class.tag])' />                          
-                        </raise>
-                        <script>
-                            this.classes_map.Remove(remove_class.tag);
-                            this.canvas_widget.removeElement(remove_class);
-                        </script>
-                    </transition>
-                    
+                    <state id="default">
+     
+                        <!-- Left mouse down : unselect -->
 
-                    <!-- Element initiated edge creation -->
+                        <transition event="left-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
+                            <parameter name="tag" type="int"/>
+                            <raise event="unselect" target='"./classes"'>
+                                <parameter expr='tag'/>
+                            </raise>
+                            <raise event="reset_panel" target='"window/properties_panel"'/>
+                        </transition>
+
+                        <!-- Right mouse down : unselect + create state -->
+
+                        <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../class_creation">
+                            <parameter name="tag" type="int"/>
+                            <parameter type="Vector2" name="position"/>
+                            <raise event="unselect" target='"./classes"'>
+                                <parameter expr='tag'/>
+                            </raise>
+                            <script>
+                                this.current_class = new SGUICanvasElement(canvas_widget, position);
+                            </script>
+                            <raise scope="cd" event="create_instance">
+                                <parameter expr='"./classes"' />
+                                <parameter expr='"Class"'/>
+                                <parameter expr='this.current_class' />
+                                <parameter expr='this.xml_diagram' />
+                                <parameter expr='false' />
+                            </raise>
+                        </transition>
+
+                        <!-- Middle mouse down : unselect -->
+
+                        <transition event="middle-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
+                            <parameter name="tag" type="int"/>
+                            <raise event="unselect" target='"./classes"'>
+                                <parameter expr='tag'/>
+                            </raise>
+                            <raise event="reset_panel" target='"window/properties_panel"'/>
+                        </transition>
+                        
+                        <!-- Remove class from canvas -->
+                        
+                        <transition event="remove_class" target=".">
+                            <parameter name="remove_class" type="SGUICanvasElement"/>
+                            <raise scope="cd" event="delete_instance">
+                                <parameter expr='String.Format("classes[{0}]", this.classes_map[remove_class.tag])' />                          
+                            </raise>
+                            <script>
+                                this.classes_map.Remove(remove_class.tag);
+                                this.canvas_widget.removeElement(remove_class);
+                            </script>
+                        </transition>
+                        
+
+                        <!-- Element initiated edge creation -->
+                        
+                        <transition event="create_edge" target="../edge_creation">
+                            <parameter type="SGUICanvasElement" name="source_class"/>
+                            <parameter type="Vector2" name="position"/>
+                            <raise event="enter_edge_creation" target='"classes"'/>
+                            <script>
+                                this.current_edge = new SGUICanvasEdge(source_class, position);
+                            </script>
+                            <raise scope="cd" event="create_instance">
+                                <parameter expr='"./edges"' />
+                                <parameter expr='"Edge"'/>
+                                <parameter expr='this.current_edge' />
+                            </raise>
+                        </transition>
+                    </state>
                     
-                    <transition event="create_edge" target="../edge_creation">
-                        <parameter type="SGUICanvasElement" name="source_class"/>
-                        <parameter type="Vector2" name="position"/>
-                        <raise event="enter_edge_creation" target='"classes"'/>
-                        <script>
-                            this.current_edge = new SGUICanvasEdge(source_class, position);
-                        </script>
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"./edges"' />
-                            <parameter expr='"Edge"'/>
-                            <parameter expr='this.current_edge' />
-                        </raise>
-                    </transition>
+                    <!-- EDGE CREATION STATE -->
+                    
+                    <state id="edge_creation" initial="activation">
+                        <state id="activation">
+                            <transition event="instance_created" target="../wait">
+                                <parameter name="id" type="int"/>
+                                <parameter name="association_name" type="String"/>
+                                <script>
+                                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                                    this.edges_map[this.current_edge.tag] = id;
+                                </script>
+                                <raise scope="cd" event="associate_instance">
+                                    <parameter expr='"."'/>
+                                    <parameter expr='association_path + "/canvas"' />
+                                </raise>
+                                <raise scope="cd" event="start_instance">
+                                    <parameter expr='association_path' />
+                                </raise>
+                            </transition>
+                        </state>
+                        <state id="wait">
+
+
+
+                            <transition event="edge_cancelled" target="../../default">
+                                <script>
+                                    String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
+                                    this.edges_map.Remove(this.current_edge.tag);
+                                </script>
+                                <raise scope="cd" event="delete_instance">
+                                    <parameter expr="association_path"/>
+                                </raise>
+                                <script>
+                                    this.current_edge = null;
+                                </script>
+                            </transition>
+
+
+
+                            <transition event="edge_finished" target="../../default">
+                                <script>
+                                    this.current_edge = null;
+                                </script>
+                            </transition>
+
+
+
+                            <transition event="edge_end" target=".">
+                                <parameter name="element" type="SGUICanvasElement"/>
+                                <parameter name="position" type="Vector2"/>
+                                <script>
+                                    String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
+                                </script>
+                                <raise event="edge_end" target="association_path">
+                                    <parameter expr="element"/>
+                                    <parameter expr="position"/>
+                                </raise>
+                            </transition>
+
+
+
+                            <transition event="over_edge_end" target=".">
+                                <parameter name="element" type="SGUICanvasElement"/>
+                                <parameter name="position" type="Vector2"/>
+                                <script>
+                                    String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
+                                </script>
+                                <raise event="over_edge_end" target="association_path">
+                                    <parameter expr="element"/>
+                                    <parameter expr="position"/>
+                                </raise>
+                            </transition>
+                        </state>
+                        <onexit>
+                            <raise event="edge_creation_stopped" target='"classes"'/>
+                        </onexit>
+                    </state>
+                    
+                    <!-- HISTORY STATE TO RESTORE STATE AFTER STATE/EDGE ACTIVATION -->
+                    
+                    <history id="history" type="deep"/>
+                    
+                    
                 </state>
-                
+
                 <!-- CLASS CREATION STATE -->
 
                 <state id="class_creation">
@@ -156,7 +280,7 @@
                 <!-- CREATED CLASS ACTIVATION STATE -->
                 
                 <state id="class_activation">
-                    <transition event="instance_associated" target="../default">
+                    <transition event="instance_associated" target="../saving_history/history">
                         <parameter name="id" type="int"/>
                         <parameter name="association_name" type="String"/>
                         <script>
@@ -165,85 +289,7 @@
                         </script>
                     </transition>
                 </state>
-                
-                <!-- EDGE CREATION STATE -->
-                
-                <state id="edge_creation" initial="activation">
-                    <state id="activation">
-                        <transition event="instance_created" target="../wait">
-                            <parameter name="id" type="int"/>
-                            <parameter name="association_name" type="String"/>
-                            <script>
-                                String association_path = String.Format("{0}[{1}]", association_name, id);
-                                this.edges_map[this.current_edge.tag] = id;
-                            </script>
-                            <raise scope="cd" event="associate_instance">
-                                <parameter expr='"."'/>
-                                <parameter expr='association_path + "/canvas"' />
-                            </raise>
-                            <raise scope="cd" event="start_instance">
-                                <parameter expr='association_path' />
-                            </raise>
-                        </transition>
-                    </state>
-                    <state id="wait">
-
-
-
-                        <transition event="edge_cancelled" target="../../default">
-                            <script>
-                                String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
-                                this.edges_map.Remove(this.current_edge.tag);
-                            </script>
-                            <raise scope="cd" event="delete_instance">
-                                <parameter expr="association_path"/>
-                            </raise>
-                            <script>
-                                this.current_edge = null;
-                            </script>
-                        </transition>
-
-
-
-                        <transition event="edge_finished" target="../../default">
-                            <script>
-                                this.current_edge = null;
-                            </script>
-                        </transition>
-
-
-
-                        <transition event="edge_end" target=".">
-                            <parameter name="element" type="SGUICanvasElement"/>
-                            <parameter name="position" type="Vector2"/>
-                            <script>
-                                String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
-                            </script>
-                            <raise event="edge_end" target="association_path">
-                                <parameter expr="element"/>
-                                <parameter expr="position"/>
-                            </raise>
-                        </transition>
-
-
-
-                        <transition event="over_edge_end" target=".">
-                            <parameter name="element" type="SGUICanvasElement"/>
-                            <parameter name="position" type="Vector2"/>
-                            <script>
-                                String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
-                            </script>
-                            <raise event="over_edge_end" target="association_path">
-                                <parameter expr="element"/>
-                                <parameter expr="position"/>
-                            </raise>
-                        </transition>
-                    </state>
-                    <onexit>
-                        <raise event="edge_creation_stopped" target='"classes"'/>
-                    </onexit>
-                </state>
- 
+               
             </state>
             
         </parallel>

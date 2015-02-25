@@ -9,6 +9,8 @@ namespace sccdlib
         protected ControllerBase controller;
         EventQueue events = new EventQueue();
         Dictionary<IRuntimeClass,InstanceWrapper> instances_map = new Dictionary<IRuntimeClass,InstanceWrapper> ();
+
+        private List<IRuntimeClass> to_be_removed = new List<IRuntimeClass>();
         
         public ObjectManagerBase (ControllerBase controller)
         {
@@ -77,6 +79,12 @@ namespace sccdlib
                 {
                     instance.step(delta);
                 }
+                foreach (IRuntimeClass instance in this.to_be_removed)
+                {
+                    this.instances_map.Remove(instance);
+                }
+                to_be_removed.Clear();
+
             } while (!this.events.isEmpty());
         }
     
@@ -280,7 +288,7 @@ namespace sccdlib
         {
             stop_instance.stop();
             stop_instance.user_defined_destructor();
-            this.instances_map.Remove(stop_instance);
+            this.to_be_removed.Add(stop_instance);
         }
                 
         private void handleAssociateEvent (object[] parameters)

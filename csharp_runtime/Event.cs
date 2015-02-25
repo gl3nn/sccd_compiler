@@ -10,7 +10,7 @@ namespace sccdlib
         object[] parameters;
         
 
-        public Event (string name, string port, object[] parameters)
+        public Event (string name, string port, params object[] parameters)
         {
             this.name = name;
             this.port = port;

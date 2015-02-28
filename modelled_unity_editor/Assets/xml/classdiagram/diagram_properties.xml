@@ -111,7 +111,7 @@
                         <script>
                             XElement port_xml = this.ports_to_load[this.ports_to_load.Count - 1];
                             object group_widget;
-                            if (port_xml.Name.LocalName == "inport")
+                            if (SCCDUtility.hasName(port_xml, "inport"))
                                 group_widget = this.input_ports_group_widget;
                             else
                                 group_widget = this.output_ports_group_widget;

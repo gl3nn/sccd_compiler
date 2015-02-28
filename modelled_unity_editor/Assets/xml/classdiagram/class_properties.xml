@@ -9,11 +9,12 @@
     <attribute type="SGUICanvasElement" name='class_widget'/>
 
     <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
-    <attribute type="List&lt;XElement&gt;" name="attributes_to_load"/>
+    <attribute type="List&lt;XElement&gt;" name="elements_to_load"/>
     
     <attribute type="SGUITextField" name='name_field'/>
 
     <attribute type="SGUIVerticalGroup" name="attributes_group_widget"/>
+    <attribute type="SGUIVerticalGroup" name="methods_group_widget"/>
     
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
@@ -44,11 +45,25 @@
             attributes_heading.addChild(add_attribute_button);
             this.panel_widget.addChild(attributes_heading);
             this.attributes_group_widget = new SGUIVerticalGroup();
+            this.attributes_group_widget.setExpandHeight(false);
             this.panel_widget.addChild(this.attributes_group_widget);
             
-            //Attributes loading
-            this.attributes_to_load = this.class_xml.Elements("attribute").ToList();
-            this.attributes_to_load.Reverse();
+            //Methods setup
+            SGUIHorizontalGroup methods_heading = new SGUIHorizontalGroup();
+            methods_heading.addChild(new SGUILabel("Methods:"));
+            SGUIButton add_method_button = new SGUIButton("Add", "add_method", false);
+            this.buttons_to_activate.Add(add_method_button);
+            methods_heading.addChild(add_method_button);
+            this.panel_widget.addChild(methods_heading);
+            this.methods_group_widget = new SGUIVerticalGroup();
+            this.methods_group_widget.setExpandHeight(false);
+            this.panel_widget.addChild(this.methods_group_widget);
+            
+            //Elements loading
+            this.elements_to_load = this.class_xml.Elements("attribute").ToList();
+            this.elements_to_load.AddRange(this.class_xml.Elements("method"));
+            this.elements_to_load.Reverse();
+
             ]]>
         </body>
     </constructor>
@@ -68,7 +83,7 @@
                             <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
                         </raise>
                     </transition>
-                    <transition target="../attributes_loading" cond="this.buttons_to_activate.Count == 0">
+                    <transition target="../elements_loading" cond="this.buttons_to_activate.Count == 0">
                         <script>
                             this.buttons_to_activate = null;
                         </script>
@@ -93,26 +108,45 @@
                         </script>
                     </transition>
                 </state>
-                <state id="attributes_loading">
-                    <transition target="/default_activation" cond="this.attributes_to_load.Count &gt; 0">
+                <state id="elements_loading">
+                    <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
+                        <script>
+                            XElement element_xml = this.elements_to_load[this.elements_to_load.Count - 1];
+                            object group_widget = null;
+                            string class_name = "";
+                            if (SCCDUtility.hasName(element_xml, "attribute"))
+                            {
+                                class_name = "Attribute";
+                                group_widget = this.attributes_group_widget;
+                            }
+                            else if (SCCDUtility.hasName(element_xml, "method"))
+                            {
+                                class_name = "Method";
+                                group_widget = this.methods_group_widget;
+                            }
+                        </script>
                         <raise scope="cd" event="create_instance">
                             <parameter expr='"children"' />
-                            <parameter expr='"Attribute"'/>
-                            <parameter expr='this.attributes_to_load[this.attributes_to_load.Count - 1]' />
-                            <parameter expr='this.attributes_group_widget' />
+                            <parameter expr='class_name'/>
+                            <parameter expr='element_xml' />
+                            <parameter expr='group_widget' />
                         </raise>
                         <script>
-                            this.attributes_to_load.RemoveAt(this.attributes_to_load.Count - 1);
+                            this.elements_to_load.RemoveAt(this.elements_to_load.Count - 1);
                         </script>
                     </transition>
-                    <transition target="../../listening" cond="this.attributes_to_load.Count == 0">
+                    <transition target="../../listening" cond="this.elements_to_load.Count == 0">
                         <script>
-                            this.attributes_to_load = null;
+                            this.elements_to_load = null;
                         </script>
                     </transition>
                 </state>
             </state>
+            
             <state id="listening">
+                
+                <!-- Add attribute button pressed -->
+                
                 <transition event="button_pressed" cond='button_action == "add_attribute"' target="../../default_activation">
                     <parameter name="button_action" type="string"/>
                     <script>
@@ -124,6 +158,22 @@
                         <parameter expr='"Attribute"'/>
                         <parameter expr='attribute_xml' />
                         <parameter expr='this.attributes_group_widget' />
+                    </raise>
+                </transition>
+                
+                <!-- Add method button pressed -->
+                
+                <transition event="button_pressed" cond='button_action == "add_method"' target="../../default_activation">
+                    <parameter name="button_action" type="string"/>
+                    <script>
+                        XElement method_xml = new XElement("method", new XAttribute("name", "New Method"));
+                        this.class_xml.Add(method_xml);
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"Method"'/>
+                        <parameter expr='method_xml' />
+                        <parameter expr='this.methods_group_widget' />
                     </raise>
                 </transition>
                 

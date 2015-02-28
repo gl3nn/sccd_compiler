@@ -6,24 +6,14 @@ namespace SCCDEditor
 {
     public class SGUIVerticalGroup : SGUIGroupWidget
     {
-        protected float min_width = 0.0f;
-          
-        public SGUIVerticalGroup(GUIStyle style): base(style)
+        public SGUIVerticalGroup(): base()
         {
-        }
-
-        public SGUIVerticalGroup(): base(GUIStyle.none)
-        {
-        }
-
-        public void setMinWidth(float min_width)
-        {
-            this.min_width = min_width;
+            this.expand_height = true;
         }
 
         protected override void OnGUI()
         {
-            EditorGUILayout.BeginVertical(this.style, GUILayout.ExpandHeight(true), GUILayout.MinWidth(this.min_width));
+            EditorGUILayout.BeginVertical(this.style, GUILayout.ExpandHeight(this.expand_height), GUILayout.MinWidth(this.min_width));
             base.OnGUI();
             EditorGUILayout.EndVertical();
             if (Event.current.type == EventType.Repaint)

@@ -9,7 +9,8 @@
         <parameter type="SGUITopLevel" name="window_widget"/>
         <body>
             <![CDATA[
-            this.panel_widget = new SGUIVerticalGroup("box");
+            this.panel_widget = new SGUIVerticalGroup();
+            this.panel_widget.setStyle("box");
             window_widget.addChild(this.panel_widget);
             ]]>
         </body>

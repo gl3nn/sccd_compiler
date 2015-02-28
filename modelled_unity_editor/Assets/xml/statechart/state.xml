@@ -182,16 +182,15 @@
                                 </transition>
                             </state>
                             <state id="wait_for_drop_window">
-                                <transition event="state_drop_response" target="../../not_dragging" cond="!do_reconnect">
-                                    <parameter type="bool" name="do_reconnect"/>
-                                    <parameter type="SGUICanvasElement" name="connection"/>
+                                <onexit>
                                     <raise scope="cd" event="delete_instance">
                                         <parameter expr='"state_drop"' />
                                     </raise>
+                                </onexit>
+                                <transition event="not_change_connection" target="../../not_dragging">
                                     <raise target='"parent"' event="adjust_size"/>
                                 </transition>
-                                <transition event="state_drop_response" target="../../not_dragging" cond="do_reconnect">
-                                    <parameter type="bool" name="do_reconnect"/>
+                                <transition event="change_connection" target="../../not_dragging">
                                     <parameter type="SGUICanvasElement" name="connection"/>
                                     <raise event="disconnect_child" target='"parent"'>
                                         <parameter expr="this.widget"/>
@@ -202,9 +201,6 @@
                                     <raise event="connect_child_to_parent" target='"canvas"'>
                                         <parameter expr="this.widget"/>
                                         <parameter expr="connection"/>
-                                    </raise>
-                                    <raise scope="cd" event="delete_instance">
-                                        <parameter expr='"state_drop"' />
                                     </raise>
                                 </transition>
                             </state>

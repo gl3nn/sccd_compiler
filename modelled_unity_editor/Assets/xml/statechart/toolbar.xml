@@ -11,7 +11,8 @@
         <parameter type="SGUITopLevel" name="window_widget"/>
         <body>
             <![CDATA[
-            this.toolbar_widget = new SGUIHorizontalGroup("box");
+            this.toolbar_widget = new SGUIHorizontalGroup();
+            this.toolbar_widget.setStyle("box");
             ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.toolbar_widget);
             
             this.toolbar_widget.addChild(new SGUIButton("Basic", "set-basic", true));

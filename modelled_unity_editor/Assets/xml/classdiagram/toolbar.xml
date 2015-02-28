@@ -11,7 +11,8 @@
         <parameter type="SGUIVerticalGroup" name="canvas_container"/>
         <body>
             <![CDATA[
-            this.toolbar_widget = new SGUIHorizontalGroup("box");
+            this.toolbar_widget = new SGUIHorizontalGroup();
+            this.toolbar_widget.setStyle("box");
             canvas_container.addChild(this.toolbar_widget);
             
             this.toolbar_widget.addChild(new SGUIButton("Basic", "set-basic", true));

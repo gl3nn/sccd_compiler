@@ -43,9 +43,11 @@ namespace SCCDEditor
             if (this.modal_window != null)
             {
                 GUI.enabled = true;
+                SGUIEvent.current = null;
                 this.window.BeginWindows();
                 this.modal_window.draw();
                 this.window.EndWindows();
+                this.window.processEvent();
             }
 
             SGUITopLevel.current = null;

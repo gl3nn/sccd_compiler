@@ -5,15 +5,49 @@ namespace SCCDEditor
 {
     public class SGUIGroupWidget: SGUIWidget
     {
-        protected List<SGUIWidget>             children { private set; get; }
-        protected GUIStyle                     style    { private set; get; }
+        protected List<SGUIWidget>              children        { private set; get; }
+        protected GUIStyle                      style;
+        protected float                         min_width;
+        protected float                         min_height;
+        protected bool                          expand_width;
+        protected bool                          expand_height;
+                                                
 
-        public SGUIGroupWidget(GUIStyle style)
+        public SGUIGroupWidget()
         {
             this.children = new List<SGUIWidget>();
+            this.style = GUIStyle.none;
+            this.min_width = 0.0f;
+            this.min_height = 0.0f;
+            this.expand_width = false;
+            this.expand_height = false;
+        }
+
+        public void setStyle(GUIStyle style)
+        {
             this.style = style;
         }
 
+        public void setMinWidth(float min_width)
+        {
+            this.min_width = min_width;
+        }
+        
+        public void setMinHeight(float min_height)
+        {
+            this.min_height = min_height;
+        }
+
+        public void setExpandWidth(bool expand_width)
+        {
+            this.expand_width = expand_width;
+        }
+
+        public void setExpandHeight(bool expand_height)
+        {
+            this.expand_height = expand_height;
+        }
+        
         public int children_count
         {
             get { return this.children.Count; }

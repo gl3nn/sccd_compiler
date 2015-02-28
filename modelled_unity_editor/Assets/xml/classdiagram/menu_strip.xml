@@ -10,7 +10,8 @@
         <parameter type="SGUITopLevel" name="window_widget"/>
         <body>
             <![CDATA[
-            this.menu_strip = new SGUIHorizontalGroup(EditorStyles.toolbar);
+            this.menu_strip = new SGUIHorizontalGroup();
+            this.menu_strip.setStyle(EditorStyles.toolbar);
             window_widget.addChild(this.menu_strip);
             this.menu_strip.addChild(new SGUIButton("Save Diagram", "save_diagram", false, EditorStyles.toolbarButton));
             this.menu_strip.addChild(new SGUIButton("Edit Diagram", "remove_port", false, EditorStyles.toolbarButton));

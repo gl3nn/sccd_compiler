@@ -12,6 +12,11 @@ namespace SCCDEditor
         {
             this.label = label;
         }
+
+        public void setLabel(string label)
+        {
+            this.label = label;
+        }
         
         protected override void OnGUI()
         {

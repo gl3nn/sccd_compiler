@@ -63,6 +63,7 @@
      <Compile Include="Assets\Editor\SGUI\SGUIHorizontalGroup.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUILabel.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUIModalWindow.cs" />
+     <Compile Include="Assets\Editor\SGUI\SGUISelectionGrid.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUISpace.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUITextArea.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUITextField.cs" />
@@ -84,7 +85,9 @@
      <None Include="Assets\classdiagram_editor.xml" />
      <None Include="Assets\mklink command.txt" />
      <None Include="Assets\xml\classdiagram\window.xml" />
+     <None Include="Assets\xml\classdiagram\formal_parameter.xml" />
      <None Include="Assets\xml\statechart\properties_panel.xml" />
+     <None Include="Assets\xml\classdiagram\method.xml" />
      <None Include="Assets\xml\statechart\state.xml" />
      <None Include="Assets\xml\classdiagram\class_properties.xml" />
      <None Include="Assets\xml\statechart\window.xml" />

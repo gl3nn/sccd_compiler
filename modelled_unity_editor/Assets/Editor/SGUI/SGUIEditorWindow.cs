@@ -11,7 +11,7 @@ namespace SCCDEditor{
 
         private   double                            update_time = 0;
 
-        protected SGUITopLevel                       window_widget;
+        protected SGUITopLevel                      window_widget;
 
         public void processEvent()
         {

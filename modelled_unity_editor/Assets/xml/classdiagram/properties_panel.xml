@@ -11,7 +11,8 @@
         <parameter type="XElement" name="diagram_xml"/>
         <body>
             <![CDATA[
-            this.panel_widget = new SGUIVerticalGroup("box");
+            this.panel_widget = new SGUIVerticalGroup();
+            this.panel_widget.setStyle("box");
             this.panel_widget.setMinWidth(400);
             container_widget.addChild(this.panel_widget);
             this.diagram_xml = diagram_xml;

@@ -7,17 +7,14 @@ namespace SCCDEditor
     public class SGUIHorizontalGroup : SGUIGroupWidget
     {
 
-        public SGUIHorizontalGroup(GUIStyle style): base(style)
+        public SGUIHorizontalGroup(): base()
         {
-        }
-
-        public SGUIHorizontalGroup(): base(GUIStyle.none)
-        {
+            this.expand_width = true;
         }
 
         protected override void OnGUI()
         {
-            EditorGUILayout.BeginHorizontal(this.style, GUILayout.ExpandWidth(true));
+            EditorGUILayout.BeginHorizontal(this.style, GUILayout.ExpandWidth(this.expand_width));
             base.OnGUI();
             EditorGUILayout.EndHorizontal();
             if (Event.current.type == EventType.Repaint)

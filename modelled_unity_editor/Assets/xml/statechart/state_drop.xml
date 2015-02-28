@@ -2,11 +2,19 @@
 <class name="StateDrop">
     <relationships>
         <association class="State" name="dropped_state" max="1"/>
+        <association class="IRuntimeClass" name="children"/>
     </relationships>
     <attribute type="List&lt;SGUICanvasElement&gt;" name="connection_options"/>
     <attribute type="string[]" name="connection_options_strings"/>
     <attribute type="int" name="selected_option" init-value="0"/>
     <attribute type="SGUICanvasElement" name="canvas_member" />
+    
+    <attribute type="SGUIModalWindow" name="modal_window" />
+    <attribute type="SGUISelectionGrid" name="selection_grid" />
+    
+    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
+    
+    
     <constructor>
         <parameter type="SGUICanvasElement" name="canvas_member"/>
         <body>
@@ -34,49 +42,45 @@
         </body>
     </constructor>
     <method access="public" type="void" name="drawModalWindow">
-    	<parameter name="modal_window" type="SGUIModalWindow"/>
         <body>
         <![CDATA[
-            EditorGUILayout.Space();
-            GUILayout.Label("Connect to:");
-            this.selected_option = GUILayout.SelectionGrid(this.selected_option, this.connection_options_strings, 1, "MenuItem");
-            EditorGUILayout.Space();
-            EditorGUILayout.BeginHorizontal();          
-            if (GUILayout.Button("Yes"))
-            {
-                this.addEvent(new sccdlib.Event("state_drop_popup_response", "", new object[] {true, this.connection_options[this.selected_option]}));
-                modal_window.close();
-            }
-            if (GUILayout.Button("No"))
-            {
-                this.addEvent(new sccdlib.Event("state_drop_popup_response", "", new object[] {false, null}));
-                modal_window.close();
-            }
-            EditorGUILayout.EndHorizontal();
+            this.modal_window = new SGUIModalWindow("State Drop");
+            this.modal_window.addChild(new SGUISpace());
+            this.modal_window.addChild(new SGUILabel("Connect to:"));
+            this.selection_grid = new SGUISelectionGrid(this.connection_options_strings);
+            this.modal_window.addChild(this.selection_grid);
+            this.modal_window.addChild(new SGUISpace());
+            
+            //Buttons
+            this.buttons_to_activate = new List<SGUIButton>();
+            SGUIHorizontalGroup buttons_widget = new SGUIHorizontalGroup();
+            this.modal_window.addChild(buttons_widget);
+            
+            SGUIButton yes_button = new SGUIButton("Yes", "change_connection", false);
+            this.buttons_to_activate.Add(yes_button);
+            buttons_widget.addChild(yes_button);
+            
+            SGUIButton no_button = new SGUIButton("No", "not_change_connection", false);
+            this.buttons_to_activate.Add(no_button);
+            buttons_widget.addChild(no_button);
+
         ]]>
         </body>
     </method>
     <scxml initial="root">
         <state id="root">
-            <transition target="../final" cond="this.connection_options.Count == 0 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] != null)">
-                <script>
-                    SGUICanvasElement connection = null;
-                    bool do_reconnect = false;
-                    if (this.connection_options.Count == 1)
-                    {
-                        do_reconnect = true;
-                        connection = this.connection_options[0];
-                    }
-                </script>
-                <raise target='"dropped_state"' event="state_drop_response">
-                    <parameter expr="do_reconnect"/>
-                    <parameter expr="connection"/>
+            <transition target="../final" cond="this.connection_options.Count == 0">
+                <raise target='"dropped_state"' event="not_change_connection"/>
+            </transition>
+            <transition target="../final" cond="this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] != null">
+                <raise target='"dropped_state"' event="change_connection">
+                    <parameter expr="this.connection_options[0]"/>
                 </raise>
             </transition>
-            <transition cond="this.connection_options.Count &gt; 1 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] == null)" target="../popup"/>
+            <transition cond="this.connection_options.Count &gt; 1 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] == null)" target="../popup_active"/>
         </state>
-        <state id="final"/>
-        <state id="popup">
+
+        <state id="popup_active" initial="setup">
             <onentry>
                 <script>
                 <![CDATA[
@@ -88,19 +92,65 @@
                         else
                             this.connection_options_strings[i] = "Canvas(disconnecting)";
                     }
-                    new SGUIModalWindow("State Drop", this.canvas_member.canvas, this.drawModalWindow);
+                    this.drawModalWindow();
                 ]]>
                 </script>
             </onentry>
-            <transition port="" event="state_drop_popup_response" target="../final">
-                <parameter type="bool" name="do_reconnect"/>
-                <parameter type="SGUICanvasElement" name="connection"/>
-                <raise target='"dropped_state"' event="state_drop_response">
-                    <parameter expr="do_reconnect"/>
-                    <parameter expr="connection"/>
-                </raise>
-           </transition>
+            <onexit>
+                <script>
+                    this.modal_window.close();
+                </script>
+            </onexit>
+            
+            <state id="setup" initial="buttons_creation_loop">
+                <state id="buttons_creation_loop">
+                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"children"' />
+                            <parameter expr='"Button"'/>
+                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
+                        </raise>
+                    </transition>
+                    <transition target="../../listening" cond="this.buttons_to_activate.Count == 0">
+                        <script>
+                            this.buttons_to_activate = null;
+                        </script>
+                    </transition>
+                </state>
+                <state id="button_activation">
+                    <transition event="instance_created" target="../buttons_creation_loop">
+                        <parameter name="id" type="int"/>
+                        <parameter name="association_name" type="String"/>
+                        <script>
+                            String association_path = String.Format("{0}[{1}]", association_name, id);
+                        </script>
+                        <raise scope="cd" event="associate_instance">
+                            <parameter expr='"."' />
+                            <parameter expr='association_path + "/event_receiver"'/>
+                        </raise>
+                        <raise scope="cd" event="start_instance">
+                            <parameter expr='association_path' />
+                        </raise>
+                        <script>
+                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
+                        </script>
+                    </transition>
+                </state>
+            </state>
+            <state id="listening">
+                <transition event="button_pressed" cond='button_action == "change_connection"' target="../../final">
+                    <parameter name="button_action" type="string"/>
+                    <raise target='"dropped_state"' event="change_connection">
+                        <parameter expr="this.connection_options[this.selected_option]"/>
+                    </raise>
+                </transition>
+                <transition event="button_pressed" cond='button_action == "not_change_connection"' target="../../final">
+                    <parameter name="button_action" type="string"/>
+                    <raise target='"dropped_state"' event="not_change_connection"/>
+                </transition>
+            </state>
         </state>
+        <state id="final"/>
     </scxml>
 </class>
 

@@ -25,6 +25,8 @@
     <class name="Port" src="xml/classdiagram/port.xml"/>
     <class name="ClassProperties" src="xml/classdiagram/class_properties.xml"/>
     <class name="Attribute" src="xml/classdiagram/attribute.xml"/>
+    <class name="Method" src="xml/classdiagram/method.xml"/>
+    <class name="FormalParameter" src="xml/classdiagram/formal_parameter.xml"/>
 
     <class name="Canvas" src="xml/classdiagram/canvas.xml"/>
     <class name="Class" src="xml/classdiagram/class.xml"/>

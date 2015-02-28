@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Attribute">
+<class name="FormalParameter">
     <relationships>
-        <association class="ClassProperties" name="parent" max="1"/>
+        <association class="IRuntimeClass" name="parent" max="1"/>
         <association class="Button" name="delete_button" max="1"/>
     </relationships>
-    <attribute type="XElement" name="attribute_xml"/>
+    <attribute type="XElement" name="parameter_xml"/>
     <attribute type="SGUIHorizontalGroup" name="horizontal_widget"/>
     <attribute type="SGUITextField" name="type_text_widget"/>
     <attribute type="SGUITextField" name="name_text_widget"/>
-    <attribute type="SGUITextField" name="initial_value_text_widget"/>
+    <attribute type="SGUITextField" name="default_value_text_widget"/>
     <attribute type="SGUIButton" name="remove_button_widget"/>
     <attribute type="int" name="child_id"/>
     <constructor>
-        <parameter type="XElement" name="attribute_xml"/>
+        <parameter type="XElement" name="parameter_xml"/>
         <parameter type="SGUIGroupWidget" name="container_widget"/>
         <body>
             <![CDATA[
-            this.attribute_xml = attribute_xml;
-            SCCDUtility.assureAttribute(this.attribute_xml, "type");
-            SCCDUtility.assureAttribute(this.attribute_xml, "name");
-            SCCDUtility.assureAttribute(this.attribute_xml, "init-value");
+            this.parameter_xml = parameter_xml;
+            SCCDUtility.assureAttribute(this.parameter_xml, "type");
+            SCCDUtility.assureAttribute(this.parameter_xml, "name");
+            SCCDUtility.assureAttribute(this.parameter_xml, "default");
             
             this.horizontal_widget = new SGUIHorizontalGroup();
             container_widget.addChild(this.horizontal_widget);
@@ -27,18 +27,18 @@
             //Left vertical group
             SGUIVerticalGroup vertical_widget_1 = new SGUIVerticalGroup();
             vertical_widget_1.setExpandHeight(false);
-            this.type_text_widget = new SGUITextField("Type", this.attribute_xml.Attribute("type").Value);
+            this.type_text_widget = new SGUITextField("Type", this.parameter_xml.Attribute("type").Value);
             vertical_widget_1.addChild(this.type_text_widget);
-            this.initial_value_text_widget = new SGUITextField("Initial value", this.attribute_xml.Attribute("init-value").Value);
-            vertical_widget_1.addChild(this.initial_value_text_widget);
+            this.default_value_text_widget = new SGUITextField("Default value", this.parameter_xml.Attribute("default").Value);
+            vertical_widget_1.addChild(this.default_value_text_widget);
             this.horizontal_widget.addChild(vertical_widget_1);
             
             //Right vertical group
             SGUIVerticalGroup vertical_widget_2 = new SGUIVerticalGroup();
             vertical_widget_2.setExpandHeight(false);
-            this.name_text_widget = new SGUITextField("Name", this.attribute_xml.Attribute("name").Value);
+            this.name_text_widget = new SGUITextField("Name", this.parameter_xml.Attribute("name").Value);
             vertical_widget_2.addChild(this.name_text_widget);
-            this.remove_button_widget = new SGUIButton("Remove", "remove_attribute", false);
+            this.remove_button_widget = new SGUIButton("Remove", "remove_parameter", false);
             vertical_widget_2.addChild(this.remove_button_widget);
             this.horizontal_widget.addChild(vertical_widget_2);
             
@@ -78,12 +78,12 @@
             </state>
         </state>
         <state id="listening">
-            <transition event="button_pressed" cond='button_action == "remove_attribute"' target=".">
+            <transition event="button_pressed" cond='button_action == "remove_parameter"' target=".">
                 <parameter name="button_action" type="string"/>
                 <script>
                     this.horizontal_widget.removeFromParent();
-                    String target_path = String.Format("parent/children[{0}]", this.child_id);
-                    this.attribute_xml.Remove();
+                    String target_path = String.Format("parent/modal_window_children[{0}]", this.child_id);
+                    this.parameter_xml.Remove();
                 </script>
                 <raise scope="cd" event="delete_instance">
                     <parameter expr='"delete_button"'/>
@@ -98,7 +98,7 @@
             <transition event="changed" port="input" cond='this.type_text_widget.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
-                    this.attribute_xml.Attribute("type").Value = this.type_text_widget.text;
+                    this.parameter_xml.Attribute("type").Value = this.type_text_widget.text;
                 </script>
             </transition>
             
@@ -107,16 +107,16 @@
             <transition event="changed" port="input" cond='this.name_text_widget.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
-                    this.attribute_xml.Attribute("name").Value = this.name_text_widget.text;
+                    this.parameter_xml.Attribute("name").Value = this.name_text_widget.text;
                 </script>
             </transition>
             
-            <!-- Initial value field changed, edit @init-value -->
+            <!-- Default value field changed, edit @default -->
             
-            <transition event="changed" port="input" cond='this.initial_value_text_widget.tag == tag' target=".">
+            <transition event="changed" port="input" cond='this.default_value_text_widget.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
-                    this.attribute_xml.Attribute("init-value").Value = this.initial_value_text_widget.text;
+                    this.parameter_xml.Attribute("default").Value = this.default_value_text_widget.text;
                 </script>
             </transition>
         </state>

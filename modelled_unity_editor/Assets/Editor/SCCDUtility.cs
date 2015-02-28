@@ -16,5 +16,14 @@ namespace SCCDEditor{
         {
             return element.Name.LocalName == name;
         }
+
+        public static void assureChild(XElement element, string child_name)
+        {
+            XElement child = element.Element(child_name);
+            if (child == null)
+            {
+               element.Add(new XElement(child_name));
+            }
+        }
     }
 }

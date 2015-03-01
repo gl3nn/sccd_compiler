@@ -19,12 +19,7 @@
             ]]>
         </body>
     </constructor>
-    <scxml initial="setup">
-        <state id="setup">
-            <transition target="../listening">
-                <raise event="reset_panel"/>
-            </transition>
-        </state>
+    <scxml initial="listening">
         <state id="listening">
             <!-- Create default panel - diagram editor. -->
             <transition event="reset_panel" target="../panel_activation">

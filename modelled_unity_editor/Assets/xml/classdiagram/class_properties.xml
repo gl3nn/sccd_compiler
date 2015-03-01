@@ -166,7 +166,7 @@
                 <transition event="button_pressed" cond='button_action == "add_method"' target="../../default_activation">
                     <parameter name="button_action" type="string"/>
                     <script>
-                        XElement method_xml = new XElement("method", new XAttribute("name", "New Method"));
+                        XElement method_xml = new XElement("method", new XAttribute("name", "newMethod"));
                         this.class_xml.Add(method_xml);
                     </script>
                     <raise scope="cd" event="create_instance">
@@ -190,6 +190,7 @@
                     <parameter name="tag" type="int"/>
                     <script>
                         this.class_xml.Attribute("name").Value = this.name_field.text;
+                        this.class_widget.label = this.name_field.text;
                     </script>
                 </transition>
 

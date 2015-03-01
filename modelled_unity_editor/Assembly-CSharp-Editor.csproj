@@ -86,6 +86,7 @@
      <None Include="Assets\mklink command.txt" />
      <None Include="Assets\xml\classdiagram\window.xml" />
      <None Include="Assets\xml\classdiagram\formal_parameter.xml" />
+     <None Include="Assets\xml\statechart\statechart_properties.xml" />
      <None Include="Assets\xml\statechart\properties_panel.xml" />
      <None Include="Assets\xml\classdiagram\method.xml" />
      <None Include="Assets\xml\statechart\state.xml" />

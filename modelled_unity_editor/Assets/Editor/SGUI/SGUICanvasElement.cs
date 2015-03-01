@@ -22,7 +22,7 @@ namespace SCCDEditor{
         public SGUICanvasElement(SGUICanvasBase parent)
         {
             this.position = new Rect(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT); 
-            this.label = string.Format("state {0}", this.tag);
+            this.label = "";
             parent.addElement(this);
             this.canvas = this.parent.canvas;
             //this.setDefaultConnectionPoints();

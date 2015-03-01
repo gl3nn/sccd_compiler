@@ -8,12 +8,12 @@
     <attribute type="SGUIHorizontalGroup" name="toolbar_widget"/>
     <attribute type="int" name="button_count" init-value='0'/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIVerticalGroup" name="canvas_container"/>
         <body>
             <![CDATA[
             this.toolbar_widget = new SGUIHorizontalGroup();
             this.toolbar_widget.setStyle("box");
-            ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.toolbar_widget);
+            canvas_container.addChild(this.toolbar_widget);
             
             this.toolbar_widget.addChild(new SGUIButton("Basic", "set-basic", true));
             this.toolbar_widget.addChild(new SGUIButton("Parallel", "set-parallel", true));

@@ -13,15 +13,18 @@
     <attribute type="SGUICanvasElement" name="current_element"/>
     <attribute type="SGUICanvasEdge" name="current_edge"/>
     <attribute type="string" name="creation_type" init-value='"bla"'/>
+    <attribute type="XElement" name="statechart_xml"/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIVerticalGroup" name="canvas_container"/>
+        <parameter type="XElement" name="statechart_xml"/>
         <body>
             <![CDATA[
             this.canvas_widget = new SGUICanvas();
-            ((SGUIGroupWidget)window_widget.getChild(0)).addChild(this.canvas_widget);
+            canvas_container.addChild(this.canvas_widget);
             this.children_map = new Dictionary<int,int>();
             this.all_states_map = new Dictionary<int,int>();
             this.all_edges_map = new Dictionary<int,int>();
+            this.statechart_xml = statechart_xml;
             ]]>
         </body>
     </constructor>
@@ -69,6 +72,7 @@
                         <raise event="unselect" target='"./all_states"'>
                             <parameter expr='tag'/>
                         </raise>
+                        <raise event="reset_panel" target='"window/properties_panel"'/>
                     </transition>
 
                     <!-- Right mouse down : unselect + create state -->
@@ -86,6 +90,8 @@
                             <parameter expr='"./all_states"' />
                             <parameter expr='"State"'/>
                             <parameter expr='this.current_element' />
+                            <parameter expr='this.statechart_xml' />
+                            <parameter expr='false' />
                         </raise>
                     </transition>
 

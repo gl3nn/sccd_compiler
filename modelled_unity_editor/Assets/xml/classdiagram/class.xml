@@ -22,12 +22,14 @@
                     float.Parse(this.class_xml.Attribute("w").Value),
                     float.Parse(this.class_xml.Attribute("h").Value)
                 );
+                
+                SCCDUtility.assureAttribute(this.class_xml, "name", "NoNameClass");
             }
             else
             {
                 //xml is parent, create XElement for class
                 this.class_xml = new XElement("class", 
-                    new XAttribute("name", ""),
+                    new XAttribute("name", "NewClass"),
                     new XAttribute("x", this.widget.position.x.ToString()),
                     new XAttribute("y", this.widget.position.y.ToString()),
                     new XAttribute("w", this.widget.position.width.ToString()),
@@ -35,7 +37,7 @@
                 );
                 xml.Add(this.class_xml);
             }
-            
+            this.widget.label = this.class_xml.Attribute("name").Value;
             
             ]]>
         </body>

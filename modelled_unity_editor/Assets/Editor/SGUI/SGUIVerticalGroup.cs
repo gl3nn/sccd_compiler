@@ -15,6 +15,7 @@ namespace SCCDEditor
         {
             EditorGUILayout.BeginVertical(this.style, GUILayout.ExpandHeight(this.expand_height), GUILayout.MinWidth(this.min_width));
             base.OnGUI();
+            EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
             if (Event.current.type == EventType.Repaint)
                 this.position = GUILayoutUtility.GetLastRect();

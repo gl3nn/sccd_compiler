@@ -11,9 +11,8 @@
     
     <attribute type="SGUIModalWindow" name="modal_window" />
     <attribute type="SGUISelectionGrid" name="selection_grid" />
-    
-    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
-    
+    <attribute type="SGUIButton" name="yes_button" />
+    <attribute type="SGUIButton" name="no_button" />
     
     <constructor>
         <parameter type="SGUICanvasElement" name="canvas_member"/>
@@ -52,17 +51,14 @@
             this.modal_window.addChild(new SGUISpace());
             
             //Buttons
-            this.buttons_to_activate = new List<SGUIButton>();
             SGUIHorizontalGroup buttons_widget = new SGUIHorizontalGroup();
             this.modal_window.addChild(buttons_widget);
             
-            SGUIButton yes_button = new SGUIButton("Yes", "change_connection", false);
-            this.buttons_to_activate.Add(yes_button);
-            buttons_widget.addChild(yes_button);
+            this.yes_button = new SGUIButton("Yes");
+            buttons_widget.addChild(this.yes_button);
             
-            SGUIButton no_button = new SGUIButton("No", "not_change_connection", false);
-            this.buttons_to_activate.Add(no_button);
-            buttons_widget.addChild(no_button);
+            this.no_button = new SGUIButton("No");
+            buttons_widget.addChild(this.no_button);
 
         ]]>
         </body>
@@ -80,7 +76,7 @@
             <transition cond="this.connection_options.Count &gt; 1 || (this.connection_options.Count == 1 &amp;&amp; this.connection_options[0] == null)" target="../popup_active"/>
         </state>
 
-        <state id="popup_active" initial="setup">
+        <state id="popup_active" initial="listening">
             <onentry>
                 <script>
                 <![CDATA[
@@ -102,50 +98,15 @@
                 </script>
             </onexit>
             
-            <state id="setup" initial="buttons_creation_loop">
-                <state id="buttons_creation_loop">
-                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"children"' />
-                            <parameter expr='"Button"'/>
-                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
-                        </raise>
-                    </transition>
-                    <transition target="../../listening" cond="this.buttons_to_activate.Count == 0">
-                        <script>
-                            this.buttons_to_activate = null;
-                        </script>
-                    </transition>
-                </state>
-                <state id="button_activation">
-                    <transition event="instance_created" target="../buttons_creation_loop">
-                        <parameter name="id" type="int"/>
-                        <parameter name="association_name" type="String"/>
-                        <script>
-                            String association_path = String.Format("{0}[{1}]", association_name, id);
-                        </script>
-                        <raise scope="cd" event="associate_instance">
-                            <parameter expr='"."' />
-                            <parameter expr='association_path + "/event_receiver"'/>
-                        </raise>
-                        <raise scope="cd" event="start_instance">
-                            <parameter expr='association_path' />
-                        </raise>
-                        <script>
-                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
-                        </script>
-                    </transition>
-                </state>
-            </state>
             <state id="listening">
-                <transition event="button_pressed" cond='button_action == "change_connection"' target="../../final">
-                    <parameter name="button_action" type="string"/>
+                <transition event="button_pressed" port="input" cond='this.yes_button.tag == tag' target="../../final">
+                    <parameter name="tag" type="int"/>
                     <raise target='"dropped_state"' event="change_connection">
                         <parameter expr="this.connection_options[this.selected_option]"/>
                     </raise>
                 </transition>
-                <transition event="button_pressed" cond='button_action == "not_change_connection"' target="../../final">
-                    <parameter name="button_action" type="string"/>
+                <transition event="button_pressed" port="input" cond='this.no_button.tag == tag' target="../../final">
+                    <parameter name="tag" type="int"/>
                     <raise target='"dropped_state"' event="not_change_connection"/>
                 </transition>
             </state>

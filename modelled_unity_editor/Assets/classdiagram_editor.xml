@@ -31,5 +31,4 @@
     <class name="Canvas" src="xml/classdiagram/canvas.xml"/>
     <class name="Class" src="xml/classdiagram/class.xml"/>
     <class name="Edge" src="xml/common/edge.xml"/>
-    <class name="Button" src="xml/common/button.xml"/>
 </diagram>

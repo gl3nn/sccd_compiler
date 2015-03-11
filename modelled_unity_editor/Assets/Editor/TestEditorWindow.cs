@@ -11,7 +11,7 @@ namespace SCCDEditor{
         Rect canvas_position = new Rect(0,0,0,0);
         Rect view_rect;
 
-		//[MenuItem("SCCD/Open Test Editor")]
+		[MenuItem("SCCD/Open Test Editor")]
         public static void createOrFocus()
         {
             TestEditorWindow window = (TestEditorWindow) EditorWindow.GetWindow(typeof(TestEditorWindow), false);
@@ -37,6 +37,7 @@ namespace SCCDEditor{
             GUI.EndScrollView();
 
             EditorGUILayout.BeginVertical("box");
+            GUILayout.Toggle(false, "test");
             EditorGUILayout.TextField("bla", "ok");
             this.text = EditorGUILayout.TextArea(this.text);
             EditorGUILayout.EndVertical();

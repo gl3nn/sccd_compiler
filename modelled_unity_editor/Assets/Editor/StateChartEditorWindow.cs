@@ -41,8 +41,8 @@ namespace SCCDEditor{
 
         private void init()
         {
-            this.window_widget = new SGUITopLevel(this);
-            this.controller = new StateChartEditor.Controller(this.window_widget, this.statechart_xml);
+            this.top_level_widget = new SGUITopLevel(this);
+            this.controller = new StateChartEditor.Controller(this.top_level_widget, this.statechart_xml);
             this.controller.start();
         }
 

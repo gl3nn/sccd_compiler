@@ -7,7 +7,6 @@
     <attribute type="SGUIVerticalGroup" name="panel_widget"/>
     <attribute type="XElement" name='diagram_xml'/>
 
-    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
     <attribute type="List&lt;XElement&gt;" name="ports_to_load"/>
     
     <attribute type="SGUITextField" name='author_field'/>
@@ -16,13 +15,15 @@
     <attribute type="SGUITextArea" name='top_field'/>
     <attribute type="SGUIVerticalGroup" name="input_ports_group_widget"/>
     <attribute type="SGUIVerticalGroup" name="output_ports_group_widget"/>
+    
+    <attribute type="SGUIButton" name="add_input_port_button"/>
+    <attribute type="SGUIButton" name="add_output_port_button"/>
 
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
         <parameter type="XElement" name='diagram_xml'/>
         <body>
             <![CDATA[
-            this.buttons_to_activate = new List<SGUIButton>();
             this.panel_widget = panel_widget;
             this.diagram_xml = diagram_xml;
             
@@ -41,9 +42,8 @@
             //Input ports setup
             SGUIHorizontalGroup input_ports_heading = new SGUIHorizontalGroup();
             input_ports_heading.addChild(new SGUILabel("Input Ports:"));
-            SGUIButton add_input_port_button = new SGUIButton("Add", "add_input_port", false);
-            this.buttons_to_activate.Add(add_input_port_button);
-            input_ports_heading.addChild(add_input_port_button);
+            this.add_input_port_button = new SGUIButton("Add");
+            input_ports_heading.addChild(this.add_input_port_button);
             this.panel_widget.addChild(input_ports_heading);
             this.input_ports_group_widget = new SGUIVerticalGroup();
             this.panel_widget.addChild(this.input_ports_group_widget);
@@ -51,9 +51,8 @@
             //Output ports setup
             SGUIHorizontalGroup output_ports_heading = new SGUIHorizontalGroup();
             output_ports_heading.addChild(new SGUILabel("Output Ports:"));
-            SGUIButton add_output_port_button = new SGUIButton("Add", "add_output_port", false);
-            this.buttons_to_activate.Add(add_output_port_button);
-            output_ports_heading.addChild(add_output_port_button);
+            this.add_output_port_button = new SGUIButton("Add");
+            output_ports_heading.addChild(this.add_output_port_button);
             this.panel_widget.addChild(output_ports_heading);
             this.output_ports_group_widget = new SGUIVerticalGroup();
             this.panel_widget.addChild(this.output_ports_group_widget);
@@ -72,40 +71,7 @@
     </destructor>
     <scxml initial="main">
         <state id="main" initial="setup">
-            <state id="setup" initial="buttons_creation_loop">
-                <state id="buttons_creation_loop">
-                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"children"' />
-                            <parameter expr='"Button"'/>
-                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
-                        </raise>
-                    </transition>
-                    <transition target="../ports_loading" cond="this.buttons_to_activate.Count == 0">
-                        <script>
-                            this.buttons_to_activate = null;
-                        </script>
-                    </transition>
-                </state>
-                <state id="button_activation">
-                    <transition event="instance_created" target="../buttons_creation_loop">
-                        <parameter name="id" type="int"/>
-                        <parameter name="association_name" type="String"/>
-                        <script>
-                            String association_path = String.Format("{0}[{1}]", association_name, id);
-                        </script>
-                        <raise scope="cd" event="associate_instance">
-                            <parameter expr='"."' />
-                            <parameter expr='association_path + "/event_receiver"'/>
-                        </raise>
-                        <raise scope="cd" event="start_instance">
-                            <parameter expr='association_path' />
-                        </raise>
-                        <script>
-                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
-                        </script>
-                    </transition>
-                </state>
+            <state id="setup" initial="ports_loading">
                 <state id="ports_loading">
                     <transition target="/default_activation" cond="this.ports_to_load.Count &gt; 0">
                         <script>
@@ -134,12 +100,12 @@
                 </state>
             </state>
             <state id="listening">
-                <transition event="button_pressed" cond='button_action == "add_input_port" || button_action == "add_output_port"' target="../../default_activation">
-                    <parameter name="button_action" type="string"/>
+                <transition port="input" event="button_pressed" cond='tag == this.add_input_port_button.tag || tag == this.add_output_port_button.tag' target="../../default_activation">
+                    <parameter name="tag" type="int"/>
                     <script>
                         XElement port_xml;
                         object group_widget;
-                        if (button_action == "add_input_port")
+                        if (tag == this.add_input_port_button.tag)
                         {
                             port_xml = new XElement("inport", new XAttribute("name", ""));
                             group_widget = this.input_ports_group_widget;

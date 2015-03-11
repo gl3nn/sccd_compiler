@@ -15,8 +15,9 @@
         <body>
             <![CDATA[
             this.window_widget = window_widget;
-            this.statechart_xml = new XElement("scxml");
-            class_xml.Add(this.statechart_xml);
+            SCCDUtility.assureChild(class_xml, "scxml");
+            this.statechart_xml = class_xml.Element("scxml");
+            SCCDUtility.assureAttribute(this.statechart_xml, "initial");
             ]]>
         </body>
     </constructor>

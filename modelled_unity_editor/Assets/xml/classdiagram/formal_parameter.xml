@@ -2,7 +2,6 @@
 <class name="FormalParameter">
     <relationships>
         <association class="IRuntimeClass" name="parent" max="1"/>
-        <association class="Button" name="delete_button" max="1"/>
     </relationships>
     <attribute type="XElement" name="parameter_xml"/>
     <attribute type="SGUIHorizontalGroup" name="horizontal_widget"/>
@@ -38,7 +37,7 @@
             vertical_widget_2.setExpandHeight(false);
             this.name_text_widget = new SGUITextField("Name", this.parameter_xml.Attribute("name").Value);
             vertical_widget_2.addChild(this.name_text_widget);
-            this.remove_button_widget = new SGUIButton("Remove", "remove_parameter", false);
+            this.remove_button_widget = new SGUIButton("Remove");
             vertical_widget_2.addChild(this.remove_button_widget);
             this.horizontal_widget.addChild(vertical_widget_2);
             
@@ -48,38 +47,17 @@
     <scxml initial="setup">
         <state id="setup" initial="wait_for_child_id">
             <state id="wait_for_child_id">
-                <transition event="set_child_id" target="../button_activation">
+                <transition event="set_child_id" target="../../listening">
                     <parameter name="child_id" type="int"/>
                     <script>
                         this.child_id = child_id;
                     </script>
-                    <raise scope="cd" event="create_instance">
-                        <parameter expr='"delete_button"' />
-                        <parameter expr='"Button"'/>
-                        <parameter expr='this.remove_button_widget' />
-                    </raise>
-                </transition>
-            </state>
-            <state id="button_activation">
-                <transition event="instance_created" target="../../listening">
-                    <parameter name="id" type="int"/>
-                    <parameter name="association_name" type="String"/>
-                    <script>
-                        String association_path = String.Format("{0}[{1}]", association_name, id);
-                    </script>
-                    <raise scope="cd" event="associate_instance">
-                        <parameter expr='"."' />
-                        <parameter expr='association_path + "/event_receiver"'/>
-                    </raise>
-                    <raise scope="cd" event="start_instance">
-                        <parameter expr='association_path' />
-                    </raise>
                 </transition>
             </state>
         </state>
         <state id="listening">
-            <transition event="button_pressed" cond='button_action == "remove_parameter"' target=".">
-                <parameter name="button_action" type="string"/>
+            <transition event="button_pressed" port="input" cond='this.remove_button_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
                 <script>
                     this.horizontal_widget.removeFromParent();
                     String target_path = String.Format("parent/modal_window_children[{0}]", this.child_id);

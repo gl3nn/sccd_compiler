@@ -11,7 +11,7 @@ namespace SCCDEditor{
 
         private   double                            update_time = 0;
 
-        protected SGUITopLevel                      window_widget;
+        protected SGUITopLevel                      top_level_widget;
 
         public void processEvent()
         {
@@ -118,17 +118,18 @@ namespace SCCDEditor{
         public void generateEvent(string event_name, string port, params object[] parameters)
         {
             this.controller.addInput(new sccdlib.Event(event_name, port, parameters));
+            this.updateController();
         }
 
         public void OnGUI()
         {
+            this.update_time += Time.deltaTime;
             GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
-            this.window_widget.doOnGUI();
+            this.top_level_widget.doOnGUI();
         }
 
         public void Update()
         {
-			this.update_time += Time.deltaTime;
             if (this == EditorWindow.focusedWindow)
                 this.Repaint ();
         }

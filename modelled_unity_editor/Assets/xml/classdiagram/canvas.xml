@@ -42,10 +42,10 @@
                 
                     <!-- Set edge creation type (toolbar event) -->
 
-                    <transition event="set_creation_type" target=".">
-                        <parameter name="creation_type" type="string"/>
+                    <transition event="edge_type_toolbar_changed" target=".">
+                        <parameter name="edge_type" type="string"/>
                         <script>
-                            this.creation_type = creation_type;
+                            this.creation_type = edge_type;
                         </script>
                     </transition>
                     
@@ -71,7 +71,7 @@
                     <state id="setup">
                         <transition target="../../class_creation" cond="this.classes_to_load.Count &gt; 0">
                             <script>
-                                this.current_class = new SGUICanvasElement(canvas_widget);
+                                this.current_class = new SGUICanvasElement(this.canvas_widget);
                             </script>
                             <raise scope="cd" event="create_instance">
                                 <parameter expr='"./classes"' />
@@ -91,7 +91,6 @@
                             <raise event="unselect" target='"./classes"'>
                                 <parameter expr='-1'/>
                             </raise>
-                            <raise event="reset_panel" target='"window/properties_panel"'/>
                         </transition>
                         
                     </state>
@@ -107,7 +106,6 @@
                             <raise event="unselect" target='"./classes"'>
                                 <parameter expr='tag'/>
                             </raise>
-                            <raise event="reset_panel" target='"window/properties_panel"'/>
                         </transition>
 
                         <!-- Right mouse down : unselect + create state -->
@@ -137,7 +135,6 @@
                             <raise event="unselect" target='"./classes"'>
                                 <parameter expr='tag'/>
                             </raise>
-                            <raise event="reset_panel" target='"window/properties_panel"'/>
                         </transition>
                         
                         <!-- Remove class from canvas -->

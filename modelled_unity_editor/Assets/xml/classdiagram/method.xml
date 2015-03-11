@@ -9,15 +9,18 @@
     <!--- widgets in the panel -->
     <attribute type="SGUIHorizontalGroup" name="panel_horizontal_widget"/>
     <attribute type="SGUILabel" name="name_panel_widget"/>
-    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
     <attribute type="int" name="child_id"/>
+    <attribute type="SGUIButton" name="edit_button_widget"/>
+    <attribute type="SGUIButton" name="delete_button_widget"/>
     
     <!--- popup widgets -->
     <attribute type="SGUIModalWindow" name="modal_window" />
     <attribute type="SGUITextField" name="type_text_widget"/>
     <attribute type="SGUITextField" name="name_text_widget"/>
     <attribute type="SGUITextArea" name="body_text_widget"/>
-    <attribute type="List&lt;SGUIButton&gt;" name="window_buttons_to_activate"/>
+    <attribute type="SGUIButton" name="add_parameter_button"/>
+    <attribute type="SGUIButton" name="close_edit_window_button"/>
+    
     <attribute type="SGUIVerticalGroup" name="parameters_group_widget"/>
     <attribute type="List&lt;XElement&gt;" name="parameters_to_load"/>
     
@@ -38,13 +41,10 @@
             this.panel_horizontal_widget.addChild(this.name_panel_widget);
             this.panel_horizontal_widget.addChild(new SGUISpace());
             
-            this.buttons_to_activate = new List<SGUIButton>();
-            SGUIButton edit_button_widget = new SGUIButton("Edit", "edit_method", false);
-            this.panel_horizontal_widget.addChild(edit_button_widget);
-            this.buttons_to_activate.Add(edit_button_widget);
-            SGUIButton delete_button_widget = new SGUIButton("Delete", "delete_method", false);
-            this.panel_horizontal_widget.addChild(delete_button_widget);
-            this.buttons_to_activate.Add(delete_button_widget);
+            this.edit_button_widget = new SGUIButton("Edit");
+            this.panel_horizontal_widget.addChild(this.edit_button_widget);
+            this.delete_button_widget = new SGUIButton("Delete");
+            this.panel_horizontal_widget.addChild(this.delete_button_widget);
             
             ]]>
         </body>
@@ -59,14 +59,12 @@
             this.type_text_widget = new SGUITextField("Return type:", this.method_xml.Attribute("type").Value);
             this.modal_window.addChild(this.type_text_widget);
             
-            this.window_buttons_to_activate = new List<SGUIButton>();
             
             //Parameters
             SGUIHorizontalGroup parameters_heading = new SGUIHorizontalGroup();
             parameters_heading.addChild(new SGUILabel("Parameters:"));
-            SGUIButton add_parameter_button = new SGUIButton("Add", "add_parameter", false);
-            this.window_buttons_to_activate.Add(add_parameter_button);
-            parameters_heading.addChild(add_parameter_button);
+            this.add_parameter_button = new SGUIButton("Add");
+            parameters_heading.addChild(this.add_parameter_button);
             this.modal_window.addChild(parameters_heading);
             this.parameters_group_widget = new SGUIVerticalGroup();
             this.parameters_group_widget.setExpandHeight(false);
@@ -80,9 +78,8 @@
             SGUIHorizontalGroup buttons_widget = new SGUIHorizontalGroup();
             this.modal_window.addChild(buttons_widget);
             
-            SGUIButton close_edit_window_button = new SGUIButton("OK", "close_edit_window", false);
-            buttons_widget.addChild(close_edit_window_button);
-            window_buttons_to_activate.Add(close_edit_window_button);
+            this.close_edit_window_button = new SGUIButton("OK");
+            buttons_widget.addChild(this.close_edit_window_button);
             
             buttons_widget.addChild(new SGUISpace());
             
@@ -108,43 +105,10 @@
       
         <state id="setup" initial="wait_for_child_id">
             <state id="wait_for_child_id">
-                <transition event="set_child_id" target="../buttons_creation_loop">
+                <transition event="set_child_id" target="../../popup_not_showing">
                     <parameter name="child_id" type="int"/>
                     <script>
                         this.child_id = child_id;
-                    </script>
-                </transition>
-            </state>
-            <state id="buttons_creation_loop">
-                <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
-                    <raise scope="cd" event="create_instance">
-                        <parameter expr='"panel_children"' />
-                        <parameter expr='"Button"'/>
-                        <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
-                    </raise>
-                </transition>
-                <transition target="../../popup_not_showing" cond="this.buttons_to_activate.Count == 0">
-                    <script>
-                        this.buttons_to_activate = null;
-                    </script>
-                </transition>
-            </state>
-            <state id="button_activation">
-                <transition event="instance_created" target="../buttons_creation_loop">
-                    <parameter name="id" type="int"/>
-                    <parameter name="association_name" type="String"/>
-                    <script>
-                        String association_path = String.Format("{0}[{1}]", association_name, id);
-                    </script>
-                    <raise scope="cd" event="associate_instance">
-                        <parameter expr='"."' />
-                        <parameter expr='association_path + "/event_receiver"'/>
-                    </raise>
-                    <raise scope="cd" event="start_instance">
-                        <parameter expr='association_path' />
-                    </raise>
-                    <script>
-                        this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
                     </script>
                 </transition>
             </state>
@@ -167,40 +131,7 @@
                 </raise>
             </onexit>
             <state id="saving_history" initial="setup_popup">
-                <state id="setup_popup" initial="buttons_creation_loop">
-                    <state id="buttons_creation_loop">
-                        <transition target="../button_activation" cond="this.window_buttons_to_activate.Count &gt; 0">
-                            <raise scope="cd" event="create_instance">
-                                <parameter expr='"modal_window_children"' />
-                                <parameter expr='"Button"'/>
-                                <parameter expr='this.window_buttons_to_activate[this.window_buttons_to_activate.Count - 1]' />
-                            </raise>
-                        </transition>
-                        <transition target="../parameters_loading" cond="this.window_buttons_to_activate.Count == 0">
-                            <script>
-                                this.window_buttons_to_activate = null;
-                            </script>
-                        </transition>
-                    </state>
-                    <state id="button_activation">
-                        <transition event="instance_created" target="../buttons_creation_loop">
-                            <parameter name="id" type="int"/>
-                            <parameter name="association_name" type="String"/>
-                            <script>
-                                String association_path = String.Format("{0}[{1}]", association_name, id);
-                            </script>
-                            <raise scope="cd" event="associate_instance">
-                                <parameter expr='"."' />
-                                <parameter expr='association_path + "/event_receiver"'/>
-                            </raise>
-                            <raise scope="cd" event="start_instance">
-                                <parameter expr='association_path' />
-                            </raise>
-                            <script>
-                                this.window_buttons_to_activate.RemoveAt(this.window_buttons_to_activate.Count - 1);
-                            </script>
-                        </transition>
-                    </state>
+                <state id="setup_popup" initial="parameters_loading">
                     <state id="parameters_loading">
                         <transition target="/popup_showing/parameter_activation" cond="this.parameters_to_load.Count &gt; 0">
                             <raise scope="cd" event="create_instance">
@@ -224,8 +155,8 @@
                 
                     <!-- Add parameter button pressed -->
                     
-                    <transition event="button_pressed" cond='button_action == "add_parameter"' target="/popup_showing/parameter_activation">
-                        <parameter name="button_action" type="string"/>
+                    <transition event="button_pressed" port="input" cond='tag == this.add_parameter_button.tag' target="/popup_showing/parameter_activation">
+                        <parameter name="tag" type="int"/>
                         <script>
                             XElement parameter_xml = new XElement("parameter");
                             this.method_xml.Add(parameter_xml);
@@ -240,8 +171,8 @@
                 
                     <!-- Button pressed to close method editing window -->
                 
-                    <transition event="button_pressed" cond='button_action == "close_edit_window"' target="/popup_not_showing">
-                        <parameter name="button_action" type="string"/>
+                    <transition event="button_pressed" port="input" cond='tag == this.close_edit_window_button.tag' target="/popup_not_showing">
+                        <parameter name="tag" type="int"/>
                         <script>
                             this.name_panel_widget.setLabel(this.method_xml.Attribute("name").Value);
                         </script>
@@ -302,8 +233,8 @@
         <!-- POPUP WINDOW NOT VISIBLE YET -->
 
         <state id="popup_not_showing">
-            <transition event="button_pressed" cond='button_action == "delete_method"' target=".">
-                <parameter name="button_action" type="string"/>
+            <transition event="button_pressed" port="input" cond='tag == this.delete_button_widget.tag' target=".">
+                <parameter name="tag" type="int"/>
                 <script>
                     this.panel_horizontal_widget.removeFromParent();
                     String target_path = String.Format("parent/children[{0}]", this.child_id);
@@ -319,8 +250,8 @@
             
             <!-- Edit button pressed, open editing window. -->
             
-            <transition event="button_pressed" cond='button_action == "edit_method"' target="../popup_showing">
-                <parameter name="button_action" type="string"/>
+            <transition port="input" event="button_pressed" cond='tag == this.edit_button_widget.tag' target="../popup_showing">
+                <parameter name="tag" type="int"/>
             </transition>
         </state>
     </scxml>

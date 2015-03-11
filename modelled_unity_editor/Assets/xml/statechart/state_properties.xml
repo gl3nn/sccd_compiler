@@ -8,10 +8,10 @@
     <attribute type="XElement" name='state_xml'/>
     <attribute type="SGUICanvasElement" name='state_widget'/>
     
-    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
     <attribute type="List&lt;XElement&gt;" name="elements_to_load"/>
     
     <attribute type="SGUITextField" name='name_field'/>
+    <attribute type="SGUICheckBox" name='is_default_checkbox'/>
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
         <parameter type="XElement" name='state_xml'/>
@@ -21,12 +21,18 @@
             this.panel_widget = panel_widget;
             this.state_xml = state_xml;
             this.state_widget = state_widget;
-            this.buttons_to_activate = new List<SGUIButton>();
             
             //id property setup
             SCCDUtility.assureAttribute(this.state_xml, "id");
-            this.name_field = new SGUITextField("name", this.state_xml.Attribute("id").Value);
+            this.name_field = new SGUITextField("Name", this.state_xml.Attribute("id").Value);
             this.panel_widget.addChild(this.name_field);
+            
+            //Is this a default state?
+            if (SCCDUtility.hasName(this.state_xml.Parent, "state") || SCCDUtility.hasName(this.state_xml.Parent, "scxml"))
+            {           
+                this.is_default_checkbox = new SGUICheckBox("Is default state", state_xml.Parent.Attribute("initial").Value == this.state_xml.Attribute("id").Value);
+                this.panel_widget.addChild(this.is_default_checkbox);
+            }
             
             //Elements loading
             this.elements_to_load = this.state_xml.Elements("replacebyonentry").ToList();
@@ -40,40 +46,7 @@
     </destructor>
     <scxml initial="main">
         <state id="main" initial="setup">
-            <state id="setup" initial="buttons_creation_loop">
-                <state id="buttons_creation_loop">
-                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"children"' />
-                            <parameter expr='"Button"'/>
-                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
-                        </raise>
-                    </transition>
-                    <transition target="../elements_loading" cond="this.buttons_to_activate.Count == 0">
-                        <script>
-                            this.buttons_to_activate = null;
-                        </script>
-                    </transition>
-                </state>
-                <state id="button_activation">
-                    <transition event="instance_created" target="../buttons_creation_loop">
-                        <parameter name="id" type="int"/>
-                        <parameter name="association_name" type="String"/>
-                        <script>
-                            String association_path = String.Format("{0}[{1}]", association_name, id);
-                        </script>
-                        <raise scope="cd" event="associate_instance">
-                            <parameter expr='"."' />
-                            <parameter expr='association_path + "/event_receiver"'/>
-                        </raise>
-                        <raise scope="cd" event="start_instance">
-                            <parameter expr='association_path' />
-                        </raise>
-                        <script>
-                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
-                        </script>
-                    </transition>
-                </state>
+            <state id="setup" initial="elements_loading">
                 <state id="elements_loading">
                     <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
                         <script>
@@ -107,6 +80,14 @@
                     <script>
                         this.state_xml.Attribute("id").Value = this.name_field.text;
                         this.state_widget.label = this.name_field.text;
+                    </script>
+                </transition>
+                
+                <!-- is_default_checkbox changed, edit parent's @initial -->
+                <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.state_xml.Parent.Attribute("initial").Value = this.is_default_checkbox.is_checked ? this.name_field.text : "";
                     </script>
                 </transition>
 

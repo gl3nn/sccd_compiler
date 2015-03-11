@@ -8,12 +8,14 @@ namespace SCCDEditor
         public Rect                                 position    { get; protected set; }
         public int                                  tag         { get; private set; }
         public SGUIGroupWidget                      parent      { get; set; }
+        public bool                                 is_enabled  { get; private set; }
 
         private static int                          tag_counter = 0;
 
         public SGUIWidget()
         {
             this.tag = SGUIWidget.tag_counter++;
+            this.is_enabled = true;
         }
 
         protected void catchMouseDefault()
@@ -25,9 +27,19 @@ namespace SCCDEditor
             }
         }
 
+        public void setEnabled(bool is_enabled = true)
+        {
+            this.is_enabled = is_enabled;
+        }
+
         public void doOnGUI()
         {
+            bool previous_enabled_state = GUI.enabled;
+            if (!this.is_enabled)
+                GUI.enabled = false;
             this.OnGUI();
+            GUI.enabled = previous_enabled_state;
+
         }
 
         protected virtual void OnGUI()

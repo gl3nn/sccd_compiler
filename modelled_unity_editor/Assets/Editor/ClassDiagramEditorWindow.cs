@@ -23,8 +23,8 @@ namespace SCCDEditor{
 
         public void start(string file_name)
         {
-            this.window_widget = new SGUITopLevel(this);
-            this.controller = new ClassDiagramEditor.Controller(this.window_widget, file_name);
+            this.top_level_widget = new SGUITopLevel(this);
+            this.controller = new ClassDiagramEditor.Controller(this.top_level_widget, file_name);
             this.controller.start();
         }
 

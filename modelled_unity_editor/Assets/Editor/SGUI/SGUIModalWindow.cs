@@ -19,7 +19,7 @@ namespace SCCDEditor{
             this.title = title;
             SGUITopLevel.current.setModalWindow(this);
             this.window = SGUITopLevel.current.window;
-            Rect position = new Rect(0, 0, min_width, 75);
+            Rect position = new Rect(0, 0, min_width, 0);
             position.center = new Vector2(this.window.position.width/2, this.window.position.height/2);
             this.position = position;
         }
@@ -36,7 +36,7 @@ namespace SCCDEditor{
 
         public void draw() 
         {
-            Rect next_position = new Rect(0, 0, this.position.width, 0);
+            Rect next_position = new Rect(0, 0, this.position.width, this.position.height);
             next_position.center = new Vector2(this.window.position.width/2, this.window.position.height/2);
             next_position = GUILayout.Window(0, next_position, this.windowDrawFunction, this.title);
             GUI.FocusWindow(0);

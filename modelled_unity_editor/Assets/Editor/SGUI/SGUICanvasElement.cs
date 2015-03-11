@@ -19,13 +19,16 @@ namespace SCCDEditor{
             this.setCenter(center);
         }
 
-        public SGUICanvasElement(SGUICanvasBase parent)
+        public SGUICanvasElement(SGUICanvasBase parent) : this()
         {
             this.position = new Rect(0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT); 
-            this.label = "";
             parent.addElement(this);
-            this.canvas = this.parent.canvas;
             //this.setDefaultConnectionPoints();
+        }
+
+        public SGUICanvasElement()
+        {
+            this.label = "";
         }
 
         public void setCenter(Vector2 center)
@@ -38,6 +41,8 @@ namespace SCCDEditor{
         public void setParent(SGUICanvasBase parent)
         {
             this.parent = parent;
+            if(this.parent != null)
+                this.canvas = this.parent.canvas;
         }
 
         public void setColor(Color color)

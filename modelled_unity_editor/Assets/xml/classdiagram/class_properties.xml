@@ -8,13 +8,16 @@
     <attribute type="XElement" name='class_xml'/>
     <attribute type="SGUICanvasElement" name='class_widget'/>
 
-    <attribute type="List&lt;SGUIButton&gt;" name="buttons_to_activate"/>
     <attribute type="List&lt;XElement&gt;" name="elements_to_load"/>
     
     <attribute type="SGUITextField" name='name_field'/>
 
     <attribute type="SGUIVerticalGroup" name="attributes_group_widget"/>
     <attribute type="SGUIVerticalGroup" name="methods_group_widget"/>
+    
+    <attribute type="SGUIButton" name="open_statechart_button"/>
+    <attribute type="SGUIButton" name="add_attribute_button"/>
+    <attribute type="SGUIButton" name="add_method_button"/>
     
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
@@ -25,7 +28,6 @@
             this.panel_widget = panel_widget;
             this.class_xml = class_xml;
             this.class_widget = class_widget;
-            this.buttons_to_activate = new List<SGUIButton>();
             
             //Name property setup
             SCCDUtility.assureAttribute(this.class_xml, "name");
@@ -33,16 +35,14 @@
             this.panel_widget.addChild(this.name_field);
             
             //Statechart
-            SGUIButton open_statechart_button = new SGUIButton("Edit Statechart", "open_statechart", false);
-            this.panel_widget.addChild(open_statechart_button);
-            this.buttons_to_activate.Add(open_statechart_button);
+            this.open_statechart_button = new SGUIButton("Edit Statechart");
+            this.panel_widget.addChild(this.open_statechart_button);
             
             //Attributes setup
             SGUIHorizontalGroup attributes_heading = new SGUIHorizontalGroup();
             attributes_heading.addChild(new SGUILabel("Attributes:"));
-            SGUIButton add_attribute_button = new SGUIButton("Add", "add_attribute", false);
-            this.buttons_to_activate.Add(add_attribute_button);
-            attributes_heading.addChild(add_attribute_button);
+            this.add_attribute_button = new SGUIButton("Add");
+            attributes_heading.addChild(this.add_attribute_button);
             this.panel_widget.addChild(attributes_heading);
             this.attributes_group_widget = new SGUIVerticalGroup();
             this.attributes_group_widget.setExpandHeight(false);
@@ -51,9 +51,8 @@
             //Methods setup
             SGUIHorizontalGroup methods_heading = new SGUIHorizontalGroup();
             methods_heading.addChild(new SGUILabel("Methods:"));
-            SGUIButton add_method_button = new SGUIButton("Add", "add_method", false);
-            this.buttons_to_activate.Add(add_method_button);
-            methods_heading.addChild(add_method_button);
+            this.add_method_button = new SGUIButton("Add");
+            methods_heading.addChild(this.add_method_button);
             this.panel_widget.addChild(methods_heading);
             this.methods_group_widget = new SGUIVerticalGroup();
             this.methods_group_widget.setExpandHeight(false);
@@ -74,40 +73,7 @@
     </destructor>
     <scxml initial="main">
         <state id="main" initial="setup">
-            <state id="setup" initial="buttons_creation_loop">
-                <state id="buttons_creation_loop">
-                    <transition target="../button_activation" cond="this.buttons_to_activate.Count &gt; 0">
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"children"' />
-                            <parameter expr='"Button"'/>
-                            <parameter expr='this.buttons_to_activate[this.buttons_to_activate.Count - 1]' />
-                        </raise>
-                    </transition>
-                    <transition target="../elements_loading" cond="this.buttons_to_activate.Count == 0">
-                        <script>
-                            this.buttons_to_activate = null;
-                        </script>
-                    </transition>
-                </state>
-                <state id="button_activation">
-                    <transition event="instance_created" target="../buttons_creation_loop">
-                        <parameter name="id" type="int"/>
-                        <parameter name="association_name" type="String"/>
-                        <script>
-                            String association_path = String.Format("{0}[{1}]", association_name, id);
-                        </script>
-                        <raise scope="cd" event="associate_instance">
-                            <parameter expr='"."' />
-                            <parameter expr='association_path + "/event_receiver"'/>
-                        </raise>
-                        <raise scope="cd" event="start_instance">
-                            <parameter expr='association_path' />
-                        </raise>
-                        <script>
-                            this.buttons_to_activate.RemoveAt(this.buttons_to_activate.Count - 1);
-                        </script>
-                    </transition>
-                </state>
+            <state id="setup" initial="elements_loading">
                 <state id="elements_loading">
                     <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
                         <script>
@@ -147,8 +113,8 @@
                 
                 <!-- Add attribute button pressed -->
                 
-                <transition event="button_pressed" cond='button_action == "add_attribute"' target="../../default_activation">
-                    <parameter name="button_action" type="string"/>
+                <transition port="input" event="button_pressed" cond='tag == this.add_attribute_button.tag' target="../../default_activation">
+                    <parameter name="tag" type="int"/>
                     <script>
                         XElement attribute_xml = new XElement("attribute");
                         this.class_xml.Add(attribute_xml);
@@ -163,8 +129,8 @@
                 
                 <!-- Add method button pressed -->
                 
-                <transition event="button_pressed" cond='button_action == "add_method"' target="../../default_activation">
-                    <parameter name="button_action" type="string"/>
+                <transition port="input" event="button_pressed" cond='tag == this.add_method_button.tag' target="../../default_activation">
+                    <parameter name="tag" type="int"/>
                     <script>
                         XElement method_xml = new XElement("method", new XAttribute("name", "newMethod"));
                         this.class_xml.Add(method_xml);
@@ -178,8 +144,8 @@
                 </transition>
                 
                 <!-- Edit statechart button pressed -->
-                <transition event="button_pressed" cond='button_action == "open_statechart"' target=".">
-                    <parameter name="button_action" type="string"/>
+                <transition port="input" event="button_pressed" cond='tag == this.open_statechart_button.tag' target=".">
+                    <parameter name="tag" type="int"/>
                     <script>
                         StateChartEditorWindow.createOrFocus(this.class_xml);
                     </script>

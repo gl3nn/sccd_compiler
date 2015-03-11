@@ -135,6 +135,7 @@
                             <script>
                                 this.widget.resetColor();
                             </script>
+                            <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>
                         <transition event="unselect" target="../not_selected" cond="this.widget.tag != except_tag">
                             <parameter type="int" name="except_tag"/>

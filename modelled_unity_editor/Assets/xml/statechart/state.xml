@@ -40,11 +40,21 @@
                     new XAttribute("h", this.widget.position.height.ToString())
                 );
                 xml.Add(this.state_xml);
+                if ( (SCCDUtility.hasName(xml, "state") || SCCDUtility.hasName(xml, "scxml")) && xml.Attribute("initial").Value == "" )
+                {           
+                    xml.Attribute("initial").Value = this.state_xml.Attribute("id").Value;
+                }
             }
             this.widget.label = this.state_xml.Attribute("id").Value;
             ]]>
         </body>
     </constructor>
+    <method type="void" name="updateXMLPosition">
+        <body>
+            this.state_xml.Attribute("x").Value = this.widget.position.x.ToString();
+            this.state_xml.Attribute("y").Value = this.widget.position.y.ToString();
+        </body>
+    </method>
     <scxml initial="main">            
         <parallel id="main">
         
@@ -58,10 +68,17 @@
                     <transition event="new_child" target=".">
                         <parameter type="int" name="id"/>
                         <parameter type="SGUICanvasElement" name="child"/>
+                        <parameter type="XElement" name="child_xml"/>
                         <script>
+                            if(SCCDUtility.hasName(this.state_xml, "state"))
+                            {
+                                SCCDUtility.assureAttribute(this.state_xml, "initial");
+                            }
                             this.widget.addElement(child);
                             this.children_map[child.tag] = id;
                             this.widget.adjustSize();
+                            child_xml.Remove();
+                            this.state_xml.Add(child_xml);
                         </script>
                     </transition>
 
@@ -92,7 +109,7 @@
                 <!-- Only on initial creation of the state we want to enter the drop state as default. -->
 
                 <state id="setup">
-                    <transition target="../default/selected/drop/"/>
+                    <transition target="../default/selected/"/>
                 </state>
 
                 <state id="default" initial="not_selected">
@@ -148,6 +165,7 @@
                             <script>
                                 this.widget.resetColor();
                             </script>
+                            <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>
                         <transition event="unselect" target="../not_selected" cond="this.widget.tag != except_tag">
                             <parameter type="int" name="except_tag"/>
@@ -165,6 +183,7 @@
                                 <parameter type="Vector2" name="delta"/>
                                 <script>
                                     this.widget.move(delta);
+                                    this.updateXMLPosition();
                                 </script>
                             </transition>
                         </state>
@@ -181,6 +200,7 @@
                                 <parameter type="Vector2" name="delta"/>
                                 <script>
                                     this.widget.move(delta);
+                                    this.updateXMLPosition();
                                 </script>
                             </transition>
                             
@@ -233,6 +253,7 @@
                                     <raise event="connect_child_to_parent" target='"canvas"'>
                                         <parameter expr="this.widget"/>
                                         <parameter expr="connection"/>
+                                        <parameter expr="this.state_xml"/>
                                     </raise>
                                 </transition>
                             </state>

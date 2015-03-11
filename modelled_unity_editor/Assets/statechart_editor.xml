@@ -26,6 +26,5 @@
     <class name="State" src="xml/statechart/state.xml"/>
     <class name="StateDrop" src="xml/statechart/state_drop.xml"/>
     <class name="Edge" src="xml/common/edge.xml"/>
-    <class name="Button" src="xml/common/button.xml"/>
 
 </diagram>

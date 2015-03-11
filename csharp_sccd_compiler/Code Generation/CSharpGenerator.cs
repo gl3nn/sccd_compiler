@@ -268,6 +268,7 @@ namespace csharp_sccd_compiler
                             this.output_file.write("this.enter_" + default_node.full_name + "();");
                     }
                 }
+                this.output_file.write("this.step(0);");
                 this.output_file.dedent();
                 this.output_file.write("}");
 

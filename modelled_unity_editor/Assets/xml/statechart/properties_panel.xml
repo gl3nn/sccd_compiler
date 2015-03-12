@@ -17,17 +17,10 @@
         </body>
     </constructor>
     <scxml initial="listening">
-        <state id="listening">
-        
-            <!-- Create default panel -->
-            <transition event="reset_panel" target=".">
-                <raise scope="cd" event="delete_instance">
-                    <parameter expr='"active_panel"' />
-                </raise>
-            </transition>
-               
+        <state id="listening" initial="not_deactivating">
+                       
             <!-- State selected, create its panel. -->
-            <transition event="set_state_properties" target="../panel_activation">
+            <transition event="set_state_properties" target=".">
                 <parameter name="xml" type="XElement"/>
                 <parameter name="state_widget" type="SGUICanvasElement"/>
                 <raise scope="cd" event="delete_instance">
@@ -41,20 +34,30 @@
                     <parameter expr='state_widget' />
                 </raise>
             </transition>
-        </state>
-        <state id="panel_activation">
-            <transition event="instance_created" target="../wait_for_deactivations">
-                <raise scope="cd" event="associate_instance">
+        
+            <state id="not_deactivating">
+                <transition event="reset_panel" target="../deactivating"/>
+                <transition event="instance_created" target="../wait_for_deactivations">
+                    <raise scope="cd" event="associate_instance">
                     <parameter expr='"."'/>
-                    <parameter expr='"active_panel/panel"' />
-                </raise>
-                <raise scope="cd" event="start_instance">
-                    <parameter expr='"active_panel"' />
-                </raise>
-            </transition>
-        </state>
-        <state id="wait_for_deactivations">
-            <transition after="0.00000000001" target="../listening"/>
+                        <parameter expr='"active_panel/panel"' />
+                    </raise>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='"active_panel"' />
+                    </raise>
+                </transition>
+            </state>
+            <state id="deactivating">
+                <onentry>
+                    <raise scope="cd" event="delete_instance">
+                        <parameter expr='"active_panel"' />
+                    </raise>
+                </onentry>
+                <transition after="0" target="../not_deactivating"/>
+            </state>
+            <state id="wait_for_deactivations">
+                <transition after="0" target="../not_deactivating"/>
+            </state>
         </state>
     </scxml>
 </class>

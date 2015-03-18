@@ -97,6 +97,8 @@
             this.type_text_widget = null;
             this.body_text_widget = null;
             this.parameters_group_widget = null;
+            this.close_edit_window_button = null;
+            this.add_parameter_button = null;
             this.modal_window = null;
         ]]>
         </body>

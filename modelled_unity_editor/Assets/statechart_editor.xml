@@ -21,6 +21,9 @@
     <class name="Toolbar" src="xml/statechart/toolbar.xml"/>
     <class name="PropertiesPanel" src="xml/statechart/properties_panel.xml"/>
     <class name="StateProperties" src="xml/statechart/state_properties.xml"/>
+    <class name="Action" src="xml/statechart/action.xml"/>
+    <class name="Script" src="xml/statechart/script.xml"/>
+    <class name="Raise" src="xml/statechart/raise.xml"/>
 
     <class name="Canvas" src="xml/statechart/canvas.xml"/>
     <class name="State" src="xml/statechart/state.xml"/>

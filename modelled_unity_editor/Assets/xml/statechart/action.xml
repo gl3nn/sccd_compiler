@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Action">
+    <relationships>
+        <association class="IRuntimeClass" name="children"/>
+        <association class="IRuntimeClass" name="parent" max="1"/>
+    </relationships>
+    <attribute type="XElement" name="action_xml"/>
+    
+    <!--- popup widgets -->
+    <attribute type="SGUIModalWindow" name="modal_window" />
+    <attribute type="SGUIVerticalGroup" name="action_group_widget"/>
+    <attribute type="SGUIButton" name="close_edit_window_button"/>
+    <attribute type="SGUIButton" name="add_raise_button"/>
+    <attribute type="SGUIButton" name="add_script_button"/>
+    
+    <attribute type="List&lt;XElement&gt;" name="actions_to_load"/>
+    
+    <constructor>
+        <parameter type="XElement" name="action_xml"/>
+        <body>
+            <![CDATA[
+            this.action_xml = action_xml;
+            this.openWindow();
+            ]]>
+        </body>
+    </constructor>
+    <method access="public" type="void" name="openWindow">
+        <body>
+        <![CDATA[
+            this.modal_window = new SGUIModalWindow("Edit Action", 600);
+            
+            this.action_group_widget = new SGUIVerticalGroup();
+            this.action_group_widget.setExpandHeight(false);
+            this.modal_window.addChild(this.action_group_widget);
+            
+            
+            //Buttons
+            SGUIHorizontalGroup buttons_widget = new SGUIHorizontalGroup();
+            this.modal_window.addChild(buttons_widget);
+            
+            this.add_script_button = new SGUIButton("Add Script");
+            buttons_widget.addChild(this.add_script_button);
+            
+            this.add_raise_button = new SGUIButton("Add Raise");
+            buttons_widget.addChild(this.add_raise_button);
+            
+            buttons_widget.addChild(new SGUISpace()); 
+                                                
+            this.close_edit_window_button = new SGUIButton("OK");
+            buttons_widget.addChild(this.close_edit_window_button);
+            
+            
+            //Actions loading
+            this.actions_to_load = new List<XElement>();
+            
+            foreach(XElement action_child in this.action_xml.Elements())
+            {
+                if( SCCDUtility.hasName(action_child, "raise") || SCCDUtility.hasName(action_child, "script"))
+                {
+                    this.actions_to_load.Add(action_child);
+                }
+            }
+            this.actions_to_load.Reverse();
+        ]]>
+        </body>
+    </method>
+    <method access="public" type="void" name="closeWindow">
+        <body>
+        <![CDATA[
+            this.modal_window.close();
+        ]]>
+        </body>
+    </method>
+    <scxml initial="main">
+        <state id="main" initial="setup">
+            <state id="setup" initial="actions_loading">
+                <state id="actions_loading">
+                    <transition target="/default_activation" cond="this.actions_to_load.Count &gt; 0">
+                        <script>
+                            XElement action_xml = this.actions_to_load[this.actions_to_load.Count - 1];
+                            String class_name = "";
+                            if (SCCDUtility.hasName(action_xml, "script"))
+                            {
+                                class_name = "Script";
+                            }
+                            else if (SCCDUtility.hasName(action_xml, "raise"))
+                            {
+                                class_name = "Raise";
+                            }
+                        </script>
+                        <raise scope="cd" event="create_instance">
+                            <parameter expr='"children"' />
+                            <parameter expr='class_name'/>
+                            <parameter expr='action_xml' />
+                            <parameter expr='this.action_group_widget' />
+                        </raise>
+                        <script>
+                            this.actions_to_load.RemoveAt(this.actions_to_load.Count - 1);
+                        </script>
+                    </transition>
+                    <transition target="../../listening" cond="this.actions_to_load.Count == 0">
+                        <script>
+                            this.actions_to_load = null;
+                        </script>
+                    </transition>
+                </state>
+            </state>
+
+            <state id="listening">
+                     
+                <!-- Button pressed to close window -->
+            
+                <transition event="button_pressed" port="input" cond='tag == this.close_edit_window_button.tag' target="/closed">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.closeWindow();
+                    </script>
+                    <raise scope="cd" event="delete_instance">
+                        <parameter expr='"children"'/>
+                    </raise>
+                    <raise event="action_closed" target='"parent"'/>
+                </transition>
+                
+                <!-- Add raise button pressed -->
+                
+                <transition port="input" event="button_pressed" cond='tag == this.add_raise_button.tag' target="../../default_activation">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        XElement raise_xml = new XElement("raise");
+                        this.action_xml.Add(raise_xml);
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"Raise"'/>
+                        <parameter expr='raise_xml' />
+                        <parameter expr='this.action_group_widget' />
+                    </raise>
+                </transition>
+                
+                <!-- Add script button pressed -->
+                
+                <transition port="input" event="button_pressed" cond='tag == this.add_script_button.tag' target="../../default_activation">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        XElement script_xml = new XElement("script");
+                        this.action_xml.Add(script_xml);
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"Script"'/>
+                        <parameter expr='script_xml' />
+                        <parameter expr='this.action_group_widget' />
+                    </raise>
+                </transition>
+                    
+            </state>
+            <history id="history" type="deep"/>
+        </state>
+        
+        <state id="default_activation">
+            <transition event="instance_created" target="../main/history">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/parent"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <raise target="association_path" event="set_child_id">
+                    <parameter expr='id' />
+                </raise>
+            </transition>
+        </state>
+        
+        <state id="closed"/>
+    </scxml>
+</class>

@@ -56,6 +56,7 @@
      <Compile Include="Assets\Editor\SGUI\SGUICanvasBase.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUICanvasEdge.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUICanvasElement.cs" />
+     <Compile Include="Assets\Editor\SGUI\SGUICheckBox.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUIEditorWindow.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUIEvent.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUIException.cs" />
@@ -67,6 +68,7 @@
      <Compile Include="Assets\Editor\SGUI\SGUISpace.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUITextArea.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUITextField.cs" />
+     <Compile Include="Assets\Editor\SGUI\SGUIToolbar.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUITopLevel.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUIVerticalGroup.cs" />
      <Compile Include="Assets\Editor\SGUI\SGUIWidget.cs" />
@@ -93,9 +95,12 @@
      <None Include="Assets\xml\classdiagram\class_properties.xml" />
      <None Include="Assets\xml\statechart\window.xml" />
      <None Include="Assets\xml\classdiagram\attribute.xml" />
+     <None Include="Assets\xml\statechart\raise.xml" />
+     <None Include="Assets\xml\statechart\script.xml" />
      <None Include="Assets\xml\common\edge.xml" />
      <None Include="Assets\statechart_editor.xml" />
      <None Include="Assets\xml\statechart\toolbar.xml" />
+     <None Include="Assets\xml\statechart\action.xml" />
      <None Include="Assets\xml\statechart\canvas.xml" />
      <None Include="Assets\xml\classdiagram\canvas.xml" />
      <None Include="Assets\xml\statechart\state_properties.xml" />

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Raise">
+    <relationships>
+        <association class="Action" name="parent" max="1"/>
+    </relationships>
+    <attribute type="XElement" name="raise_xml"/>
+    <attribute type="SGUIVerticalGroup" name="group_widget"/>
+    <attribute type="SGUIVerticalGroup" name="parameters_group_widget"/>
+    <attribute type="SGUITextField" name="event_widget"/>
+    <attribute type="SGUITextField" name="scope_widget"/>
+    <attribute type="SGUITextField" name="target_widget"/>
+    <attribute type="SGUIButton" name="remove_button_widget"/>
+    <attribute type="int" name="child_id"/>
+    <constructor>
+        <parameter type="XElement" name="raise_xml"/>
+        <parameter type="SGUIGroupWidget" name="container_widget"/>
+        <body>
+            <![CDATA[
+            this.raise_xml = raise_xml;
+            
+            SCCDUtility.assureAttribute(this.raise_xml, "event");
+            SCCDUtility.assureAttribute(this.raise_xml, "scope");
+            SCCDUtility.assureAttribute(this.raise_xml, "target");
+            
+            this.group_widget = new SGUIVerticalGroup();
+            //this.group_widget.setExpandHeight(false);
+            container_widget.addChild(this.group_widget);
+            
+            //upper horizontal group
+            SGUIHorizontalGroup horizontal_widget = new SGUIHorizontalGroup();
+            this.event_widget = new SGUITextField("Event", this.raise_xml.Attribute("event").Value);
+            horizontal_widget.addChild(this.event_widget);
+            this.scope_widget = new SGUITextField("Scope", this.raise_xml.Attribute("scope").Value);
+            horizontal_widget.addChild(this.scope_widget);
+            this.group_widget.addChild(horizontal_widget);
+            
+            //lower horizontal group
+            horizontal_widget = new SGUIHorizontalGroup();
+            this.target_widget = new SGUITextField("Target", this.raise_xml.Attribute("target").Value);
+            horizontal_widget.addChild(this.target_widget);
+            this.remove_button_widget = new SGUIButton("Remove");
+            horizontal_widget.addChild(this.remove_button_widget);
+            this.group_widget.addChild(horizontal_widget);
+            
+            //Actual parameters
+            this.parameters_group_widget = new SGUIVerticalGroup();
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="setup">
+        <state id="setup" initial="wait_for_child_id">
+            <state id="wait_for_child_id">
+                <transition event="set_child_id" target="../../listening">
+                    <parameter name="child_id" type="int"/>
+                    <script>
+                        this.child_id = child_id;
+                    </script>
+                </transition>
+            </state>
+        </state>
+        <state id="listening">
+            <transition port="input" event="button_pressed" cond='this.remove_button_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.group_widget.removeFromParent();
+                    String target_path = String.Format("parent/children[{0}]", this.child_id);
+                    this.raise_xml.Remove();
+                </script>
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='target_path'/>
+                </raise>
+            </transition>
+            
+            <!-- Event field changed, edit @event -->
+            
+            <transition event="changed" port="input" cond='this.event_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.raise_xml.Attribute("event").Value = this.event_widget.text;
+                </script>
+            </transition>
+            
+            <!-- Scope field changed, edit @scope -->
+            
+            <transition event="changed" port="input" cond='this.scope_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.raise_xml.Attribute("scope").Value = this.scope_widget.text;
+                </script>
+            </transition>
+            
+            <!-- Target field changed, edit @target -->
+            
+            <transition event="changed" port="input" cond='this.target_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.raise_xml.Attribute("target").Value = this.target_widget.text;
+                </script>
+            </transition>
+        </state>
+    </scxml>
+</class>

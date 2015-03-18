@@ -16,6 +16,11 @@ namespace SCCDEditor
             this.action = action;
             this.style = style == null ? EditorStyles.miniButton : style;
         }
+
+        public void setLabel(string label)
+        {
+            this.label = label;
+        }
         
         protected override void OnGUI()
         {

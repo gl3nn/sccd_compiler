@@ -2,7 +2,7 @@
 <class name="StateProperties">
     <relationships>
         <association class="PropertiesPanel" name="panel" max="1"/>
-        <association class="IRuntimeClass" name="children"/>
+        <association class="Action" name="action" max="1"/>
     </relationships>
     <attribute type="SGUIVerticalGroup" name="panel_widget"/>
     <attribute type="XElement" name='state_xml'/>
@@ -12,6 +12,8 @@
     
     <attribute type="SGUITextField" name='name_field'/>
     <attribute type="SGUICheckBox" name='is_default_checkbox'/>
+    <attribute type="SGUIButton" name='enter_action_button'/>
+    <attribute type="SGUIButton" name='exit_action_button'/>
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
         <parameter type="XElement" name='state_xml'/>
@@ -34,8 +36,21 @@
                 this.panel_widget.addChild(this.is_default_checkbox);
             }
             
-            //Elements loading
-            this.elements_to_load = this.state_xml.Elements("replacebyonentry").ToList();
+            //onentry setup
+            SGUIHorizontalGroup onentry_group = new SGUIHorizontalGroup();
+            onentry_group.addChild(new SGUILabel("Enter action:"));
+            onentry_group.addChild(new SGUISpace());
+            this.enter_action_button = new SGUIButton(this.state_xml.Element("onentry") == null ? "Add" : "Edit");
+            onentry_group.addChild(this.enter_action_button);
+            this.panel_widget.addChild(onentry_group);
+            
+            //onexit setup
+            SGUIHorizontalGroup onexit_group = new SGUIHorizontalGroup();
+            onexit_group.addChild(new SGUILabel("Exit action:"));
+            onexit_group.addChild(new SGUISpace());
+            this.exit_action_button = new SGUIButton(this.state_xml.Element("onexit") == null ? "Add" : "Edit");
+            onexit_group.addChild(this.exit_action_button);
+            this.panel_widget.addChild(onexit_group);
             ]]>
         </body>
     </constructor>
@@ -44,60 +59,70 @@
             this.panel_widget.clearChildren();
         </body>
     </destructor>
-    <scxml initial="main">
-        <state id="main" initial="setup">
-            <state id="setup" initial="elements_loading">
-                <state id="elements_loading">
-                    <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
-                        <script>
-                            XElement element_xml = this.elements_to_load[this.elements_to_load.Count - 1];
-                            object group_widget = null;
-                            string class_name = "";
-                        </script>
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"children"' />
-                            <parameter expr='class_name'/>
-                            <parameter expr='element_xml' />
-                            <parameter expr='group_widget' />
-                        </raise>
-                        <script>
-                            this.elements_to_load.RemoveAt(this.elements_to_load.Count - 1);
-                        </script>
-                    </transition>
-                    <transition target="../../listening" cond="this.elements_to_load.Count == 0">
-                        <script>
-                            this.elements_to_load = null;
-                        </script>
-                    </transition>
-                </state>
-            </state>
+    <scxml initial="listening">
+        <state id="listening">
+                
+            <!-- Name field changed, edit @name -->
+            <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.state_xml.Attribute("id").Value = this.name_field.text;
+                    this.state_widget.label = this.name_field.text;
+                </script>
+            </transition>
             
-            <state id="listening">
-                
-                <!-- Name field changed, edit @name -->
-                <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
-                    <parameter name="tag" type="int"/>
+            <!-- is_default_checkbox changed, edit parent's @initial -->
+            <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.state_xml.Parent.Attribute("initial").Value = this.is_default_checkbox.is_checked ? this.name_field.text : "";
+                </script>
+            </transition>
+            
+            <!-- The add/edit button of the enter or exit action pressed -->
+            
+            <transition event="button_pressed" port="input" cond='tag == this.enter_action_button.tag || tag == this.exit_action_button.tag' target="../default_activation">
+                <parameter name="tag" type="int"/>
                     <script>
-                        this.state_xml.Attribute("id").Value = this.name_field.text;
-                        this.state_widget.label = this.name_field.text;
+                        XElement action_xml;
+                        if (tag == this.enter_action_button.tag)
+                        {
+                            action_xml = this.state_xml.Element("onentry");
+                            if (action_xml == null)
+                            {
+                                 action_xml = new XElement("onentry");
+                                 this.state_xml.Add(action_xml);
+                                 this.enter_action_button.setLabel("Edit");
+                            }
+                        }
+                        else
+                        {
+                            action_xml = this.state_xml.Element("onexit");
+                            if (action_xml == null)
+                            {
+                                 action_xml = new XElement("onexit");
+                                 this.state_xml.Add(action_xml);
+                                 this.exit_action_button.setLabel("Edit");
+                            }
+                        }
                     </script>
-                </transition>
-                
-                <!-- is_default_checkbox changed, edit parent's @initial -->
-                <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
-                    <parameter name="tag" type="int"/>
-                    <script>
-                        this.state_xml.Parent.Attribute("initial").Value = this.is_default_checkbox.is_checked ? this.name_field.text : "";
-                    </script>
-                </transition>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"action"' />
+                    <parameter expr='"Action"'/>
+                    <parameter expr='action_xml' />
+                </raise>
+            </transition>
+            
+            <transition event="action_closed" target=".">
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='"action"' />
+                </raise>         
+            </transition>
 
-            </state>
-            <history id="history" type="deep"/>
         </state>
         
-        
         <state id="default_activation">
-            <transition event="instance_created" target="../main/history">
+            <transition event="instance_created" target="../listening">
                 <parameter name="id" type="int"/>
                 <parameter name="association_name" type="String"/>
                 <script>
@@ -109,9 +134,6 @@
                 </raise>
                 <raise scope="cd" event="start_instance">
                     <parameter expr='association_path' />
-                </raise>
-                <raise target="association_path" event="set_child_id">
-                    <parameter expr='id' />
                 </raise>
             </transition>
         </state>

@@ -23,82 +23,96 @@ namespace SCCDEditor{
                 this.updateController();
                 return;
             }
-            
+
             sccdlib.Event input_event = null;
 
-            // NEXT ARE ALL EVENTS RELATED TO THE MOUSE WHICH SHOULD NOT BE GENERATED IF THE MOUSE IS NOT OVER THE WINDOW
-            if (SGUIEvent.current == null)
-                return;
-
-            // PROCESS MOUSE DOWN EVENT
-            if (Event.current.type == EventType.MouseDown)
+            if (SGUIEvent.current != null)
             {
-                string event_name = "";
+                // NEXT ARE ALL EVENTS RELATED TO THE MOUSE WHICH SHOULD NOT BE GENERATED IF THE MOUSE IS NOT OVER THE WINDOW
 
-                if (Event.current.button == 0)
-                    event_name = "left-mouse-down";
-                else if (Event.current.button == 1)
-                    event_name = "right-mouse-down";
-                else if (Event.current.button == 2)
-                    event_name = "middle-mouse-down";
+                // PROCESS MOUSE DOWN EVENT
+                if (Event.current.type == EventType.MouseDown)
+                {
+                    string event_name = "";
 
-                if (event_name != "")
-                    input_event = new sccdlib.Event(event_name, "input", new object[] {
-                        SGUIEvent.current.focus_tag,
-                        SGUIEvent.current.mouse_position
-                    });
-            }
-            // PROCESS MOUSE UP EVENT
-            else if (Event.current.type == EventType.MouseUp)
-            {
-                string event_name = "";
+                    if (Event.current.button == 0)
+                        event_name = "left-mouse-down";
+                    else if (Event.current.button == 1)
+                        event_name = "right-mouse-down";
+                    else if (Event.current.button == 2)
+                        event_name = "middle-mouse-down";
 
-                if (Event.current.button == 0)
-                    event_name = "left-mouse-up";
-                else if (Event.current.button == 1)
-                    event_name = "right-mouse-up";
-                else if (Event.current.button == 2)
-                    event_name = "middle-mouse-up";
+                    if (event_name != "")
+                    {
+                        input_event = new sccdlib.Event(event_name, "input", new object[] {
+                            SGUIEvent.current.focus_tag,
+                            SGUIEvent.current.mouse_position
+                        });
+                        GUI.FocusControl("");
+                    }
+                }
+                // PROCESS MOUSE UP EVENT
+                else if (Event.current.type == EventType.MouseUp)
+                {
+                    string event_name = "";
 
-                if (event_name != "")
-                    input_event = new sccdlib.Event(event_name, "input", new object[] {
-                        SGUIEvent.current.focus_tag,
-                        SGUIEvent.current.mouse_position
-                    });
-            }
-            // PROCESS MOUSE DRAG EVENT
-            else if (Event.current.type == EventType.MouseDrag)
-            {
-                string event_name = "";
+                    if (Event.current.button == 0)
+                        event_name = "left-mouse-up";
+                    else if (Event.current.button == 1)
+                        event_name = "right-mouse-up";
+                    else if (Event.current.button == 2)
+                        event_name = "middle-mouse-up";
 
-                if (Event.current.button == 0)
-                    event_name = "left-mouse-drag";
-                else if (Event.current.button == 1)
-                    event_name = "right-mouse-drag";
-                else if (Event.current.button == 2)
-                    event_name = "middle-mouse-drag";
+                    if (event_name != "")
+                        input_event = new sccdlib.Event(event_name, "input", new object[] {
+                            SGUIEvent.current.focus_tag,
+                            SGUIEvent.current.mouse_position
+                        });
+                }
+                // PROCESS MOUSE DRAG EVENT
+                else if (Event.current.type == EventType.MouseDrag)
+                {
+                    string event_name = "";
 
-                if (event_name != "")
-                    input_event = new sccdlib.Event(event_name, "input", new object[] {
+                    if (Event.current.button == 0)
+                        event_name = "left-mouse-drag";
+                    else if (Event.current.button == 1)
+                        event_name = "right-mouse-drag";
+                    else if (Event.current.button == 2)
+                        event_name = "middle-mouse-drag";
+
+                    if (event_name != "")
+                        input_event = new sccdlib.Event(event_name, "input", new object[] {
+                            SGUIEvent.current.focus_tag,
+                            SGUIEvent.current.mouse_position,
+                            Event.current.delta
+                        });
+                }
+                // PROCESS MOUSE MOVE EVENT
+                else if (Event.current.type == EventType.MouseMove)
+                {
+                    input_event = new sccdlib.Event("mouse-move", "input", new object[] {
                         SGUIEvent.current.focus_tag,
                         SGUIEvent.current.mouse_position,
                         Event.current.delta
                     });
+                }
             }
-            // PROCESS MOUSE MOVE EVENT
-            else if (Event.current.type == EventType.MouseMove)
+            if (input_event == null)
             {
-                input_event = new sccdlib.Event("mouse-move", "input", new object[] {
-                    SGUIEvent.current.focus_tag,
-                    SGUIEvent.current.mouse_position,
-                    Event.current.delta
-                });
+                if (Event.current.type == EventType.KeyDown)
+                {
+                    input_event = new sccdlib.Event("key-down", "input", new object[] {
+                        Event.current.keyCode
+                    });
+                }
             }
 
             if (input_event != null)
             {
                 this.controller.addInput(input_event);
                 this.updateController();
+                this.Repaint ();
             }
         }
 
@@ -130,8 +144,8 @@ namespace SCCDEditor{
 
         public void Update()
         {
-            if (this == EditorWindow.focusedWindow)
-                this.Repaint ();
+            /*if (this == EditorWindow.focusedWindow)
+                this.Repaint ();*/
         }
     }
 }

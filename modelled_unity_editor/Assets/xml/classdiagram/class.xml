@@ -5,6 +5,7 @@
     </relationships>
     <attribute type="SGUICanvasElement" name="widget" access="private"/>
     <attribute type="XElement" name="class_xml" access="private"/>
+    <attribute type="int" name="resize_id" access="private" init-value="-1"/>
     <constructor>
         <parameter type="SGUICanvasElement" name="widget"/>
         <parameter type="XElement" name="xml"/>
@@ -78,7 +79,7 @@
             <state id="state_dependent_actions" initial="setup">
 
                 <state id="setup">
-                    <transition target="../default/selected/"/>
+                    <transition target="../default/selected/default"/>
                 </state>
 
                 <state id="default" initial="not_selected">
@@ -121,10 +122,11 @@
                     
                     <!-- SELECTED STATE -->
                     
-                    <state id="selected" initial="listening">
+                    <state id="selected" initial="dragging">
                         <onentry>
                             <script>
                                 this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                                this.widget.enableResize(true);
                             </script>
                             <raise event="set_class_properties" target='"canvas/window/properties_panel"'>
                                 <parameter expr='this.class_xml' />
@@ -134,6 +136,7 @@
                         <onexit>
                             <script>
                                 this.widget.resetColor();
+                                this.widget.enableResize(false);
                             </script>
                             <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>
@@ -141,16 +144,44 @@
                             <parameter type="int" name="except_tag"/>
                         </transition>
                         
-                        <state id="listening">
-                            <!-- Left mouse drag causes state to be moved -->
+                        <transition target="/final" port="input" event="key-down" cond="key_code == KeyCode.Delete">
+                            <parameter type="KeyCode" name="key_code"/>
+                            <raise event="remove_class" target='"canvas"'>
+                                <parameter expr="this.widget"/>
+                            </raise>
+                        </transition>
                         
+                        <state id="default">
+                            <transition target="../dragging" port="input" event="left-mouse-down" cond="tag == this.widget.tag">
+                                <parameter type="int" name="tag"/>
+                                <parameter type="Vector2" name="position"/>
+                                <script>
+                                    this.resize_id = this.widget.getContainingResizeRect(position);
+                                </script>
+                            </transition>
+                        </state>
+                        
+                        <state id="dragging">
                             <transition target="." port="input" event="left-mouse-drag" cond="tag == this.widget.tag || tag == this.widget.canvas.tag">
                                 <parameter type="int" name="tag"/>
                                 <parameter type="Vector2" name="position"/>
                                 <parameter type="Vector2" name="delta"/>
                                 <script>
-                                    this.widget.move(delta);
+                                    if (this.resize_id >= 0)
+                                    {
+                                        this.widget.resize(this.resize_id, delta);
+                                        this.updateXMLSize();
+                                    }
+                                    else
+                                    {
+                                        this.widget.move(delta);
+                                    }
                                     this.updateXMLPosition();
+                                </script>
+                            </transition>
+                            <transition target="../default" port="input" event="left-mouse-up">
+                                <script>
+                                    this.resize_id = -1;
                                 </script>
                             </transition>
                         </state>
@@ -190,5 +221,7 @@
                 </state>
             </state>
         </parallel>
+        
+        <state id="final"/>
     </scxml>
 </class>

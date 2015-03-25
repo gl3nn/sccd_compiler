@@ -108,6 +108,19 @@
                             this.canvas_widget.removeElement(child);
                         </script>
                     </transition>
+                    
+                    <!-- Remove class from canvas -->
+                        
+                    <transition event="remove_state" target=".">
+                        <parameter name="remove_state" type="SGUICanvasElement"/>
+                        <raise scope="cd" event="delete_instance">
+                            <parameter expr='String.Format("all_states[{0}]", this.all_states_map[remove_state.tag])' />                          
+                        </raise>
+                        <script>
+                            this.all_states_map.Remove(remove_state.tag);
+                            this.canvas_widget.removeElement(remove_state);
+                        </script>
+                    </transition>
  
                 </state>
             </state>

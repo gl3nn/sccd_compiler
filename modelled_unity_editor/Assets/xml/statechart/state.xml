@@ -9,6 +9,7 @@
     <attribute type="SGUICanvasElement" name="widget"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <attribute type="XElement" name="state_xml" />
+    <attribute type="int" name="resize_id" access="private" init-value="-1"/>
     <constructor>
         <parameter type="SGUICanvasElement" name="widget"/>
         <parameter type="XElement" name="xml"/>
@@ -55,8 +56,16 @@
             this.state_xml.Attribute("y").Value = this.widget.position.y.ToString();
         </body>
     </method>
+    <method type="void" name="updateXMLSize">
+        <body>
+            this.state_xml.Attribute("w").Value = this.widget.position.width.ToString();
+            this.state_xml.Attribute("h").Value = this.widget.position.height.ToString();
+        </body>
+    </method>
     <scxml initial="main">            
         <parallel id="main">
+        
+            <transition event="parent_state_removed" target="/final"/>
         
             <!-- STATE INDEPENDENT ACTIONS -->
             
@@ -109,7 +118,7 @@
                 <!-- Only on initial creation of the state we want to enter the drop state as default. -->
 
                 <state id="setup">
-                    <transition target="../default/selected/"/>
+                    <transition target="../default/selected/not_dragging"/>
                 </state>
 
                 <state id="default" initial="not_selected">
@@ -151,10 +160,11 @@
                     
                     <!-- SELECTED STATE -->
                     
-                    <state id="selected" initial="not_dragging">
+                    <state id="selected" initial="dragging">
                         <onentry>
                             <script>
                                 this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                                this.widget.enableResize(true);
                             </script>
                             <raise event="set_state_properties" target='"canvas/window/properties_panel"'>
                                 <parameter expr='this.state_xml' />
@@ -164,6 +174,7 @@
                         <onexit>
                             <script>
                                 this.widget.resetColor();
+                                this.widget.enableResize(false);
                             </script>
                             <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>
@@ -171,19 +182,26 @@
                             <parameter type="int" name="except_tag"/>
                         </transition>
                         
+                        <!-- delete button pressed, delete this state -->
+                        
+                        <transition target="/final" port="input" event="key-down" cond="key_code == KeyCode.Delete">
+                            <parameter type="KeyCode" name="key_code"/>
+                            <raise event="disconnect_child" target='"parent"'>
+                                <parameter expr="this.widget"/>
+                            </raise>
+                        </transition>
+                        
                         <!-- NOT DRAGGING STATE -->
                         
                         <state id="not_dragging">
                         
-                            <!-- Left mouse drag causes state to be moved and the Dragging state to be entered -->
+                            <!-- Left mouse down, enter dragging state -->
                         
-                            <transition target="../dragging" port="input" event="left-mouse-drag">
+                            <transition target="../dragging" port="input" event="left-mouse-down" cond="tag == this.widget.tag">
                                 <parameter type="int" name="tag"/>
                                 <parameter type="Vector2" name="position"/>
-                                <parameter type="Vector2" name="delta"/>
                                 <script>
-                                    this.widget.move(delta);
-                                    this.updateXMLPosition();
+                                    this.resize_id = this.widget.getContainingResizeRect(position);
                                 </script>
                             </transition>
                         </state>
@@ -192,21 +210,31 @@
                         
                         <state id="dragging">
                         
-                            <!-- For each left-mouse-drag event move the state -->
-                        
-                            <transition target="." port="input" event="left-mouse-drag">
+                            <transition target="." port="input" event="left-mouse-drag" cond="tag == this.widget.tag || tag == this.widget.canvas.tag">
                                 <parameter type="int" name="tag"/>
                                 <parameter type="Vector2" name="position"/>
                                 <parameter type="Vector2" name="delta"/>
                                 <script>
-                                    this.widget.move(delta);
+                                    if (this.resize_id >= 0)
+                                    {
+                                        this.widget.resize(this.resize_id, delta);
+                                        this.updateXMLSize();
+                                    }
+                                    else
+                                    {
+                                        this.widget.move(delta);
+                                    }
                                     this.updateXMLPosition();
                                 </script>
                             </transition>
                             
                             <!-- End dragging, enter drop state -->
                             
-                            <transition target="../drop" port="input" event="left-mouse-up"/>
+                            <transition target="../drop" port="input" event="left-mouse-up">
+                                <script>
+                                    this.resize_id = -1;
+                                </script>
+                            </transition>
                         </state>
                         
                         <!-- DROP STATE -->
@@ -294,5 +322,14 @@
                 </state>
             </state>
         </parallel>
+        
+        <state id="final">
+            <onentry>
+                <raise event="remove_state" target='"canvas"'>
+                    <parameter expr="this.widget"/>
+                </raise>
+                <raise event="parent_state_removed" target='"children"'/>
+            </onentry>
+        </state>
     </scxml>
 </class>

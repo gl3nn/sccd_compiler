@@ -281,7 +281,7 @@
                         <parameter name="id" type="int"/>
                         <parameter name="association_name" type="String"/>
                         <script>
-                            this.classes_map[this.current_class.tag] = id;
+                            //this.classes_map[this.current_class.tag] = id;
                             this.current_class = null;
                         </script>
                     </transition>

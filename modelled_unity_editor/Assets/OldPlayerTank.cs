@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PlayerTank : MonoBehaviour {
+public class OldPlayerTank : MonoBehaviour {
     Transform turret;
     Transform barrell;
     Transform bullet_spawn;
@@ -20,7 +20,7 @@ public class PlayerTank : MonoBehaviour {
         if (Input.GetAxis("ArrowVertical") == 1 && shoot_time <= 0)
         {
             shoot_time = 1;
-            Transform bullet = GameObject.Instantiate(bullet_prefab, this.bullet_spawn.position, this.barrell.rotation * Quaternion.Euler(-90, 0, 0)) as Transform;
+            Transform bullet = GameObject.Instantiate(bullet_prefab, this.bullet_spawn.position, this.turret.rotation /* * Quaternion.Euler(-90, 0, 0)*/) as Transform;
         }
     }
 	

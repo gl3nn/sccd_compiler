@@ -96,6 +96,7 @@
      <None Include="Assets\xml\statechart\window.xml" />
      <None Include="Assets\xml\classdiagram\attribute.xml" />
      <None Include="Assets\xml\statechart\raise.xml" />
+     <None Include="Assets\player_tank.xml" />
      <None Include="Assets\xml\statechart\script.xml" />
      <None Include="Assets\xml\common\edge.xml" />
      <None Include="Assets\statechart_editor.xml" />

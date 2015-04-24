@@ -47,6 +47,7 @@
                 }
             }
             this.widget.label = this.state_xml.Attribute("id").Value;
+            this.widget.enableResize(true);
             ]]>
         </body>
     </constructor>
@@ -143,11 +144,13 @@
                     <state id="not_selected">
                         <transition event="left-mouse-down" port="input"  cond="tag == this.widget.tag" target="../selected">
                             <parameter name="tag" type="int"/>
+                            <parameter type="Vector2" name="position"/>
                             <raise event="unselect" target='"canvas"'>
                                 <parameter expr='this.widget.tag'/>
                             </raise>
                             <script>
                                 this.widget.pushToFront();
+                                this.resize_id = this.widget.getContainingResizeRect(position);
                             </script>
                         </transition>
                         <transition event="middle-mouse-down" port="input"  cond="tag == this.widget.tag" target=".">
@@ -164,7 +167,6 @@
                         <onentry>
                             <script>
                                 this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
-                                this.widget.enableResize(true);
                             </script>
                             <raise event="set_state_properties" target='"canvas/window/properties_panel"'>
                                 <parameter expr='this.state_xml' />
@@ -174,7 +176,6 @@
                         <onexit>
                             <script>
                                 this.widget.resetColor();
-                                this.widget.enableResize(false);
                             </script>
                             <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>

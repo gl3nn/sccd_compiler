@@ -60,7 +60,7 @@
         <attribute name="tank" type="GameObject"/>
         <attribute name="turret" type="Transform"/>
         <attribute name="bullet_spawn" type="Transform"/>
-        <attribute name="bullet_prefab" type="Transform"/>
+        <attribute name="bullet_prefab" type="GameObject"/>
         <attribute name="reload_time" type="float" init-value="1.0f"/>
         <attribute name="turret_rotation_speed" type="float" init-value="3.0f"/>
         <constructor>
@@ -69,7 +69,7 @@
                 this.tank = tank;
                 this.turret = tank.transform.FindChild("turret");
                 this.bullet_spawn = this.turret.FindChild("bullet_spawn");
-                this.bullet_prefab = Resources.Load("bullet_prefab") as Transform;
+                this.bullet_prefab = Resources.Load("bullet_prefab") as GameObject;
            </body>
         </constructor>
         <scxml>
@@ -80,11 +80,7 @@
                         <transition port="input" event="arrow-right-pressed" target="../right"/>
                     </state>
                     <state id="left">
-                        <transition port="input" event="arrow-left-released" target="../none">
-                            <script>
-                                Debug.Log("arrow-left-released");
-                            </script>
-                        </transition>
+                        <transition port="input" event="arrow-left-released" target="../none"/>
                         <transition port="input" event="arrow-right-pressed" target="../both"/>
                         <transition port="engine" event="fixed-update" target=".">
                             <script>

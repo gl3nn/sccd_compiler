@@ -76,6 +76,7 @@
                 <parameter name="tag" type="int"/>
                 <script>
                     this.state_xml.Parent.Attribute("initial").Value = this.is_default_checkbox.is_checked ? this.name_field.text : "";
+                    this.state_widget.setStyle("deephistorystate");
                 </script>
             </transition>
             

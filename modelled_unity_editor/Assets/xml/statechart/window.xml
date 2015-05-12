@@ -42,9 +42,6 @@
                         <parameter expr='"."' />
                         <parameter expr='"toolbar/window"'/>
                     </raise>
-                    <raise scope="cd" event="start_instance">
-                        <parameter expr='"toolbar"' />
-                    </raise>
                 </transition>
             </state>
             <state id="canvas_creation">
@@ -67,6 +64,9 @@
                     </raise>
                     <raise scope="cd" event="start_instance">
                         <parameter expr='"canvas"' />
+                    </raise>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='"toolbar"' />
                     </raise>
                 </transition>
             </state>

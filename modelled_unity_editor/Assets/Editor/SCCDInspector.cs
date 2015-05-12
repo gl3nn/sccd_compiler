@@ -6,7 +6,7 @@ using System.IO;
 using csharp_sccd_compiler;
 
 [CustomEditor(typeof(SCCDScript))]
-public class LevelScriptEditor : Editor 
+public class SCCDInspector : Editor 
 {
     public override void OnInspectorGUI()
     {

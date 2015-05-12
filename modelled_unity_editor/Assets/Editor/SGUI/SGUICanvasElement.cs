@@ -13,8 +13,9 @@ namespace SCCDEditor{
         public string                       label       { get; set; }
         new public SGUICanvasBase           parent      { get; private set; }
 
-        private Color?                      color       = null;
+        private bool                        selected       = false;
         private bool                        resize_enabled = false;
+        private GUIStyle                    style;
 
         public SGUICanvasElement(SGUICanvasBase parent, Vector2 center) : this(parent)
         {
@@ -31,6 +32,12 @@ namespace SCCDEditor{
         public SGUICanvasElement()
         {
             this.label = "";
+            this.style = "button";
+        }
+
+        public void setStyle(GUIStyle style)
+        {
+            this.style = style;
         }
 
         public void setCenter(Vector2 center)
@@ -47,14 +54,9 @@ namespace SCCDEditor{
                 this.canvas = this.parent.canvas;
         }
 
-        public void setColor(Color color)
+        public void setSelected(bool selected = true)
         {
-            this.color = color;
-        }
-        
-        public void resetColor()
-        {
-            this.color = null;
+            this.selected = selected;
         }
 
         public void enableResize(bool enable = true)
@@ -85,21 +87,28 @@ namespace SCCDEditor{
             base.move(delta);
 		}
 
+        public void setColor(Color meh)
+        {
+        }
+
+        public void resetColor(){
+        }
+
         protected override void OnGUI()
         {
             this.catchMouseDefault();
-            if (this.color != null)
+            if (this.selected)
             {
-                Color old_color = GUI.backgroundColor;
-                GUI.backgroundColor = Color.Lerp(GUI.backgroundColor, Color.green, 0.5f);
-                GUILayout.BeginArea(this.position, "", "button");
-                EditorGUILayout.LabelField(this.label);
+                Color old_color = GUI.color;
+                GUI.color = Color.Lerp(GUI.backgroundColor, Color.blue, 0.3f);
+                GUILayout.BeginArea(this.position, "", style);
+                EditorGUILayout.LabelField(this.label, "sfdsdf", "title");
                 GUILayout.EndArea();
-                GUI.backgroundColor = old_color;
+                GUI.color = old_color;
             } else
             {
-                GUILayout.BeginArea(this.position, "", "button");
-                EditorGUILayout.LabelField(this.label);
+                GUILayout.BeginArea(this.position, "", style);
+                EditorGUILayout.LabelField("", this.label, "title");
                 GUILayout.EndArea();
             }
             base.OnGUI();

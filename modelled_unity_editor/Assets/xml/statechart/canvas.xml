@@ -18,7 +18,7 @@
     <attribute type="SGUICanvasElement" name="current_element"/>
     <attribute type="XElement" name="current_xml_element"/>
     <attribute type="SGUICanvasEdge" name="current_edge"/>
-    <attribute type="string" name="creation_type" init-value='"bla"'/>
+    <attribute type="string" name="creation_type" init-value='""'/>
     <constructor>
         <parameter type="SGUIVerticalGroup" name="canvas_container"/>
         <parameter type="XElement" name="statechart_xml"/>
@@ -147,7 +147,7 @@
                                     <parameter expr='"State"'/>
                                     <parameter expr='this.current_element' />
                                     <parameter expr='this.current_xml_element' />
-                                    <parameter expr='true' />
+                                    <parameter expr='null' />
                                 </raise>
                             </transition>
                             <transition target="../../default" cond="this.states_to_load.Count == 0">
@@ -190,7 +190,7 @@
                                 <parameter expr='"State"'/>
                                 <parameter expr='this.current_element' />
                                 <parameter expr='this.statechart_xml' />
-                                <parameter expr='false' />
+                                <parameter expr='this.creation_type' />
                             </raise>
                         </transition>
 

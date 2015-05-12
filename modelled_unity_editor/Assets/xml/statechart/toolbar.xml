@@ -10,13 +10,13 @@
         <body>
             <![CDATA[
                 string[] labels = new string[]{"Basic", "Parallel", "History"};
-                string[] actions = new string[]{"basic", "parallel", "history"};
+                string[] actions = new string[]{"state", "parallel", "history"};
                 this.toolbar_widget = new SGUIToolbar(labels, actions);
                 canvas_container.addChild(this.toolbar_widget);
             ]]>
         </body>
     </constructor>
-        <scxml initial="setup">
+    <scxml initial="setup">
         <state id="setup">
             <transition target="../listening">
                 <raise event="state_type_toolbar_changed" target='"canvas"'>

@@ -13,44 +13,32 @@
     <constructor>
         <parameter type="SGUICanvasElement" name="widget"/>
         <parameter type="XElement" name="xml"/>
-        <parameter type="bool" name="is_loading"/>
+        <parameter type="string" name="state_type"/>
         <body>
             <![CDATA[
             this.widget = widget;
             this.children_map = new Dictionary<int,int>();
-            if (is_loading)
-            {
-                this.state_xml = xml;
-                // set position
-                this.widget.setPosition(
-                    float.Parse(this.state_xml.Attribute("x").Value),
-                    float.Parse(this.state_xml.Attribute("y").Value),
-                    float.Parse(this.state_xml.Attribute("w").Value),
-                    float.Parse(this.state_xml.Attribute("h").Value)
-                );
-                SCCDUtility.assureAttribute(this.state_xml, "id", "NoNameState");
-            }
+            if (state_type == null)
+                this.loadState(xml);
             else
-            {
-                //xml is parent, create XElement for state
-                this.state_xml = new XElement("state", 
-                    new XAttribute("id", "NewState"),
-                    new XAttribute("x", this.widget.position.x.ToString()),
-                    new XAttribute("y", this.widget.position.y.ToString()),
-                    new XAttribute("w", this.widget.position.width.ToString()),
-                    new XAttribute("h", this.widget.position.height.ToString())
-                );
-                xml.Add(this.state_xml);
-                if ( (SCCDUtility.hasName(xml, "state") || SCCDUtility.hasName(xml, "scxml")) && xml.Attribute("initial").Value == "" )
-                {           
-                    xml.Attribute("initial").Value = this.state_xml.Attribute("id").Value;
-                }
-            }
+                this.newState(xml, state_type);
+            
             this.widget.label = this.state_xml.Attribute("id").Value;
             this.widget.enableResize(true);
+            this.setStyle();           
             ]]>
         </body>
     </constructor>
+    <method type="void" name="setStyle">
+        <body>
+            if (SCCDUtility.hasName(this.state_xml, "parallel"))
+                this.widget.setStyle("parallelstate");
+            else if (SCCDUtility.hasName(this.state_xml, "history"))
+                this.widget.setStyle("shallowhistorystate");
+            else
+                this.widget.setStyle("basicstate");
+        </body>
+    </method>
     <method type="void" name="updateXMLPosition">
         <body>
             this.state_xml.Attribute("x").Value = this.widget.position.x.ToString();
@@ -61,6 +49,39 @@
         <body>
             this.state_xml.Attribute("w").Value = this.widget.position.width.ToString();
             this.state_xml.Attribute("h").Value = this.widget.position.height.ToString();
+        </body>
+    </method>
+    <method type="void" name="loadState">
+        <parameter type="XElement" name="xml"/>
+        <body>
+            this.state_xml = xml;
+            // set position
+            this.widget.setPosition(
+                float.Parse(xml.Attribute("x").Value),
+                float.Parse(xml.Attribute("y").Value),
+                float.Parse(xml.Attribute("w").Value),
+                float.Parse(xml.Attribute("h").Value)
+            );
+            SCCDUtility.assureAttribute(xml, "id", "NoNameState");            
+        </body>
+    </method>
+        <method type="void" name="newState">
+        <parameter type="XElement" name="xml"/>
+        <parameter type="string" name="state_type"/>
+        <body>            
+            //xml is parent, create XElement for state
+            this.state_xml = new XElement(state_type, 
+                new XAttribute("id", "NewState"),
+                new XAttribute("x", this.widget.position.x.ToString()),
+                new XAttribute("y", this.widget.position.y.ToString()),
+                new XAttribute("w", this.widget.position.width.ToString()),
+                new XAttribute("h", this.widget.position.height.ToString())
+            );
+            xml.Add(this.state_xml);
+            if ( (SCCDUtility.hasName(xml, "state") || SCCDUtility.hasName(xml, "scxml")) &amp;&amp; xml.Attribute("initial").Value == "" )
+            {           
+                xml.Attribute("initial").Value = this.state_xml.Attribute("id").Value;
+            }          
         </body>
     </method>
     <scxml initial="main">            
@@ -166,7 +187,7 @@
                     <state id="selected" initial="dragging">
                         <onentry>
                             <script>
-                                this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                                this.widget.setSelected();
                             </script>
                             <raise event="set_state_properties" target='"canvas/window/properties_panel"'>
                                 <parameter expr='this.state_xml' />
@@ -175,7 +196,7 @@
                         </onentry>
                         <onexit>
                             <script>
-                                this.widget.resetColor();
+                                this.widget.setSelected(false);
                             </script>
                             <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>

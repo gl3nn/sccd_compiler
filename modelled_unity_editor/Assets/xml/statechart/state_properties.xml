@@ -12,6 +12,7 @@
     
     <attribute type="SGUITextField" name='name_field'/>
     <attribute type="SGUICheckBox" name='is_default_checkbox'/>
+    <attribute type="SGUICheckBox" name='is_history_deep_checkbox'/>
     <attribute type="SGUIButton" name='enter_action_button'/>
     <attribute type="SGUIButton" name='exit_action_button'/>
     <constructor>
@@ -34,6 +35,13 @@
             {           
                 this.is_default_checkbox = new SGUICheckBox("Is default state", state_xml.Parent.Attribute("initial").Value == this.state_xml.Attribute("id").Value);
                 this.panel_widget.addChild(this.is_default_checkbox);
+            }
+            
+            //Is this a history state? yes, what type?
+            if (SCCDUtility.hasName(this.state_xml, "history"))
+            {           
+                this.is_history_deep_checkbox = new SGUICheckBox("Deep history?", state_xml.Attribute("type").Value == "deep");
+                this.panel_widget.addChild(this.is_history_deep_checkbox);
             }
             
             //onentry setup
@@ -75,8 +83,34 @@
             <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
-                    this.state_xml.Parent.Attribute("initial").Value = this.is_default_checkbox.is_checked ? this.name_field.text : "";
-                    this.state_widget.setStyle("deephistorystate");
+                    this.state_widget.setLabelStyle("emphtitle");
+                    if (this.is_default_checkbox.is_checked)
+                    {
+                        this.state_xml.Parent.Attribute("initial").Value = this.name_field.text;
+                        this.state_widget.setLabelStyle("emphtitle");
+                    }
+                    else
+                    {
+                        this.state_xml.Parent.Attribute("initial").Value = "";
+                        this.state_widget.setLabelStyle("title");
+                    }
+                </script>
+            </transition>
+            
+                <!-- is_history_deep_checkbox changed, edit @type -->
+            <transition event="changed" port="input" cond='this.is_history_deep_checkbox.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    if (this.is_history_deep_checkbox.is_checked)
+                    {
+                        this.state_xml.Attribute("type").Value = "deep";
+                        this.state_widget.setStyle("deephistorystate");
+                    }
+                    else
+                    {
+                        this.state_xml.Attribute("type").Value = "shallow";
+                        this.state_widget.setStyle("shallowhistorystate");
+                    }
                 </script>
             </transition>
             

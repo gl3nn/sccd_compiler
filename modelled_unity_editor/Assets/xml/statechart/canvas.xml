@@ -76,6 +76,9 @@
                         <raise event="unselect" target='"./all_states"'>
                             <parameter expr='except_tag'/>
                         </raise>
+                        <raise event="unselect" target='"./all_edges"'>
+                            <parameter expr='except_tag'/>
+                        </raise>
                     </transition>
                     
                                             
@@ -169,7 +172,7 @@
 
                         <transition event="left-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
                             <parameter name="tag" type="int"/>
-                            <raise event="unselect" target='"./all_states"'>
+                            <raise event="unselect">
                                 <parameter expr='tag'/>
                             </raise>
                         </transition>
@@ -179,7 +182,7 @@
                         <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../state_creation">
                             <parameter name="tag" type="int"/>
                             <parameter type="Vector2" name="position"/>
-                            <raise event="unselect" target='"./all_states"'>
+                            <raise event="unselect">
                                 <parameter expr='tag'/>
                             </raise>
                             <script>
@@ -198,7 +201,7 @@
 
                         <transition event="middle-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
                             <parameter name="tag" type="int"/>
-                            <raise event="unselect" target='"./all_states"'>
+                            <raise event="unselect">
                                 <parameter expr='tag'/>
                             </raise>
                         </transition>
@@ -234,6 +237,7 @@
                         <transition event="create_edge" target="../edge_creation">
                             <parameter type="SGUICanvasElement" name="source_element"/>
                             <parameter type="Vector2" name="position"/>
+                            <parameter type="XElement" name="state_xml"/>
                             <raise event="enter_edge_creation" target='"all_states"'/>
                             <script>
                                 this.current_edge = new SGUICanvasEdge(source_element, position);
@@ -242,6 +246,7 @@
                                 <parameter expr='"./all_edges"' />
                                 <parameter expr='"Edge"'/>
                                 <parameter expr='this.current_edge' />
+                                <parameter expr='state_xml'/>
                             </raise>
                         </transition>
                     </state>                
@@ -250,7 +255,7 @@
                     
                     <state id="edge_creation" initial="activation">
                         <state id="activation">
-                            <transition event="instance_created" target="../wait">
+                            <transition event="instance_created" target="../creating">
                                 <parameter name="id" type="int"/>
                                 <parameter name="association_name" type="String"/>
                                 <script>
@@ -266,7 +271,7 @@
                                 </raise>
                             </transition>
                         </state>
-                        <state id="wait">
+                        <state id="creating">
 
 
 
@@ -318,6 +323,7 @@
                                     <parameter expr="position"/>
                                 </raise>
                             </transition>
+
                         </state>
                         <onexit>
                             <raise event="edge_creation_stopped" target='"all_states"'/>

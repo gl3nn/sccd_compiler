@@ -4,8 +4,10 @@
         <association class="Canvas" name="canvas" max="1"/>
     </relationships>
     <attribute type="SGUICanvasEdge" name="edge_widget"/>
+    <attribute type="XElement" name="edge_xml"/>
     <constructor>
         <parameter type="SGUICanvasEdge" name="edge_widget"/>
+        <parameter type="XElement" name="edge_xml"/>
         <body>
             <![CDATA[
             this.edge_widget = edge_widget;
@@ -30,14 +32,15 @@
                 </script>
             </transition>
 
-        <!-- state where mouse is over an element (which might be used as end for the edge -->
+            <!-- state where mouse is over an element (which might be used as end for the edge -->
     
             <state id="state_drag">
-                <transition event="edge_end" target="../../idle">
+                <transition event="edge_end" target="../../active/selected">
                     <parameter name="element" type="SGUICanvasElement"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
                         this.edge_widget.adjustEndPoint(position);
+                        this.edge_widget.setLabel("label");
                     </script>
                     <raise event="edge_finished" target='"canvas"'/>
                 </transition>
@@ -107,9 +110,60 @@
             </state>
         </state>
 
-        <state id="idle">
-
+        <state id="active" initial="not_selected">
+            <state id="not_selected">
+                <transition event="left-mouse-down" port="input"  cond="tag == this.edge_widget.tag" target="../selected">
+                    <parameter name="tag" type="int"/>
+                    <parameter type="Vector2" name="position"/>
+                    <raise event="unselect" target='"canvas"'>
+                        <parameter expr='this.edge_widget.tag'/>
+                    </raise>
+                    <script>
+                        //this.widget.pushToFront();
+                    </script>
+                </transition>
+            </state>
+            <state id="selected">
+                <onentry>
+                    <script>
+                        this.edge_widget.setLabelStyle("emphtitle");
+                    </script>
+                    <raise event="set_edge_properties" target='"canvas/window/properties_panel"'>
+                        <parameter expr='this.edge_xml' />
+                        <parameter expr='this.edge_widget' />
+                    </raise>
+                </onentry>
+                <onexit>
+                    <script>
+                        this.edge_widget.resetLabelStyle();
+                    </script>
+                    <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
+                </onexit>
+                
+                <transition event="unselect" target="../not_selected" cond="this.edge_widget.tag != except_tag">
+                    <parameter type="int" name="except_tag"/>
+                </transition>
+                
+                <transition target="/destroyed" port="input" event="key-down" cond="key_code == KeyCode.Delete">
+                    <parameter type="KeyCode" name="key_code"/>
+                    <raise event="disconnect_edge" target='"canvas"'>
+                        <parameter expr="this.edge_widget"/>
+                    </raise>
+                </transition>
+                
+                <transition target="." port="input" event="left-mouse-drag" cond="tag == this.edge_widget.tag || tag == this.edge_widget.canvas.tag">
+                    <parameter type="int" name="tag"/>
+                    <parameter type="Vector2" name="position"/>
+                    <parameter type="Vector2" name="delta"/>
+                    <script>
+                        this.edge_widget.moveLabel(delta);
+                    </script>
+                </transition>
+            
+            </state>
+            
         </state>
+        
         <state id="destroyed">
             <onentry>
                 <script>

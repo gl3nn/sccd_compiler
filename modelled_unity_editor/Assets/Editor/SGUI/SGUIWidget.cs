@@ -17,6 +17,13 @@ namespace SCCDEditor
             this.tag = SGUIWidget.tag_counter++;
             this.is_enabled = true;
         }
+        
+        public void setCenter(Vector2 center)
+        {
+            Rect rect = this.position;
+            rect.center = center;
+            this.position = rect;
+        }
 
         protected void catchMouseDefault()
         {

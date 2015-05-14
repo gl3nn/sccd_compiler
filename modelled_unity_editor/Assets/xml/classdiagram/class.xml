@@ -127,7 +127,7 @@
                     <state id="selected" initial="dragging">
                         <onentry>
                             <script>
-                                this.widget.setColor(Color.Lerp(GUI.backgroundColor, Color.green, 0.5f));
+                                this.widget.setSelected();
                             </script>
                             <raise event="set_class_properties" target='"canvas/window/properties_panel"'>
                                 <parameter expr='this.class_xml' />
@@ -136,7 +136,7 @@
                         </onentry>
                         <onexit>
                             <script>
-                                this.widget.resetColor();
+                                this.widget.setSelected(false);
                             </script>
                             <raise event="reset_panel" target='"canvas/window/properties_panel"'/>
                         </onexit>

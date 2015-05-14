@@ -43,7 +43,10 @@ namespace SCCDEditor{
         SGUICanvasConnectionPoint end = null;
         public List<Vector2> control_points = new List<Vector2>();
 
-        public SGUICanvas canvas    { get; private set; }
+        public SGUICanvas canvas        { get; private set; }
+        public string label             { get; private set; }
+        private Vector2 label_offset    = new Vector2(0, 0);
+        private GUIStyle label_style    = "title";
         
         public SGUICanvasEdge(SGUICanvasElement start_element, Vector2 closest_to)
         {
@@ -73,29 +76,27 @@ namespace SCCDEditor{
             this.canvas.removeEdge(this);
         }
 
-        /*private static void Initialize()
+        public void setLabel(string text)
         {
-            if (lineTex == null)
-            {
-                lineTex = new Texture2D(1, 1, TextureFormat.ARGB32, false);
-                lineTex.SetPixel(0, 1, Color.white);
-                lineTex.Apply();
-            }
-            if (aaLineTex == null)
-            {
-                // TODO: better anti-aliasing of wide lines with a larger texture? or use Graphics.DrawTexture with border settings
-                aaLineTex = new Texture2D(1, 3, TextureFormat.ARGB32, false);
-                aaLineTex.SetPixel(0, 0, new Color(1, 1, 1, 0));
-                aaLineTex.SetPixel(0, 1, Color.white);
-                aaLineTex.SetPixel(0, 2, new Color(1, 1, 1, 0));
-                aaLineTex.Apply();
-            }
-            
-            // GUI.blitMaterial and GUI.blendMaterial are used internally by GUI.DrawTexture,
-            // depending on the alphaBlend parameter. Use reflection to "borrow" these references.
-            blitMaterial = (Material)typeof(GUI).GetMethod("get_blitMaterial", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
-            blendMaterial = (Material)typeof(GUI).GetMethod("get_blendMaterial", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
-        }*/
+            this.label = text;
+            Vector2 size = this.label_style.CalcSize(new GUIContent(this.label));
+            this.position = new Rect(this.position.x, this.position.y, size.x, size.y);
+        }
+
+        public void resetLabelStyle()
+        {
+            this.label_style = "title";
+        }
+        
+        public void setLabelStyle(GUIStyle label_style)
+        {
+            this.label_style = label_style;
+        }
+
+        public void moveLabel(Vector2 delta)
+        {
+            this.label_offset = new Vector2(this.label_offset.x + delta.x, this.label_offset.y + delta.y);
+        }
         
         public static void drawLine(Vector2 start_pos, Vector2 end_pos)
         {       
@@ -119,6 +120,19 @@ namespace SCCDEditor{
                3.25f
             );*/
 
+            /*Handles.DrawAAPolyLine(
+                new Vector3(start_pos.x, start_pos.y),
+                new Vector3(end_pos.x, end_pos.y)
+            );*/
+
+            Handles.color = Color.black;
+
+            Handles.DrawAAPolyLine(
+                4.0f,
+                new Vector3(start_pos.x, start_pos.y),
+                new Vector3(end_pos.x, end_pos.y)
+            );
+            /*
             Handles.DrawBezier( 
                new Vector3(start_pos.x, start_pos.y),
                new Vector3(end_pos.x, end_pos.y),
@@ -127,7 +141,7 @@ namespace SCCDEditor{
                Color.black,
                null,
                3.25f
-            );
+            );*/
 
             /*Handles.DrawLine(
                 new Vector3(start_pos.x, start_pos.y),
@@ -151,6 +165,13 @@ namespace SCCDEditor{
             return this.control_points.Count > 1;
         }
 
+        private void calculatePosition()
+        {
+            float x = (this.start.canvas_element.position.center.x + this.end.canvas_element.position.center.x) / 2;
+            float y = (this.start.canvas_element.position.center.y + this.end.canvas_element.position.center.y) / 2;
+            this.setCenter(new Vector2(x + this.label_offset.x, y + this.label_offset.y));
+        }
+
         protected override void OnGUI()
         {
 			Vector2 begin_point = this.start.getPosition ();
@@ -162,7 +183,24 @@ namespace SCCDEditor{
                 begin_point = next_point;
             }
             if (this.end != null)
+            {
                 SGUICanvasEdge.drawLine(begin_point, this.end.getPosition());
+                this.calculatePosition();
+                this.catchMouseDefault();
+                GUI.Label(this.position, this.label, this.label_style);
+
+                Texture2D arrow_texture = GUI.skin.GetStyle("arrowhead").normal.background;
+                Vector2 end_pos = this.end.getPosition();
+                Matrix4x4 matrixBackup = GUI.matrix;
+                float angle = Mathf.Atan2(end_pos.y-begin_point.y, end_pos.x-begin_point.x);
+                //Vector2 angle_vector = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                //end_pos.x += angle_vector.x;
+                //end_pos.y += angle_vector.y;
+                GUIUtility.RotateAroundPivot((angle * 180 / Mathf.PI) + 90, end_pos);
+                GUI.DrawTexture(new Rect(end_pos.x - 6.0f, end_pos.y, 12, 12), arrow_texture);
+                GUI.matrix = matrixBackup;
+            }
+
         }
     }
 }

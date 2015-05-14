@@ -16,6 +16,7 @@ namespace SCCDEditor{
         private bool                        selected       = false;
         private bool                        resize_enabled = false;
         private GUIStyle                    style;
+        private GUIStyle                    label_style;
 
         public SGUICanvasElement(SGUICanvasBase parent, Vector2 center) : this(parent)
         {
@@ -32,6 +33,12 @@ namespace SCCDEditor{
         public SGUICanvasElement()
         {
             this.label = "";
+            this.resetStyle();
+            this.resetLabelStyle();
+        }
+
+        public void resetStyle()
+        {
             this.style = "button";
         }
 
@@ -40,11 +47,14 @@ namespace SCCDEditor{
             this.style = style;
         }
 
-        public void setCenter(Vector2 center)
+        public void resetLabelStyle()
         {
-            Rect rect = this.position;
-            rect.center = center;
-            this.position = rect;
+            this.label_style = "title";
+        }
+        
+        public void setLabelStyle(GUIStyle label_style)
+        {
+            this.label_style = label_style;
         }
 
         public void setParent(SGUICanvasBase parent)
@@ -87,30 +97,17 @@ namespace SCCDEditor{
             base.move(delta);
 		}
 
-        public void setColor(Color meh)
-        {
-        }
-
-        public void resetColor(){
-        }
-
         protected override void OnGUI()
         {
             this.catchMouseDefault();
+            Color old_color = GUI.backgroundColor;
             if (this.selected)
-            {
-                Color old_color = GUI.color;
-                GUI.color = Color.Lerp(GUI.backgroundColor, Color.blue, 0.3f);
-                GUILayout.BeginArea(this.position, "", style);
-                EditorGUILayout.LabelField(this.label, "sfdsdf", "title");
-                GUILayout.EndArea();
-                GUI.color = old_color;
-            } else
-            {
-                GUILayout.BeginArea(this.position, "", style);
-                EditorGUILayout.LabelField("", this.label, "title");
-                GUILayout.EndArea();
-            }
+                GUI.backgroundColor = Color.Lerp(GUI.backgroundColor, Color.blue, 0.3f);
+            GUILayout.BeginArea(this.position, "", style);
+            EditorGUILayout.LabelField("", this.label, this.label_style);
+            GUILayout.EndArea();
+            GUI.backgroundColor = old_color;
+
             base.OnGUI();
 
             if(this.resize_enabled)

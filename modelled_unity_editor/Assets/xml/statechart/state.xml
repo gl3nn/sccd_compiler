@@ -34,9 +34,19 @@
             if (SCCDUtility.hasName(this.state_xml, "parallel"))
                 this.widget.setStyle("parallelstate");
             else if (SCCDUtility.hasName(this.state_xml, "history"))
-                this.widget.setStyle("shallowhistorystate");
+            {
+                if (this.state_xml.Attribute("type").Value == "deep")
+                    this.widget.setStyle("deephistorystate");
+                else
+                    this.widget.setStyle("shallowhistorystate");
+            }
             else
                 this.widget.setStyle("basicstate");
+                
+            if (this.state_xml.Parent.Attribute("initial").Value == this.state_xml.Attribute("id").Value)
+            {
+                this.widget.setLabelStyle("emphtitle");
+            }
         </body>
     </method>
     <method type="void" name="updateXMLPosition">
@@ -81,7 +91,9 @@
             if ( (SCCDUtility.hasName(xml, "state") || SCCDUtility.hasName(xml, "scxml")) &amp;&amp; xml.Attribute("initial").Value == "" )
             {           
                 xml.Attribute("initial").Value = this.state_xml.Attribute("id").Value;
-            }          
+            }
+            if (SCCDUtility.hasName(this.state_xml, "history"))
+                SCCDUtility.assureAttribute(this.state_xml, "type", "shallow");        
         </body>
     </method>
     <scxml initial="main">            
@@ -93,8 +105,6 @@
             
             <state id="state_independent_actions" initial="listening">
                 <state id="listening">
-                
-                    <!--  -->
 
                     <transition event="new_child" target=".">
                         <parameter type="int" name="id"/>
@@ -153,6 +163,7 @@
                         <raise event="create_edge" target='"canvas"'>
                             <parameter expr='this.widget'/>
                             <parameter expr="position"/>
+                            <parameter expr='this.state_xml'/>
                         </raise>
                     </transition>
                     

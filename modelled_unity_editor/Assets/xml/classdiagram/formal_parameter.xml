@@ -64,9 +64,6 @@
                     this.parameter_xml.Remove();
                 </script>
                 <raise scope="cd" event="delete_instance">
-                    <parameter expr='"delete_button"'/>
-                </raise>
-                <raise scope="cd" event="delete_instance">
                     <parameter expr='target_path'/>
                 </raise>
             </transition>

@@ -1,20 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Edge">
+<class name="Transition">
     <relationships>
         <association class="Canvas" name="canvas" max="1"/>
     </relationships>
     <attribute type="SGUICanvasEdge" name="edge_widget"/>
-    <attribute type="XElement" name="edge_xml"/>
+    <attribute type="XElement" name="transition_xml"/>
     <constructor>
         <parameter type="SGUICanvasEdge" name="edge_widget"/>
-        <parameter type="XElement" name="edge_xml"/>
+        <parameter type="XElement" name="state_xml"/>
         <body>
             <![CDATA[
             this.edge_widget = edge_widget;
-            //this.egde_xml = edge_xml;
+            this.newTransition(state_xml);
             ]]>
         </body>
     </constructor>
+    <method type="void" name="newTransition">
+        <parameter type="XElement" name="xml"/>
+        <body>            
+            //xml is parent, create XElement for state
+            this.transition_xml = new XElement("transition", 
+                new XAttribute("event", ""),
+                new XAttribute("port", ""),
+                new XAttribute("target", ""),
+                new XAttribute("after", ""),
+                new XAttribute("label", ""),
+                new XAttribute("x-offset", 0),
+                new XAttribute("y-offset", 0)
+            );
+            xml.Add(this.transition_xml);     
+        </body>
+    </method>
     <scxml initial="creation">
 
         <state id="creation" initial="state_drag">
@@ -33,43 +49,46 @@
                 </script>
             </transition>
 
-            <!-- state where mouse is over an element (which might be used as end for the edge -->
+            <!-- EDGE END IS CURRENTLY OVER A STATE -->
     
             <state id="state_drag">
-                <transition event="edge_end" target="../../active/selected">
+                <transition event="transition_finished" cond="this.edge_widget.end != null" target="../../active/selected">
+                    <script>
+                        Debug.Log("created");
+                    </script>
+                </transition>
+                
+                <transition event="transition_finished" cond="this.edge_widget.end == null" target="../../destroyed">
+                    <raise event="transition_cancelled" target='"canvas"'/>
+                    <script>
+                        Debug.Log("not created");
+                    </script>
+                </transition>             
+                
+                <transition event="transition_end_over_state" cond="this.edge_widget.end != null" target=".">
                     <parameter name="element" type="SGUICanvasElement"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
                         this.edge_widget.adjustEndPoint(position);
-                        this.edge_widget.setLabel("label");
-                    </script>
-                    <raise event="edge_finished" target='"canvas"'/>
-                </transition>
-                <transition event="over_edge_end" target=".">
-                    <parameter name="element" type="SGUICanvasElement"/>
-                    <parameter name="position" type="Vector2"/>
-                    <script>
-                        this.edge_widget.adjustEndPoint(position);
                     </script>
                 </transition>
+                
+                <!-- mouse dragging over canvas, change state - add control point - remove end point -->
+                
                 <transition event="right-mouse-drag" port="input" cond="this.edge_widget.canvas.tag == tag" target="../canvas_drag">
                     <parameter name="tag" type="int"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
-                        /*if (!this.edge_widget.hasControlPoints())
-                        {
-                            this.edge_widget.start.setClosest(position);
-                        }*/
                         this.edge_widget.addControlPoint(position); // Current mouse position as temporary control point
                         this.edge_widget.removeEndPoint();
                     </script>
                 </transition>
             </state>
+            
+            <!-- EDGE IS CURRENTLY ON CANVAS (NOT OVER STATE) -->  
             <state id="canvas_drag">
             
-            
-            
-                <transition event="over_edge_end" target="../state_drag">
+                <transition event="transition_end_over_state" target="../state_drag">
                     <parameter name="element" type="SGUICanvasElement"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
@@ -80,7 +99,7 @@
                 
                 <transition event="right-mouse-up" port="input" cond="this.edge_widget.canvas.tag == tag" target="../../destroyed">
                     <parameter name="tag" type="int"/>
-                    <raise event="edge_cancelled" target='"canvas"'/>
+                    <raise event="transition_cancelled" target='"canvas"'/>
                 </transition>
 
                 <transition event="right-mouse-drag" port="input" cond="this.edge_widget.canvas.tag == tag" target=".">
@@ -88,10 +107,6 @@
                     <parameter name="position" type="Vector2"/>
                     <script>
                         this.edge_widget.popControlPoint();
-                        /*if (!this.edge_widget.hasControlPoints())
-                        {
-                            this.edge_widget.start.setClosest(position);
-                        }*/
                         this.edge_widget.addControlPoint(position); // Current mouse position as temporary control point
                     </script>
                 </transition>
@@ -100,10 +115,6 @@
                     <parameter name="position" type="Vector2"/>
                     <script>
                         this.edge_widget.popControlPoint();
-                        /*if (!this.edge_widget.hasControlPoints())
-                        {
-                            this.edge_widget.start.setClosest(position);
-                        }*/
                         this.edge_widget.addControlPoint(position); // New control point
                         this.edge_widget.addControlPoint(position); // Current mouse position as temporary control point
                     </script>
@@ -129,8 +140,8 @@
                     <script>
                         this.edge_widget.setLabelStyle("emphtitle");
                     </script>
-                    <raise event="set_edge_properties" target='"canvas/window/properties_panel"'>
-                        <parameter expr='this.edge_xml' />
+                    <raise event="set_transition_properties" target='"canvas/window/properties_panel"'>
+                        <parameter expr='this.transition_xml' />
                         <parameter expr='this.edge_widget' />
                     </raise>
                 </onentry>

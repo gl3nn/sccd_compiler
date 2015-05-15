@@ -71,42 +71,40 @@
             this.panel_widget.clearChildren();
         </body>
     </destructor>
-    <scxml initial="main">
-        <state id="main" initial="setup">
-            <state id="setup" initial="elements_loading">
-                <state id="elements_loading">
-                    <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
-                        <script>
-                            XElement element_xml = this.elements_to_load[this.elements_to_load.Count - 1];
-                            object group_widget = null;
-                            string class_name = "";
-                            if (SCCDUtility.hasName(element_xml, "attribute"))
-                            {
-                                class_name = "Attribute";
-                                group_widget = this.attributes_group_widget;
-                            }
-                            else if (SCCDUtility.hasName(element_xml, "method"))
-                            {
-                                class_name = "Method";
-                                group_widget = this.methods_group_widget;
-                            }
-                        </script>
-                        <raise scope="cd" event="create_instance">
-                            <parameter expr='"children"' />
-                            <parameter expr='class_name'/>
-                            <parameter expr='element_xml' />
-                            <parameter expr='group_widget' />
-                        </raise>
-                        <script>
-                            this.elements_to_load.RemoveAt(this.elements_to_load.Count - 1);
-                        </script>
-                    </transition>
-                    <transition target="../../listening" cond="this.elements_to_load.Count == 0">
-                        <script>
-                            this.elements_to_load = null;
-                        </script>
-                    </transition>
-                </state>
+    <scxml initial="saving_history">
+        <state id="saving_history" initial="loading">
+            <state id="loading">
+                <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
+                    <script>
+                        XElement element_xml = this.elements_to_load[this.elements_to_load.Count - 1];
+                        object group_widget = null;
+                        string class_name = "";
+                        if (SCCDUtility.hasName(element_xml, "attribute"))
+                        {
+                            class_name = "Attribute";
+                            group_widget = this.attributes_group_widget;
+                        }
+                        else if (SCCDUtility.hasName(element_xml, "method"))
+                        {
+                            class_name = "Method";
+                            group_widget = this.methods_group_widget;
+                        }
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='class_name'/>
+                        <parameter expr='element_xml' />
+                        <parameter expr='group_widget' />
+                    </raise>
+                    <script>
+                        this.elements_to_load.RemoveAt(this.elements_to_load.Count - 1);
+                    </script>
+                </transition>
+                <transition target="../listening" cond="this.elements_to_load.Count == 0">
+                    <script>
+                        this.elements_to_load = null;
+                    </script>
+                </transition>
             </state>
             
             <state id="listening">
@@ -166,7 +164,7 @@
         
         
         <state id="default_activation">
-            <transition event="instance_created" target="../main/history">
+            <transition event="instance_created" target="../saving_history/history">
                 <parameter name="id" type="int"/>
                 <parameter name="association_name" type="String"/>
                 <script>

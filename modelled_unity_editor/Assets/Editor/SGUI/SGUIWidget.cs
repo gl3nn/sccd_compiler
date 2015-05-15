@@ -46,7 +46,6 @@ namespace SCCDEditor
                 GUI.enabled = false;
             this.OnGUI();
             GUI.enabled = previous_enabled_state;
-
         }
 
         protected virtual void OnGUI()

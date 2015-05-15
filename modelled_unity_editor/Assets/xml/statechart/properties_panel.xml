@@ -34,6 +34,22 @@
                     <parameter expr='state_widget' />
                 </raise>
             </transition>
+            
+            <!-- Transition selected, create its panel. -->
+            <transition event="set_transition_properties" target=".">
+                <parameter name="xml" type="XElement"/>
+                <parameter name="edge_widget" type="SGUICanvasEdge"/>
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='"active_panel"' />
+                </raise>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"active_panel"' />
+                    <parameter expr='"TransitionProperties"'/>
+                    <parameter expr='this.panel_widget'/>
+                    <parameter expr='xml' />
+                    <parameter expr='edge_widget' />
+                </raise>
+            </transition>
         
             <state id="not_deactivating">
                 <transition event="reset_panel" target="../deactivating"/>

@@ -4,7 +4,7 @@
         <association class="Window" name="window" max="1"/>
         <association class="State" name="children"/>
         <association class="State" name="all_states"/>
-        <association class="Edge" name="all_edges"/>
+        <association class="Transition" name="all_transitions"/>
     </relationships>
     <attribute type="SGUICanvas" name="canvas_widget"/>
     <attribute type="XElement" name="statechart_xml"/>
@@ -14,10 +14,10 @@
     
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="all_states_map"/>
-    <attribute type="Dictionary&lt;int, int&gt;" name="all_edges_map"/>
+    <attribute type="Dictionary&lt;int, int&gt;" name="all_transitions_map"/>
     <attribute type="SGUICanvasElement" name="current_element"/>
     <attribute type="XElement" name="current_xml_element"/>
-    <attribute type="SGUICanvasEdge" name="current_edge"/>
+    <attribute type="SGUICanvasEdge" name="current_transition"/>
     <attribute type="string" name="creation_type" init-value='""'/>
     <constructor>
         <parameter type="SGUIVerticalGroup" name="canvas_container"/>
@@ -28,7 +28,7 @@
             canvas_container.addChild(this.canvas_widget);
             this.children_map = new Dictionary<int,int>();
             this.all_states_map = new Dictionary<int,int>();
-            this.all_edges_map = new Dictionary<int,int>();
+            this.all_transitions_map = new Dictionary<int,int>();
             this.statechart_xml = statechart_xml;
             
             //load states from xml
@@ -76,7 +76,7 @@
                         <raise event="unselect" target='"./all_states"'>
                             <parameter expr='except_tag'/>
                         </raise>
-                        <raise event="unselect" target='"./all_edges"'>
+                        <raise event="unselect" target='"./all_transitions"'>
                             <parameter expr='except_tag'/>
                         </raise>
                     </transition>
@@ -232,35 +232,35 @@
                             </raise>
                         </transition>
 
-                        <!-- Element initiated edge creation -->
+                        <!-- State initiated transition creation -->
                         
-                        <transition event="create_edge" target="../edge_creation">
-                            <parameter type="SGUICanvasElement" name="source_element"/>
+                        <transition event="create_transition" target="../transition_creation">
+                            <parameter type="SGUICanvasElement" name="source_state"/>
                             <parameter type="Vector2" name="position"/>
                             <parameter type="XElement" name="state_xml"/>
-                            <raise event="enter_edge_creation" target='"all_states"'/>
+                            <raise event="enter_transition_creation" target='"all_states"'/>
                             <script>
-                                this.current_edge = new SGUICanvasEdge(source_element, position);
+                                this.current_transition = new SGUICanvasEdge(source_state, position);  
                             </script>
                             <raise scope="cd" event="create_instance">
-                                <parameter expr='"./all_edges"' />
-                                <parameter expr='"Edge"'/>
-                                <parameter expr='this.current_edge' />
+                                <parameter expr='"./all_transitions"' />
+                                <parameter expr='"Transition"'/>
+                                <parameter expr='this.current_transition' />
                                 <parameter expr='state_xml'/>
                             </raise>
                         </transition>
                     </state>                
                 
-                    <!-- EDGE CREATION STATE -->
+                    <!-- TRANSITION CREATION STATE -->
                     
-                    <state id="edge_creation" initial="activation">
+                    <state id="transition_creation" initial="activation">
                         <state id="activation">
                             <transition event="instance_created" target="../creating">
                                 <parameter name="id" type="int"/>
                                 <parameter name="association_name" type="String"/>
                                 <script>
                                     String association_path = String.Format("{0}[{1}]", association_name, id);
-                                    this.all_edges_map[this.current_edge.tag] = id;
+                                    this.all_transitions_map[this.current_transition.tag] = id;
                                 </script>
                                 <raise scope="cd" event="associate_instance">
                                     <parameter expr='"."'/>
@@ -273,52 +273,45 @@
                         </state>
                         <state id="creating">
 
+                            <!-- Mouse released on canvas, so transition gets cancelled.--> 
 
-
-                            <transition event="edge_cancelled" target="../../default">
+                            <transition event="transition_cancelled" target="../../default">
                                 <script>
-                                    String association_path = String.Format("all_edges[{0}]", this.all_edges_map[this.current_edge.tag]);
-                                    this.all_edges_map.Remove(this.current_edge.tag);
+                                    String association_path = String.Format("all_transitions[{0}]", this.all_transitions_map[this.current_transition.tag]);
+                                    this.all_transitions_map.Remove(this.current_transition.tag);
                                 </script>
                                 <raise scope="cd" event="delete_instance">
                                     <parameter expr="association_path"/>
                                 </raise>
                                 <script>
-                                    this.current_edge = null;
+                                    this.current_transition = null;
                                 </script>
                             </transition>
 
 
-
-                            <transition event="edge_finished" target="../../default">
-                                <script>
-                                    this.current_edge = null;
-                                </script>
-                            </transition>
-
-
-
-                            <transition event="edge_end" target=".">
+                            <!-- Event received from a state, that the edge end got released over it. -->
+                            <transition event="transition_end" target="../../default">
                                 <parameter name="element" type="SGUICanvasElement"/>
                                 <parameter name="position" type="Vector2"/>
                                 <script>
-                                    String association_path = String.Format("all_edges[{0}]", this.all_edges_map[this.current_edge.tag]);
+                                    String association_path = String.Format("all_transitions[{0}]", this.all_transitions_map[this.current_transition.tag]);
+                                    this.current_transition = null;
                                 </script>
-                                <raise event="edge_end" target="association_path">
+                                <raise event="transition_finished" target="association_path">
                                     <parameter expr="element"/>
                                     <parameter expr="position"/>
                                 </raise>
                             </transition>
 
 
-
-                            <transition event="over_edge_end" target=".">
+                            <!-- Event received from a state, that the edge end is currently hoover it. -->
+                            <transition event="transition_end_over_state" target=".">
                                 <parameter name="element" type="SGUICanvasElement"/>
                                 <parameter name="position" type="Vector2"/>
                                 <script>
-                                    String association_path = String.Format("all_edges[{0}]", this.all_edges_map[this.current_edge.tag]);
+                                    String association_path = String.Format("all_transitions[{0}]", this.all_transitions_map[this.current_transition.tag]);
                                 </script>
-                                <raise event="over_edge_end" target="association_path">
+                                <raise event="transition_end_over_state" target="association_path">
                                     <parameter expr="element"/>
                                     <parameter expr="position"/>
                                 </raise>
@@ -326,7 +319,7 @@
 
                         </state>
                         <onexit>
-                            <raise event="edge_creation_stopped" target='"all_states"'/>
+                            <raise event="transition_creation_stopped" target='"all_states"'/>
                         </onexit>
                     </state>
                     

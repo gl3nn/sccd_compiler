@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TransitionProperties">
+    <relationships>
+        <association class="PropertiesPanel" name="panel" max="1"/>
+        <association class="Action" name="action" max="1"/>
+    </relationships>
+    <attribute type="SGUIVerticalGroup" name="panel_widget"/>
+    <attribute type="XElement" name='transition_xml'/>
+    <attribute type="SGUICanvasEdge" name='edge_widget'/>
+    
+    <attribute type="List&lt;XElement&gt;" name="elements_to_load"/>
+    
+    <attribute type="SGUITextArea" name='label_field'/>
+    <attribute type="SGUITextField" name='event_field'/>
+    <attribute type="SGUITextField" name='port_field'/>
+    <attribute type="SGUITextField" name='after_field'/>
+    
+    <attribute type="SGUIButton" name='action_button'/>
+    
+    <attribute type="SGUIVerticalGroup" name="parameters_group_widget"/>
+    <attribute type="SGUIButton" name="add_parameter_button"/>
+
+    <constructor>
+        <parameter type="SGUIVerticalGroup" name='panel_widget'/>
+        <parameter type="XElement" name='transition_xml'/>
+        <parameter type="SGUICanvasEdge" name='edge_widget'/>
+        <body>
+            <![CDATA[
+            this.panel_widget = panel_widget;
+            this.transition_xml = transition_xml;
+            this.edge_widget = edge_widget;
+            
+            this.panel_widget.addChild(new SGUILabel("Edit transition properties."));
+            
+            //@label property setup
+            SCCDUtility.assureAttribute(this.transition_xml, "label");
+            this.label_field = new SGUITextArea("Edge Label", this.edge_widget.label);
+            this.panel_widget.addChild(this.label_field);
+            
+            //@event property setup
+            SCCDUtility.assureAttribute(this.transition_xml, "event");
+            this.event_field = new SGUITextField("Event Name", this.transition_xml.Attribute("event").Value);
+            this.panel_widget.addChild(this.event_field);
+            
+            //@port property setup
+            SCCDUtility.assureAttribute(this.transition_xml, "port");
+            this.port_field = new SGUITextField("Input Port", this.transition_xml.Attribute("port").Value);
+            this.panel_widget.addChild(this.port_field);
+            
+            //@after property setup
+            SCCDUtility.assureAttribute(this.transition_xml, "after");
+            this.after_field = new SGUITextField("After Time", this.transition_xml.Attribute("after").Value);
+            this.panel_widget.addChild(this.after_field);
+            
+            //action setup
+            this.action_button = new SGUIButton("Edit Action");
+            this.panel_widget.addChild(this.action_button);
+            
+            //Parameters setup
+            SGUIHorizontalGroup parameters_heading = new SGUIHorizontalGroup();
+            parameters_heading.addChild(new SGUILabel("Parameters:"));
+            this.add_parameter_button = new SGUIButton("Add");
+            parameters_heading.addChild(this.add_parameter_button);
+            this.panel_widget.addChild(parameters_heading);
+            this.parameters_group_widget = new SGUIVerticalGroup();
+            this.parameters_group_widget.setExpandHeight(false);
+            this.panel_widget.addChild(this.parameters_group_widget);
+            ]]>
+        </body>
+    </constructor>
+    <destructor>
+        <body>
+            this.panel_widget.clearChildren();
+        </body>
+    </destructor>
+    <scxml initial="listening">
+        <state id="listening">
+                
+            <!-- Label field changed, edit @label -->
+            <transition event="changed" port="input" cond='this.label_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.transition_xml.Attribute("label").Value = this.label_field.text;
+                    this.edge_widget.setLabel(this.label_field.text);
+                </script>
+            </transition>
+            
+            <!-- Event name field changed, edit @event -->
+            <transition event="changed" port="input" cond='this.event_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.transition_xml.Attribute("event").Value = this.event_field.text;
+                </script>
+            </transition>
+            
+            <!-- Input port field changed, edit @port -->
+            <transition event="changed" port="input" cond='this.port_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.transition_xml.Attribute("port").Value = this.port_field.text;
+                </script>
+            </transition>
+            
+            <!-- After time field changed, edit @after -->
+            <transition event="changed" port="input" cond='this.after_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.transition_xml.Attribute("after").Value = this.after_field.text;
+                </script>
+            </transition>
+                        
+            <!-- The add/edit button of the enter or exit action pressed -->
+            
+            <transition event="button_pressed" port="input" cond='tag == this.action_button.tag' target="../default_activation">
+                <parameter name="tag" type="int"/>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"action"' />
+                    <parameter expr='"Action"'/>
+                    <parameter expr='this.transition_xml' />
+                </raise>
+            </transition>
+            
+            <!-- action editing window was closed -->
+            
+            <transition event="action_closed" target=".">
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='"action"' />
+                </raise>         
+            </transition>
+            
+            <transition port="input" event="button_pressed" cond='tag == this.add_parameter_button.tag' target="../default_activation">
+                <parameter name="tag" type="int"/>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"children"' />
+                    <parameter expr='"FormalEventParameter"'/>
+                    <parameter expr='this.transition_xml' />
+                    <parameter expr='this.parameters_group_widget' />
+                </raise>
+            </transition>
+
+        </state>
+        
+        <state id="default_activation">
+            <transition event="instance_created" target="../listening">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/parent"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+            </transition>
+        </state>
+    </scxml>
+</class>

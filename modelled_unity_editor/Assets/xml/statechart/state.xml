@@ -75,7 +75,7 @@
             SCCDUtility.assureAttribute(xml, "id", "NoNameState");            
         </body>
     </method>
-        <method type="void" name="newState">
+    <method type="void" name="newState">
         <parameter type="XElement" name="xml"/>
         <parameter type="string" name="state_type"/>
         <body>            
@@ -160,7 +160,7 @@
                     <transition event="right-mouse-down" port="input" cond="tag == this.widget.tag" target="../edge_creation">
                         <parameter name="tag" type="int"/>
                         <parameter type="Vector2" name="position"/>
-                        <raise event="create_edge" target='"canvas"'>
+                        <raise event="create_transition" target='"canvas"'>
                             <parameter expr='this.widget'/>
                             <parameter expr="position"/>
                             <parameter expr='this.state_xml'/>
@@ -169,7 +169,7 @@
                     
                     <!-- Some other state initiated edge creation, nonetheless enter the EDGE CREATION state -->
                     
-                    <transition event="enter_edge_creation" target="../edge_creation"/>
+                    <transition event="enter_transition_creation" target="../edge_creation"/>
                     
                     <!-- NOT SELECTED STATE -->
                     
@@ -331,7 +331,7 @@
                     <transition event="right-mouse-up" port="input" cond="tag == this.widget.tag" target="../default">
                         <parameter name="tag" type="int"/>
                         <parameter name="position" type="Vector2"/>
-                        <raise event="edge_end" target='"canvas"'>
+                        <raise event="transition_end" target='"canvas"'>
                             <parameter expr="this.widget"/>
                             <parameter expr="position"/>
                         </raise>
@@ -342,7 +342,7 @@
                     <transition event="right-mouse-drag" port="input" cond="tag == this.widget.tag" target=".">
                         <parameter name="tag" type="int"/>
                         <parameter name="position" type="Vector2"/>
-                        <raise event="over_edge_end" target='"canvas"'>
+                        <raise event="transition_end_over_state" target='"canvas"'>
                             <parameter expr="this.widget"/>
                             <parameter expr="position"/>
                         </raise>
@@ -350,7 +350,7 @@
                     
                     <!-- Edge creation terminated. Return to default. -->
                     
-                    <transition event="edge_creation_stopped" target="../default"/>
+                    <transition event="transition_creation_stopped" target="../default"/>
 
                 </state>
             </state>

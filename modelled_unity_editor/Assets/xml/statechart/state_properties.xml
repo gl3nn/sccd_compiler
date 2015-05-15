@@ -98,7 +98,7 @@
             </transition>
             
                 <!-- is_history_deep_checkbox changed, edit @type -->
-            <transition event="changed" port="input" cond='this.is_history_deep_checkbox.tag == tag' target=".">
+            <transition event="changed" port="input" cond='this.is_history_deep_checkbox != null &amp;&amp; this.is_history_deep_checkbox.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
                     if (this.is_history_deep_checkbox.is_checked)

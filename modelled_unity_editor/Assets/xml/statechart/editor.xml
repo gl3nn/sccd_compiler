@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<diagram author="Glenn De Jonghe" name="StateChartEditor">
+    <description>
+        SCCD visual editor for Unity.
+    </description>
+    
+    <top>
+        using UnityEditor;
+        using UnityEngine;
+        using SCCDEditor;
+        using System.Xml.Linq;
+        using System.Linq;
+        using Event = sccdlib.Event;
+        #pragma warning disable 0219 // variable assigned but not used.
+        #pragma warning disable 0414 // private field assigned but not used.
+    </top>
+    
+    <inport name="input" />
+    
+    <class name="Window" default="true" src="window.xml"/>
+    <class name="Toolbar" src="toolbar.xml"/>
+    <class name="PropertiesPanel" src="properties_panel.xml"/>
+    <class name="StateProperties" src="state_properties.xml"/>
+    <class name="Action" src="action.xml"/>
+    <class name="Script" src="script.xml"/>
+    <class name="Raise" src="raise.xml"/>
+    <class name="ActualEventParameter" src="actual_event_parameter.xml"/>
+    <class name="Canvas" src="canvas.xml"/>
+    <class name="State" src="state.xml"/>
+    <class name="StateDrop" src="state_drop.xml"/>
+    <class name="Transition" src="transition.xml"/>
+    <class name="TransitionProperties" src="transition_properties.xml"/>
+
+</diagram>

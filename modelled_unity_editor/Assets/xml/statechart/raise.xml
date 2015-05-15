@@ -2,55 +2,74 @@
 <class name="Raise">
     <relationships>
         <association class="Action" name="parent" max="1"/>
+        <association class="IRuntimeClass" name="children"/>
     </relationships>
     <attribute type="XElement" name="raise_xml"/>
-    <attribute type="SGUIVerticalGroup" name="group_widget"/>
+    <attribute type="SGUIHorizontalGroup" name="group_widget"/>
     <attribute type="SGUIVerticalGroup" name="parameters_group_widget"/>
     <attribute type="SGUITextField" name="event_widget"/>
     <attribute type="SGUITextField" name="scope_widget"/>
     <attribute type="SGUITextField" name="target_widget"/>
     <attribute type="SGUIButton" name="remove_button_widget"/>
+    <attribute type="SGUIButton" name="add_parameter_button"/>
     <attribute type="int" name="child_id"/>
+    <attribute type="List&lt;XElement&gt;" name="elements_to_load"/>
     <constructor>
         <parameter type="XElement" name="raise_xml"/>
         <parameter type="SGUIGroupWidget" name="container_widget"/>
         <body>
             <![CDATA[
             this.raise_xml = raise_xml;
-            
             SCCDUtility.assureAttribute(this.raise_xml, "event");
             SCCDUtility.assureAttribute(this.raise_xml, "scope");
             SCCDUtility.assureAttribute(this.raise_xml, "target");
             
-            this.group_widget = new SGUIVerticalGroup();
-            //this.group_widget.setExpandHeight(false);
+            this.group_widget = new SGUIHorizontalGroup();
             container_widget.addChild(this.group_widget);
-            
-            //upper horizontal group
-            SGUIHorizontalGroup horizontal_widget = new SGUIHorizontalGroup();
+            //left label
+            this.group_widget.addChild(new SGUILabel("Raise"));
+            //right part           
+            //vertical - top attributes - bottom parameters           
+            SGUIVerticalGroup right_vertical = new SGUIVerticalGroup();
+            this.group_widget.addChild(right_vertical);
+            //top right horizontal
+            SGUIHorizontalGroup top_right_horizontal = new SGUIHorizontalGroup();
+            right_vertical.addChild(top_right_horizontal);
+            // left different attributes
+            SGUIVerticalGroup attributes_vertical = new SGUIVerticalGroup();
+            attributes_vertical.setExpandHeight(false);
+            top_right_horizontal.addChild(attributes_vertical);
             this.event_widget = new SGUITextField("Event", this.raise_xml.Attribute("event").Value);
-            horizontal_widget.addChild(this.event_widget);
+            attributes_vertical.addChild(this.event_widget);
             this.scope_widget = new SGUITextField("Scope", this.raise_xml.Attribute("scope").Value);
-            horizontal_widget.addChild(this.scope_widget);
-            this.group_widget.addChild(horizontal_widget);
-            
-            //lower horizontal group
-            horizontal_widget = new SGUIHorizontalGroup();
+            attributes_vertical.addChild(this.scope_widget);
             this.target_widget = new SGUITextField("Target", this.raise_xml.Attribute("target").Value);
-            horizontal_widget.addChild(this.target_widget);
-            this.remove_button_widget = new SGUIButton("Remove");
-            horizontal_widget.addChild(this.remove_button_widget);
-            this.group_widget.addChild(horizontal_widget);
+            attributes_vertical.addChild(this.target_widget);
             
-            //Actual parameters
+            //right remove button
+            this.remove_button_widget = new SGUIButton("Remove");
+            top_right_horizontal.addChild(this.remove_button_widget);
+            //for bottom parameters have first horizontal bar with titel for parameters and add button
+            //followed by vertical list
+            SGUIHorizontalGroup parameters_heading = new SGUIHorizontalGroup();
+            right_vertical.addChild(parameters_heading);
+            parameters_heading.addChild(new SGUILabel("Parameters:"));
+            this.add_parameter_button = new SGUIButton("Add");
+            parameters_heading.addChild(this.add_parameter_button);
             this.parameters_group_widget = new SGUIVerticalGroup();
+            this.parameters_group_widget.setExpandHeight(false);
+            right_vertical.addChild(this.parameters_group_widget);
+            
+            //Parameter loading
+            this.elements_to_load = this.raise_xml.Elements("parameter").ToList();
+            this.elements_to_load.Reverse();
             ]]>
         </body>
     </constructor>
     <scxml initial="setup">
         <state id="setup" initial="wait_for_child_id">
             <state id="wait_for_child_id">
-                <transition event="set_child_id" target="../../listening">
+                <transition event="set_child_id" target="../../saving_history">
                     <parameter name="child_id" type="int"/>
                     <script>
                         this.child_id = child_id;
@@ -58,44 +77,105 @@
                 </transition>
             </state>
         </state>
-        <state id="listening">
-            <transition port="input" event="button_pressed" cond='this.remove_button_widget.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
+        
+        <state id="saving_history" initial="loading">
+            <state id="loading">
+                <transition target="/parameter_activation" cond="this.elements_to_load.Count &gt; 0">
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"ActualEventParameter"'/>
+                        <parameter expr='this.elements_to_load[this.elements_to_load.Count - 1]' />
+                        <parameter expr='this.parameters_group_widget' />
+                    </raise>
+                    <script>
+                        this.elements_to_load.RemoveAt(this.elements_to_load.Count - 1);
+                    </script>
+                </transition>
+                <transition target="../listening" cond="this.elements_to_load.Count == 0">
+                    <script>
+                        this.elements_to_load = null;
+                    </script>
+                </transition>
+            </state>
+            <state id="listening">
+            
+                <!-- remove button pressed, get this instance deleted. -->
+            
+                <transition port="input" event="button_pressed" cond='this.remove_button_widget.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.group_widget.removeFromParent();
+                        String target_path = String.Format("parent/children[{0}]", this.child_id);
+                        this.raise_xml.Remove();
+                    </script>
+                    <raise scope="cd" event="delete_instance">
+                        <parameter expr='target_path'/>
+                    </raise>
+                </transition>
+                
+                <!-- add parameter button pressed - create actual parameter -->
+                
+                <transition port="input" event="button_pressed" cond='this.add_parameter_button.tag == tag' target="/parameter_activation">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        XElement parameter_xml = new XElement("parameter");
+                        this.raise_xml.Add(parameter_xml);
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"ActualEventParameter"'/>
+                        <parameter expr='parameter_xml' />
+                        <parameter expr='this.parameters_group_widget' />
+                    </raise>
+                </transition>
+                
+                <!-- Event field changed, edit @event -->
+                
+                <transition event="changed" port="input" cond='this.event_widget.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.raise_xml.Attribute("event").Value = this.event_widget.text;
+                    </script>
+                </transition>
+                
+                <!-- Scope field changed, edit @scope -->
+                
+                <transition event="changed" port="input" cond='this.scope_widget.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.raise_xml.Attribute("scope").Value = this.scope_widget.text;
+                    </script>
+                </transition>
+                
+                <!-- Target field changed, edit @target -->
+                
+                <transition event="changed" port="input" cond='this.target_widget.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.raise_xml.Attribute("target").Value = this.target_widget.text;
+                    </script>
+                </transition>
+            </state>
+            <history id="history" type="deep"/>
+        </state>
+        
+        <state id="parameter_activation">
+            <transition event="instance_created" target="../saving_history/history">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
                 <script>
-                    this.group_widget.removeFromParent();
-                    String target_path = String.Format("parent/children[{0}]", this.child_id);
-                    this.raise_xml.Remove();
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
                 </script>
-                <raise scope="cd" event="delete_instance">
-                    <parameter expr='target_path'/>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/parent"'/>
                 </raise>
-            </transition>
-            
-            <!-- Event field changed, edit @event -->
-            
-            <transition event="changed" port="input" cond='this.event_widget.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.raise_xml.Attribute("event").Value = this.event_widget.text;
-                </script>
-            </transition>
-            
-            <!-- Scope field changed, edit @scope -->
-            
-            <transition event="changed" port="input" cond='this.scope_widget.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.raise_xml.Attribute("scope").Value = this.scope_widget.text;
-                </script>
-            </transition>
-            
-            <!-- Target field changed, edit @target -->
-            
-            <transition event="changed" port="input" cond='this.target_widget.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.raise_xml.Attribute("target").Value = this.target_widget.text;
-                </script>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <raise target="association_path" event="set_child_id">
+                    <parameter expr='id' />
+                </raise>
             </transition>
         </state>
     </scxml>

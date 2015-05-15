@@ -8,10 +8,11 @@ namespace SCCDEditor{
     {
         public delegate void DrawFunction(SGUIModalWindow window);
 
-        public bool should_close { get; private set; }
-        private string title;
+        public bool                 should_close { get; private set; }
+        private string              title;
 
-        private EditorWindow window;
+        private SGUIEditorWindow    window;
+        private int                 repaints = 3;
 
         public SGUIModalWindow(string title, float min_width = 300)
         {
@@ -34,13 +35,15 @@ namespace SCCDEditor{
             base.OnGUI();
         }
 
-        public void draw() 
+        protected override void OnGUI()
         {
             Rect next_position = new Rect(0, 0, this.position.width, this.position.height);
             next_position.center = new Vector2(this.window.position.width/2, this.window.position.height/2);
             next_position = GUILayout.Window(0, next_position, this.windowDrawFunction, this.title);
             GUI.FocusWindow(0);
             this.position = next_position;
+            if (this.repaints > 0)
+                this.window.Repaint();
         }
     }
 }

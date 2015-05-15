@@ -137,15 +137,13 @@ namespace SCCDEditor{
 
         public void OnGUI()
         {
-            this.update_time += Time.deltaTime;
             GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
             this.top_level_widget.doOnGUI();
         }
 
         public void Update()
         {
-            /*if (this == EditorWindow.focusedWindow)
-                this.Repaint ();*/
+            this.update_time += Time.deltaTime;
         }
     }
 }

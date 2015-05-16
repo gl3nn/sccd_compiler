@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FormalEventParameter">
+    <relationships>
+        <association class="IRuntimeClass" name="parent" max="1"/>
+    </relationships>
+    <attribute type="XElement" name="parameter_xml"/>
+    <attribute type="SGUIHorizontalGroup" name="horizontal_widget"/>
+    <attribute type="SGUITextField" name="type_text_widget"/>
+    <attribute type="SGUITextField" name="name_text_widget"/>
+    <attribute type="SGUIButton" name="remove_button_widget"/>
+    <attribute type="int" name="child_id"/>
+    <constructor>
+        <parameter type="XElement" name="parameter_xml"/>
+        <parameter type="SGUIGroupWidget" name="container_widget"/>
+        <body>
+            <![CDATA[
+            this.parameter_xml = parameter_xml;
+            SCCDUtility.assureAttribute(this.parameter_xml, "type");
+            SCCDUtility.assureAttribute(this.parameter_xml, "name");
+            
+            this.horizontal_widget = new SGUIHorizontalGroup();
+            container_widget.addChild(this.horizontal_widget);
+            
+            SGUIVerticalGroup vertical_group = new SGUIVerticalGroup();
+            vertical_group.setExpandHeight(false);
+            this.horizontal_widget.addChild(vertical_group);
+            
+            this.type_text_widget = new SGUITextField("Type", this.parameter_xml.Attribute("type").Value);
+            vertical_group.addChild(this.type_text_widget);
+            this.name_text_widget = new SGUITextField("Name", this.parameter_xml.Attribute("name").Value);
+            vertical_group.addChild(this.name_text_widget);
+            
+            this.remove_button_widget = new SGUIButton("Remove");
+            this.horizontal_widget.addChild(this.remove_button_widget);
+            ]]>
+        </body>
+    </constructor>
+    <scxml initial="setup">
+        <state id="setup" initial="wait_for_child_id">
+            <state id="wait_for_child_id">
+                <transition event="set_child_id" target="../../listening">
+                    <parameter name="child_id" type="int"/>
+                    <script>
+                        this.child_id = child_id;
+                    </script>
+                </transition>
+            </state>
+        </state>
+        <state id="listening">
+            <transition event="button_pressed" port="input" cond='this.remove_button_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.horizontal_widget.removeFromParent();
+                    String target_path = String.Format("parent/children[{0}]", this.child_id);
+                    this.parameter_xml.Remove();
+                </script>
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='target_path'/>
+                </raise>
+            </transition>
+            
+            <!-- Type field changed, edit @type -->
+            
+            <transition event="changed" port="input" cond='this.type_text_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.parameter_xml.Attribute("type").Value = this.type_text_widget.text;
+                </script>
+            </transition>
+            
+            <!-- Name field changed, edit @name -->
+            
+            <transition event="changed" port="input" cond='this.name_text_widget.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.parameter_xml.Attribute("name").Value = this.name_text_widget.text;
+                </script>
+            </transition>
+        </state>
+    </scxml>
+</class>

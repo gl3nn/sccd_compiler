@@ -25,6 +25,7 @@
     <class name="Script" src="script.xml"/>
     <class name="Raise" src="raise.xml"/>
     <class name="ActualEventParameter" src="actual_event_parameter.xml"/>
+    <class name="FormalEventParameter" src="formal_event_parameter.xml"/>
     <class name="Canvas" src="canvas.xml"/>
     <class name="State" src="state.xml"/>
     <class name="StateDrop" src="state_drop.xml"/>

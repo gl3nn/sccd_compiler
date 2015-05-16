@@ -3,6 +3,7 @@
     <relationships>
         <association class="PropertiesPanel" name="panel" max="1"/>
         <association class="Action" name="action" max="1"/>
+        <association class="IRuntimeClass" name="children"/>
     </relationships>
     <attribute type="SGUIVerticalGroup" name="panel_widget"/>
     <attribute type="XElement" name='transition_xml'/>
@@ -65,6 +66,10 @@
             this.parameters_group_widget = new SGUIVerticalGroup();
             this.parameters_group_widget.setExpandHeight(false);
             this.panel_widget.addChild(this.parameters_group_widget);
+            
+            //Parameter loading
+            this.elements_to_load = this.transition_xml.Elements("parameter").ToList();
+            this.elements_to_load.Reverse();
             ]]>
         </body>
     </constructor>
@@ -73,75 +78,101 @@
             this.panel_widget.clearChildren();
         </body>
     </destructor>
-    <scxml initial="listening">
-        <state id="listening">
+    <scxml initial="saving_history">
+        <state id="saving_history" initial="loading">
+            <state id="loading">
+                <transition target="/parameter_activation" cond="this.elements_to_load.Count &gt; 0">
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"FormalEventParameter"'/>
+                        <parameter expr='this.elements_to_load[this.elements_to_load.Count - 1]' />
+                        <parameter expr='this.parameters_group_widget' />
+                    </raise>
+                    <script>
+                        this.elements_to_load.RemoveAt(this.elements_to_load.Count - 1);
+                    </script>
+                </transition>
+                <transition target="../listening" cond="this.elements_to_load.Count == 0">
+                    <script>
+                        this.elements_to_load = null;
+                    </script>
+                </transition>
+            </state>
+            <state id="listening">
+                    
+                <!-- Label field changed, edit @label -->
+                <transition event="changed" port="input" cond='this.label_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.transition_xml.Attribute("label").Value = this.label_field.text;
+                        this.edge_widget.setLabel(this.label_field.text);
+                    </script>
+                </transition>
                 
-            <!-- Label field changed, edit @label -->
-            <transition event="changed" port="input" cond='this.label_field.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.transition_xml.Attribute("label").Value = this.label_field.text;
-                    this.edge_widget.setLabel(this.label_field.text);
-                </script>
-            </transition>
-            
-            <!-- Event name field changed, edit @event -->
-            <transition event="changed" port="input" cond='this.event_field.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.transition_xml.Attribute("event").Value = this.event_field.text;
-                </script>
-            </transition>
-            
-            <!-- Input port field changed, edit @port -->
-            <transition event="changed" port="input" cond='this.port_field.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.transition_xml.Attribute("port").Value = this.port_field.text;
-                </script>
-            </transition>
-            
-            <!-- After time field changed, edit @after -->
-            <transition event="changed" port="input" cond='this.after_field.tag == tag' target=".">
-                <parameter name="tag" type="int"/>
-                <script>
-                    this.transition_xml.Attribute("after").Value = this.after_field.text;
-                </script>
-            </transition>
-                        
-            <!-- The add/edit button of the enter or exit action pressed -->
-            
-            <transition event="button_pressed" port="input" cond='tag == this.action_button.tag' target="../default_activation">
-                <parameter name="tag" type="int"/>
-                <raise scope="cd" event="create_instance">
-                    <parameter expr='"action"' />
-                    <parameter expr='"Action"'/>
-                    <parameter expr='this.transition_xml' />
-                </raise>
-            </transition>
-            
-            <!-- action editing window was closed -->
-            
-            <transition event="action_closed" target=".">
-                <raise scope="cd" event="delete_instance">
-                    <parameter expr='"action"' />
-                </raise>         
-            </transition>
-            
-            <transition port="input" event="button_pressed" cond='tag == this.add_parameter_button.tag' target="../default_activation">
-                <parameter name="tag" type="int"/>
-                <raise scope="cd" event="create_instance">
-                    <parameter expr='"children"' />
-                    <parameter expr='"FormalEventParameter"'/>
-                    <parameter expr='this.transition_xml' />
-                    <parameter expr='this.parameters_group_widget' />
-                </raise>
-            </transition>
-
+                <!-- Event name field changed, edit @event -->
+                <transition event="changed" port="input" cond='this.event_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.transition_xml.Attribute("event").Value = this.event_field.text;
+                    </script>
+                </transition>
+                
+                <!-- Input port field changed, edit @port -->
+                <transition event="changed" port="input" cond='this.port_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.transition_xml.Attribute("port").Value = this.port_field.text;
+                    </script>
+                </transition>
+                
+                <!-- After time field changed, edit @after -->
+                <transition event="changed" port="input" cond='this.after_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.transition_xml.Attribute("after").Value = this.after_field.text;
+                    </script>
+                </transition>
+                            
+                <!-- The add/edit button of the enter or exit action pressed -->
+                
+                <transition event="button_pressed" port="input" cond='tag == this.action_button.tag' target="/default_activation">
+                    <parameter name="tag" type="int"/>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"action"' />
+                        <parameter expr='"Action"'/>
+                        <parameter expr='this.transition_xml' />
+                    </raise>
+                </transition>
+                
+                <!-- action editing window was closed -->
+                
+                <transition event="action_closed" target=".">
+                    <raise scope="cd" event="delete_instance">
+                        <parameter expr='"action"' />
+                    </raise>         
+                </transition>
+                
+                <!-- Add transition parameter button clicked. -->
+                
+                <transition port="input" event="button_pressed" cond='tag == this.add_parameter_button.tag' target="/parameter_activation">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        XElement parameter_xml = new XElement("parameter");
+                        this.transition_xml.Add(parameter_xml);
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"FormalEventParameter"'/>
+                        <parameter expr='parameter_xml' />
+                        <parameter expr='this.parameters_group_widget' />
+                    </raise>
+                </transition>
+            </state>
+            <history id="history" type="deep"/>
         </state>
         
         <state id="default_activation">
-            <transition event="instance_created" target="../listening">
+            <transition event="instance_created" target="../saving_history/history">
                 <parameter name="id" type="int"/>
                 <parameter name="association_name" type="String"/>
                 <script>
@@ -153,6 +184,26 @@
                 </raise>
                 <raise scope="cd" event="start_instance">
                     <parameter expr='association_path' />
+                </raise>
+            </transition>
+        </state>
+        
+        <state id="parameter_activation">
+            <transition event="instance_created" target="../saving_history/history">
+                <parameter name="id" type="int"/>
+                <parameter name="association_name" type="String"/>
+                <script>
+                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                </script>
+                <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."' />
+                    <parameter expr='association_path + "/parent"'/>
+                </raise>
+                <raise scope="cd" event="start_instance">
+                    <parameter expr='association_path' />
+                </raise>
+                <raise target="association_path" event="set_child_id">
+                    <parameter expr='id' />
                 </raise>
             </transition>
         </state>

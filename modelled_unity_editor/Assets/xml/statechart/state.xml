@@ -219,9 +219,6 @@
                         
                         <transition target="/final" port="input" event="key-down" cond="key_code == KeyCode.Delete">
                             <parameter type="KeyCode" name="key_code"/>
-                            <raise event="disconnect_child" target='"parent"'>
-                                <parameter expr="this.widget"/>
-                            </raise>
                         </transition>
                         
                         <!-- NOT DRAGGING STATE -->
@@ -357,9 +354,15 @@
         
         <state id="final">
             <onentry>
+                <raise event="disconnect_child" target='"parent"'>
+                    <parameter expr="this.widget"/>
+                </raise>
                 <raise event="remove_state" target='"canvas"'>
                     <parameter expr="this.widget"/>
                 </raise>
+                <script>
+                    this.state_xml.Remove();
+                </script>
                 <raise event="parent_state_removed" target='"children"'/>
             </onentry>
         </state>

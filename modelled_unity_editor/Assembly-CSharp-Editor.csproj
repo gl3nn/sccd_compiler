@@ -109,6 +109,7 @@
      <None Include="Assets\xml\statechart\state_properties.xml" />
      <None Include="Assets\xml\classdiagram\diagram_properties.xml" />
      <None Include="Assets\xml\statechart\transition.xml" />
+     <None Include="Assets\xml\statechart\formal_event_parameter.xml" />
      <None Include="Assets\xml\statechart\state_drop.xml" />
      <None Include="Assets\xml\classdiagram\port.xml" />
  <Reference Include="UnityEngine.UI">

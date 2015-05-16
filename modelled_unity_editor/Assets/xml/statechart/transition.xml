@@ -5,6 +5,7 @@
     </relationships>
     <attribute type="SGUICanvasEdge" name="edge_widget"/>
     <attribute type="XElement" name="transition_xml"/>
+    <attribute type="bool" name="is_loading"/>
     <constructor>
         <parameter type="SGUICanvasEdge" name="edge_widget"/>
         <parameter type="XElement" name="xml"/>
@@ -12,6 +13,7 @@
         <body>
             <![CDATA[
             this.edge_widget = edge_widget;
+            this.is_loading = is_loading;
             if (is_loading)
                 this.loadTransition(xml);
             else
@@ -19,6 +21,12 @@
             ]]>
         </body>
     </constructor>
+    <destructor>
+        <body>
+            this.edge_widget.delete();
+            this.transition_xml.Remove();
+        </body>
+    </destructor>
     <method type="void" name="loadTransition">
         <parameter type="XElement" name="transition_xml"/>
         <body>
@@ -31,6 +39,13 @@
                 float.Parse(transition_xml.Attribute("x-offset").Value),
                 float.Parse(transition_xml.Attribute("y-offset").Value)
             ));
+            foreach(XElement point in this.transition_xml.Elements("point"))
+            {
+                this.edge_widget.addControlPoint(new Vector2(
+                    float.Parse(point.Attribute("x").Value),
+                    float.Parse(point.Attribute("y").Value)
+                ));
+            }
         </body>
     </method>
     <method type="void" name="newTransition">
@@ -51,11 +66,27 @@
             state_xml.Add(this.transition_xml);
         </body>
     </method>
+    <method type="void" name="setControlPoints">
+        <body>
+            foreach( XElement point in this.transition_xml.Elements("point"))
+            {
+                point.Remove();
+            }
+            foreach(Vector2 point in this.edge_widget.control_points)
+            {
+                this.transition_xml.Add(new XElement(
+                    "point",
+                    new XAttribute("x", point.x),
+                    new XAttribute("y", point.y)
+                ));
+            }
+        </body>
+    </method>
     <scxml initial="setup">
     
         <state id="setup">
-            <transition cond="this.edge_widget.end == null" target="../creation"/>
-            <transition cond="this.edge_widget.end != null" target="../active"/>
+            <transition cond="!this.is_loading" target="../creation"/>
+            <transition cond="this.is_loading" target="../active"/>
         </state>
 
         <state id="creation" initial="state_drag">
@@ -82,6 +113,7 @@
                     <script>
                         this.transition_xml.Attribute("end-id").Value = this.edge_widget.end.point_id.ToString();
                         this.transition_xml.Attribute("target").Value = SCCDUtility.createTargetString(end_state_xml);
+                        this.setControlPoints();
                     </script>
                 </transition>
                 
@@ -93,7 +125,8 @@
                     <parameter name="element" type="SGUICanvasElement"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
-                        this.edge_widget.adjustEndPoint(position);
+                        //this.edge_widget.adjustEndPoint(position);
+                        this.edge_widget.createEndPoint(element, position);
                     </script>
                 </transition>
                 
@@ -182,7 +215,7 @@
                 
                 <transition target="/destroyed" port="input" event="key-down" cond="key_code == KeyCode.Delete">
                     <parameter type="KeyCode" name="key_code"/>
-                    <raise event="disconnect_edge" target='"canvas"'>
+                    <raise event="remove_transition" target='"canvas"'>
                         <parameter expr="this.edge_widget"/>
                     </raise>
                 </transition>
@@ -202,12 +235,7 @@
             
         </state>
         
-        <state id="destroyed">
-            <onentry>
-                <script>
-                    this.edge_widget.delete();
-                </script>
-            </onentry>
-        </state>
+        <state id="destroyed"/>
+
     </scxml>
 </class>

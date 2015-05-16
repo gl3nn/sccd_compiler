@@ -58,6 +58,7 @@
             ]]>
         </body>
     </constructor>
+    
     <scxml initial="main">
         
         <parallel id="main">
@@ -128,7 +129,30 @@
                         </raise>
                         <script>
                             this.all_states_map.Remove(remove_state.tag);
-                            this.canvas_widget.removeElement(remove_state);
+                            foreach (SGUICanvasEdge edge in this.canvas_widget.edges)
+                            {
+                                if (edge.start.canvas_element == remove_state || edge.end.canvas_element == remove_state)
+                                {
+                                    //remove edge by sending remove_transition event to canvas                    
+                        </script>
+                                    <raise scope="local" event="remove_transition">
+                                        <parameter expr='edge' />                          
+                                    </raise>
+                        <script>
+                                }
+                            }
+                        </script>
+                    </transition>
+                    
+                    <!-- Remove transition from canvas -->
+                        
+                    <transition event="remove_transition" target=".">
+                        <parameter name="edge_widget" type="SGUICanvasEdge"/>
+                        <raise scope="cd" event="delete_instance">
+                            <parameter expr='String.Format("all_transitions[{0}]", this.all_transitions_map[edge_widget.tag])' />                          
+                        </raise>
+                        <script>
+                            this.all_transitions_map.Remove(edge_widget.tag);                         
                         </script>
                     </transition>
                 </state>
@@ -388,7 +412,6 @@
                         <parameter name="association_name" type="String"/>
                         <script>
                             String association_path = String.Format("{0}[{1}]", association_name, id);
-                            //Debug.Log(string.Format("setting tag {0} to id {1}", this.current_element.tag, id));
                             this.all_states_map[this.current_element.tag] = id;
                         </script>
                         <raise scope="cd" event="associate_instance">

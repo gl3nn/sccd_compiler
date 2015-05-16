@@ -8,7 +8,7 @@ namespace SCCDEditor{
 
         private Vector2                 scroll_position = Vector2.zero;
 
-        protected List<SGUICanvasEdge>  edges    { get; private set; }
+        public List<SGUICanvasEdge>     edges    { get; private set; }
 
         public SGUICanvas()
         {

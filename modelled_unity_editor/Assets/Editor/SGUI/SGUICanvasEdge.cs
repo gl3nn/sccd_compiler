@@ -36,7 +36,7 @@ namespace SCCDEditor{
     {
         public SGUICanvasConnectionPoint start      { get; private set;}
         public SGUICanvasConnectionPoint end        { get; private set;}
-        public List<Vector2> control_points         = new List<Vector2>();
+        public List<Vector2> control_points         { get; private set;}
 
         public SGUICanvas canvas                    { get; private set; }
         public string label                         { get; private set; }
@@ -48,7 +48,7 @@ namespace SCCDEditor{
         public SGUICanvasEdge(SGUICanvasElement start_element, Vector2 closest_to)
         {
             this.start = new SGUICanvasConnectionPoint(start_element, closest_to);
-            this.end = null;
+            this.end = new SGUICanvasConnectionPoint(start_element, closest_to);
             this.canvas = start_element.canvas;
             this.init();
         }
@@ -66,6 +66,7 @@ namespace SCCDEditor{
             this.canvas.addEdge(this);
             this.setLabel("");
             this.label_offset = new Vector2(0, 0);
+            this.control_points = new List<Vector2>();
         }
 
         public void adjustEndPoint(Vector2 closest_to)

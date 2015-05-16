@@ -332,8 +332,7 @@
                         <parameter name="tag" type="int"/>
                         <parameter name="position" type="Vector2"/>
                         <raise event="transition_end" target='"canvas"'>
-                            <parameter expr="this.widget"/>
-                            <parameter expr="position"/>
+                            <parameter expr="this.state_xml"/>
                         </raise>
                     </transition>
                     

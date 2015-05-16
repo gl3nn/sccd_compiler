@@ -10,7 +10,8 @@
     <attribute type="XElement" name="statechart_xml"/>
     
     <attribute type="List&lt;XElement&gt;" name="states_to_load"/>
-    <attribute type="Dictionary&lt;XElement, SGUICanvasElement&gt;" name="xml_to_widget"/>
+    <attribute type="List&lt;XElement&gt;" name="transitions_to_load"/>
+    <attribute type="Dictionary&lt;XElement, SGUICanvasElement&gt;" name="state_xml_to_widget"/>
     
     <attribute type="Dictionary&lt;int, int&gt;" name="children_map"/>
     <attribute type="Dictionary&lt;int, int&gt;" name="all_states_map"/>
@@ -31,9 +32,10 @@
             this.all_transitions_map = new Dictionary<int,int>();
             this.statechart_xml = statechart_xml;
             
-            //load states from xml
+            //load states and transitions from xml
             this.states_to_load = new List<XElement>();
-            this.xml_to_widget = new Dictionary<XElement, SGUICanvasElement>();
+            this.transitions_to_load = new List<XElement>();
+            this.state_xml_to_widget = new Dictionary<XElement, SGUICanvasElement>();
             
             List<XElement> current_level_states = this.statechart_xml.Elements("state").ToList();
             while(current_level_states.Count > 0)
@@ -43,20 +45,25 @@
                 {
                     XElement current_element = current_level_states[i];
                     states_to_load.Add(current_element);
-                    this.xml_to_widget[current_element] = new SGUICanvasElement();
+                    this.state_xml_to_widget[current_element] = new SGUICanvasElement();
                     next_level_states.AddRange(current_element.Elements("state"));
+                    
+                    //transitions
+                    this.transitions_to_load.AddRange(current_element.Elements("transition"));
                 }
                 current_level_states = next_level_states;
             }
-            states_to_load.Reverse();
+            this.states_to_load.Reverse();
+            this.transitions_to_load.Reverse();
             ]]>
         </body>
     </constructor>
     <scxml initial="main">
+        
         <parallel id="main">
         
         	<!-- STATE INDEPENDENT ACTIONS -->
-        	
+            	
             <state id="state_independent_actions" initial="listening">
                 <state id="listening">
                 
@@ -124,25 +131,22 @@
                             this.canvas_widget.removeElement(remove_state);
                         </script>
                     </transition>
- 
                 </state>
-            </state>
-            
+            </state> <!-- end of state independent actions -->
+                
             <!-- STATE DEPENDENT ACTIONS -->
-            
+                
             <state id="state_dependent_actions" initial="saving_history">
-                <state id="saving_history" initial="setup">
+                <state id="saving_history" initial="loading">
                 
-                
-                    <!-- SETUP STATE -->
-        
-                    <state id="setup" initial="states_loading">
+                    <state id="loading" initial="states_loading">
+                    
                         <state id="states_loading">
                             <transition target="../../../loaded_state_activation" cond="this.states_to_load.Count > 0">
                                 <script>
                                     <![CDATA[
                                     this.current_xml_element = this.states_to_load[this.states_to_load.Count - 1];
-                                    this.current_element = this.xml_to_widget[current_xml_element];
+                                    this.current_element = this.state_xml_to_widget[current_xml_element];
                                     ]]>
                                 </script>
                                 <raise scope="cd" event="create_instance">
@@ -153,17 +157,68 @@
                                     <parameter expr='null' />
                                 </raise>
                             </transition>
-                            <transition target="../../default" cond="this.states_to_load.Count == 0">
+                            <transition target="../transitions_loading" cond="this.states_to_load.Count == 0">
                                 <script>
                                     this.states_to_load = null;
-                                    this.xml_to_widget = null;
                                 </script>
                             </transition>
                         </state>
-                    </state>
-                
-                
-                
+                        
+                        <state id="transitions_loading">
+                            <transition target="../loaded_transition_activation" cond="this.transitions_to_load.Count > 0">
+                                <script>
+                                    <![CDATA[
+                                    XElement transition_xml = this.transitions_to_load[this.transitions_to_load.Count - 1];
+                                    this.transitions_to_load.RemoveAt(this.transitions_to_load.Count - 1);
+                                    SCCDUtility.assureAttribute(transition_xml, "target");
+                                    SCCDUtility.assureAttribute(transition_xml, "start-id", "0");
+                                    SCCDUtility.assureAttribute(transition_xml, "end-id", "0");
+                                    XElement start_xml = transition_xml.Parent;
+                                    XElement end_xml = SCCDUtility.getTransitionTarget(
+                                        this.statechart_xml, start_xml, transition_xml.Attribute("target").Value);
+                                        
+                                    this.current_transition = new SGUICanvasEdge(
+                                        this.state_xml_to_widget[start_xml],
+                                        int.Parse(transition_xml.Attribute("start-id").Value),
+                                        this.state_xml_to_widget[end_xml],
+                                        int.Parse(transition_xml.Attribute("end-id").Value)
+                                    );
+                                    ]]>
+                                </script>
+                                <raise scope="cd" event="create_instance">
+                                    <parameter expr='"all_transitions"' />
+                                    <parameter expr='"Transition"'/>
+                                    <parameter expr='this.current_transition' />
+                                    <parameter expr='transition_xml' />
+                                    <parameter expr='true' />
+                                </raise>
+                            </transition>
+                            <transition target="../../default" cond="this.transitions_to_load.Count == 0">
+                                <script>
+                                    this.transitions_to_load = null;
+                                    this.state_xml_to_widget = null;
+                                </script>
+                            </transition>
+                        </state>
+                        
+                        <state id="loaded_transition_activation">
+                            <transition event="instance_created" target="../transitions_loading">
+                                <parameter name="id" type="int"/>
+                                <parameter name="association_name" type="String"/>
+                                <script>
+                                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                                    this.all_transitions_map[this.current_transition.tag] = id;
+                                </script>
+                                <raise scope="cd" event="associate_instance">
+                                    <parameter expr='"."'/>
+                                    <parameter expr='association_path + "/canvas"' />
+                                </raise>
+                                <raise scope="cd" event="start_instance">
+                                    <parameter expr='association_path' />
+                                </raise>
+                            </transition>
+                        </state>
+                    </state> <!-- end of loading state -->                            
                     <!-- DEFAULT STATE-->
                     
                     <state id="default">
@@ -179,7 +234,7 @@
 
                         <!-- Right mouse down : unselect + create state -->
 
-                        <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../state_creation">
+                        <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../state_activation">
                             <parameter name="tag" type="int"/>
                             <parameter type="Vector2" name="position"/>
                             <raise event="unselect">
@@ -247,9 +302,10 @@
                                 <parameter expr='"Transition"'/>
                                 <parameter expr='this.current_transition' />
                                 <parameter expr='state_xml'/>
+                                <parameter expr='false'/>
                             </raise>
                         </transition>
-                    </state>                
+                    </state> <!-- end of default -->                 
                 
                     <!-- TRANSITION CREATION STATE -->
                     
@@ -291,15 +347,13 @@
 
                             <!-- Event received from a state, that the edge end got released over it. -->
                             <transition event="transition_end" target="../../default">
-                                <parameter name="element" type="SGUICanvasElement"/>
-                                <parameter name="position" type="Vector2"/>
+                                <parameter type="XElement" name="end_state_xml"/>
                                 <script>
                                     String association_path = String.Format("all_transitions[{0}]", this.all_transitions_map[this.current_transition.tag]);
                                     this.current_transition = null;
                                 </script>
                                 <raise event="transition_finished" target="association_path">
-                                    <parameter expr="element"/>
-                                    <parameter expr="position"/>
+                                    <parameter expr="end_state_xml"/>
                                 </raise>
                             </transition>
 
@@ -321,17 +375,14 @@
                         <onexit>
                             <raise event="transition_creation_stopped" target='"all_states"'/>
                         </onexit>
-                    </state>
-                    
-                    <!-- HISTORY STATE TO RESTORE STATE AFTER STATE/EDGE ACTIVATION -->
-                    
+                    </state> <!-- end of transition creation -->
                     <history id="history" type="deep"/>
-
-                </state>
+                </state> <!-- end of saving history -->
                 
-                <!-- STATE CREATION STATE -->
+                
+                <!-- ACTIVATION OF A CREATED STATE -->
 
-                <state id="state_creation">
+                <state id="state_activation">
                     <transition event="instance_created" cond='association_name.EndsWith("/all_states")' target="../hierarchy_connection">
                         <parameter name="id" type="int"/>
                         <parameter name="association_name" type="String"/>
@@ -367,11 +418,9 @@
                         <script>
                             String child_path = String.Format("{0}[{1}]", association_name, id);
                             this.all_states_map[this.current_element.tag] = id;
-                            
-                            XElement current_xml_element = this.states_to_load[this.states_to_load.Count - 1];
-                            
+                                                        
                             SGUICanvasElement parent_widget;
-                            this.xml_to_widget.TryGetValue(current_xml_element.Parent, out parent_widget);
+                            this.state_xml_to_widget.TryGetValue(this.current_xml_element.Parent, out parent_widget);
                             String parent_path = ".";
                             if (parent_widget != null)
                             {
@@ -425,8 +474,13 @@
                         </script>
                     </transition>
                 </state>
-            </state>
-            
+                
+                
+                
+                                                              
+            </state> <!-- end of state dependent actions -->
         </parallel>
+        
+        
     </scxml>
 </class>

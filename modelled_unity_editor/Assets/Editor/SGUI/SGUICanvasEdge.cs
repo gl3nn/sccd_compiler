@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace SCCDEditor{
     public class SGUICanvasConnectionPoint
     {
-        public SGUICanvasElement   canvas_element { get; private set;}
-        public int          point_id { get; set;}
+        public SGUICanvasElement    canvas_element  { get; private set;}
+        public int                  point_id        { get; private set;}
 
         public SGUICanvasConnectionPoint(SGUICanvasElement canvas_element, int point_id)
         {
@@ -25,9 +25,10 @@ namespace SCCDEditor{
             return this.canvas_element.getConnectionPointPosition(this.point_id);
         }
 
-        public void setClosest(Vector2 closest_to)
+        public int setClosest(Vector2 closest_to)
         {
-            this.point_id =  this.canvas_element.getClosestConnectionPoint(closest_to);
+            this.point_id = this.canvas_element.getClosestConnectionPoint(closest_to);
+            return this.point_id;
         }
     }
 
@@ -39,7 +40,7 @@ namespace SCCDEditor{
 
         public SGUICanvas canvas                    { get; private set; }
         public string label                         { get; private set; }
-        private Vector2 label_offset                = new Vector2(0, 0);
+        public Vector2 label_offset                 { get; private set; }
         private GUIStyle label_style                = "title";
         private static Texture2D arrow_texture      = GUI.skin.GetStyle("arrowhead").normal.background;
         private static Texture2D empty_texture      = GUI.skin.GetStyle("button").onNormal.background;
@@ -49,8 +50,22 @@ namespace SCCDEditor{
             this.start = new SGUICanvasConnectionPoint(start_element, closest_to);
             this.end = null;
             this.canvas = start_element.canvas;
+            this.init();
+        }
+
+        public SGUICanvasEdge(SGUICanvasElement start_element, int start_id, SGUICanvasElement end_element, int end_id)
+        {
+            this.start = new SGUICanvasConnectionPoint(start_element, start_id);
+            this.end = new SGUICanvasConnectionPoint(end_element, end_id);
+            this.canvas = start_element.canvas;
+            this.init();
+        }
+
+        private void init()
+        {
             this.canvas.addEdge(this);
             this.setLabel("");
+            this.label_offset = new Vector2(0, 0);
         }
 
         public void adjustEndPoint(Vector2 closest_to)

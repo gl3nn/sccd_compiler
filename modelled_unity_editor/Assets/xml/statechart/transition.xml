@@ -7,18 +7,36 @@
     <attribute type="XElement" name="transition_xml"/>
     <constructor>
         <parameter type="SGUICanvasEdge" name="edge_widget"/>
-        <parameter type="XElement" name="state_xml"/>
+        <parameter type="XElement" name="xml"/>
+        <parameter type="bool" name="is_loading"/>
         <body>
             <![CDATA[
             this.edge_widget = edge_widget;
-            this.newTransition(state_xml);
+            if (is_loading)
+                this.loadTransition(xml);
+            else
+                this.newTransition(xml);            
             ]]>
         </body>
     </constructor>
+    <method type="void" name="loadTransition">
+        <parameter type="XElement" name="transition_xml"/>
+        <body>
+            this.transition_xml = transition_xml;            
+            SCCDUtility.assureAttribute(transition_xml, "x-offset", "0");
+            SCCDUtility.assureAttribute(transition_xml, "y-offset", "0");
+            SCCDUtility.assureAttribute(transition_xml, "label");
+            this.edge_widget.setLabel(transition_xml.Attribute("label").Value);
+            this.edge_widget.moveLabel(new Vector2(
+                float.Parse(transition_xml.Attribute("x-offset").Value),
+                float.Parse(transition_xml.Attribute("y-offset").Value)
+            ));
+        </body>
+    </method>
     <method type="void" name="newTransition">
-        <parameter type="XElement" name="xml"/>
+        <parameter type="XElement" name="state_xml"/>
         <body>            
-            //xml is parent, create XElement for state
+            //state_xml is parent, create XElement for state
             this.transition_xml = new XElement("transition", 
                 new XAttribute("event", ""),
                 new XAttribute("port", ""),
@@ -26,12 +44,19 @@
                 new XAttribute("after", ""),
                 new XAttribute("label", ""),
                 new XAttribute("x-offset", 0),
-                new XAttribute("y-offset", 0)
+                new XAttribute("y-offset", 0),
+                new XAttribute("start-id", this.edge_widget.start.point_id.ToString()),
+                new XAttribute("end-id", 0)
             );
-            xml.Add(this.transition_xml);     
+            state_xml.Add(this.transition_xml);
         </body>
     </method>
-    <scxml initial="creation">
+    <scxml initial="setup">
+    
+        <state id="setup">
+            <transition cond="this.edge_widget.end == null" target="../creation"/>
+            <transition cond="this.edge_widget.end != null" target="../active"/>
+        </state>
 
         <state id="creation" initial="state_drag">
             <history type="deep" id="history"/>
@@ -53,16 +78,15 @@
     
             <state id="state_drag">
                 <transition event="transition_finished" cond="this.edge_widget.end != null" target="../../active/selected">
+                    <parameter type="XElement" name="end_state_xml"/>
                     <script>
-                        Debug.Log("created");
+                        this.transition_xml.Attribute("end-id").Value = this.edge_widget.end.point_id.ToString();
+                        this.transition_xml.Attribute("target").Value = SCCDUtility.createTargetString(end_state_xml);
                     </script>
                 </transition>
                 
                 <transition event="transition_finished" cond="this.edge_widget.end == null" target="../../destroyed">
                     <raise event="transition_cancelled" target='"canvas"'/>
-                    <script>
-                        Debug.Log("not created");
-                    </script>
                 </transition>             
                 
                 <transition event="transition_end_over_state" cond="this.edge_widget.end != null" target=".">
@@ -120,7 +144,7 @@
                     </script>
                 </transition>
             </state>
-        </state>
+        </state> <!-- end of creation state -->
 
         <state id="active" initial="not_selected">
             <state id="not_selected">
@@ -131,7 +155,7 @@
                         <parameter expr='this.edge_widget.tag'/>
                     </raise>
                     <script>
-                        //this.widget.pushToFront();
+                        //this.edge_widget.pushToFront();
                     </script>
                 </transition>
             </state>
@@ -169,6 +193,8 @@
                     <parameter type="Vector2" name="delta"/>
                     <script>
                         this.edge_widget.moveLabel(delta);
+                        this.transition_xml.Attribute("x-offset").Value = this.edge_widget.label_offset.x.ToString();
+                        this.transition_xml.Attribute("y-offset").Value = this.edge_widget.label_offset.y.ToString();
                     </script>
                 </transition>
             

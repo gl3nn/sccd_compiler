@@ -99,11 +99,11 @@
                         <script>
                             this.canvas_widget.addElement(child);
                             this.children_map[child.tag] = id;
-                            if (child_xml != null)
-                            {
+                            /*if (child_xml != null)
+                            {*/
                                 child_xml.Remove();
                                 this.statechart_xml.Add(child_xml);
-                            }
+                            //}                            
                         </script>
                     </transition>
                     
@@ -178,7 +178,7 @@
                                     <parameter expr='"State"'/>
                                     <parameter expr='this.current_element' />
                                     <parameter expr='this.current_xml_element' />
-                                    <parameter expr='null' />
+                                    <parameter expr='true' />
                                 </raise>
                             </transition>
                             <transition target="../transitions_loading" cond="this.states_to_load.Count == 0">
@@ -266,13 +266,15 @@
                             </raise>
                             <script>
                                 this.current_element = new SGUICanvasElement(canvas_widget, position);
+                                this.current_xml_element = new XElement(this.creation_type);
+                                this.statechart_xml.Add(this.current_xml_element);
                             </script>
                             <raise scope="cd" event="create_instance">
                                 <parameter expr='"./all_states"' />
                                 <parameter expr='"State"'/>
                                 <parameter expr='this.current_element' />
-                                <parameter expr='this.statechart_xml' />
-                                <parameter expr='this.creation_type' />
+                                <parameter expr='this.current_xml_element' />
+                                <parameter expr='false' />
                             </raise>
                         </transition>
 

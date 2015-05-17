@@ -31,7 +31,8 @@
             this.panel_widget.addChild(this.name_field);
             
             //Is this a default state?
-            if (SCCDUtility.hasName(this.state_xml.Parent, "state") || SCCDUtility.hasName(this.state_xml.Parent, "scxml"))
+            if ((SCCDUtility.hasName(this.state_xml, "state") || SCCDUtility.hasName(this.state_xml, "parallel"))
+                && (SCCDUtility.hasName(this.state_xml.Parent, "state") || SCCDUtility.hasName(this.state_xml.Parent, "scxml")))
             {           
                 this.is_default_checkbox = new SGUICheckBox("Is default state", state_xml.Parent.Attribute("initial").Value == this.state_xml.Attribute("id").Value);
                 this.panel_widget.addChild(this.is_default_checkbox);
@@ -40,7 +41,7 @@
             //Is this a history state? yes, what type?
             if (SCCDUtility.hasName(this.state_xml, "history"))
             {           
-                this.is_history_deep_checkbox = new SGUICheckBox("Deep history?", state_xml.Attribute("type").Value == "deep");
+                this.is_history_deep_checkbox = new SGUICheckBox("Is deep history", state_xml.Attribute("type").Value == "deep");
                 this.panel_widget.addChild(this.is_history_deep_checkbox);
             }
             
@@ -74,6 +75,12 @@
             <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
+                    XAttribute parent_initial = this.state_xml.Parent.Attribute("initial");
+                    if (parent_initial != null &amp;&amp; parent_initial.Value == this.state_xml.Attribute("id").Value)
+                    {
+                        //This is the default state          
+                        parent_initial.Value = this.name_field.text;
+                    }
                     this.state_xml.Attribute("id").Value = this.name_field.text;
                     this.state_widget.label = this.name_field.text;
                 </script>
@@ -83,10 +90,11 @@
             <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
-                    this.state_widget.setLabelStyle("emphtitle");
                     if (this.is_default_checkbox.is_checked)
                     {
                         this.state_xml.Parent.Attribute("initial").Value = this.name_field.text;
+                        foreach (SGUICanvasElement sibling in this.state_widget.parent.elements)
+                            sibling.setLabelStyle("title");
                         this.state_widget.setLabelStyle("emphtitle");
                     }
                     else

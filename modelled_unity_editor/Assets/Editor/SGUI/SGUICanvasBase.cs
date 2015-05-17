@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace SCCDEditor{
     public abstract class SGUICanvasBase : SGUIWidget
     {
-        public    SGUICanvas                canvas      { get; protected set; }
-        protected List<SGUICanvasElement>   elements    { get; private set; }
+        public SGUICanvas                canvas      { get; protected set; }
+        public List<SGUICanvasElement>   elements    { get; private set; }
 
         public SGUICanvasBase()
         {

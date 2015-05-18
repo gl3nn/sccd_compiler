@@ -85,15 +85,18 @@
      <None Include="Assets\xml\classdiagram\class.xml" />
      <None Include="Assets\xml\classdiagram\menu_strip.xml" />
      <None Include="Assets\xml\classdiagram\properties_panel.xml" />
-     <None Include="Assets\classdiagram_editor.xml" />
+     <None Include="Assets\xml\classdiagram\relation_properties.xml" />
      <None Include="Assets\mklink command.txt" />
      <None Include="Assets\xml\classdiagram\window.xml" />
      <None Include="Assets\xml\classdiagram\formal_parameter.xml" />
      <None Include="Assets\xml\statechart\statechart_properties.xml" />
+     <None Include="Assets\test.xml" />
      <None Include="Assets\xml\statechart\properties_panel.xml" />
      <None Include="Assets\xml\statechart\transition_properties.xml" />
      <None Include="Assets\xml\classdiagram\method.xml" />
+     <None Include="Assets\xml\classdiagram\newload.xml" />
      <None Include="Assets\xml\statechart\state.xml" />
+     <None Include="Assets\mycoolmodel.xml" />
      <None Include="Assets\xml\classdiagram\class_properties.xml" />
      <None Include="Assets\xml\statechart\editor.xml" />
      <None Include="Assets\xml\statechart\window.xml" />
@@ -105,12 +108,14 @@
      <None Include="Assets\xml\statechart\toolbar.xml" />
      <None Include="Assets\xml\statechart\action.xml" />
      <None Include="Assets\xml\statechart\canvas.xml" />
+     <None Include="Assets\xml\classdiagram\relation.xml" />
      <None Include="Assets\xml\classdiagram\canvas.xml" />
      <None Include="Assets\xml\statechart\state_properties.xml" />
      <None Include="Assets\xml\classdiagram\diagram_properties.xml" />
      <None Include="Assets\xml\statechart\transition.xml" />
      <None Include="Assets\xml\statechart\formal_event_parameter.xml" />
      <None Include="Assets\xml\statechart\state_drop.xml" />
+     <None Include="Assets\xml\classdiagram\editor.xml" />
      <None Include="Assets\xml\classdiagram\port.xml" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files (x86)/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/4.6.0/UnityEngine.UI.dll</HintPath>

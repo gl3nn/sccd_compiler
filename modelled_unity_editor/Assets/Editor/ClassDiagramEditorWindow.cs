@@ -6,34 +6,38 @@ using System.Collections.Generic;
 namespace SCCDEditor{
     public class ClassDiagramEditorWindow : SGUIEditorWindow
     {
+        SCCDScript sccd_script;
 
-		[MenuItem("SCCD/Open Editor")]
-        public static void open(string file_name = "")
+        public static void open(SCCDScript sccd_script)
         {
             ClassDiagramEditorWindow window = (ClassDiagramEditorWindow) EditorWindow.GetWindow(typeof(ClassDiagramEditorWindow), false);
             window.wantsMouseMove = true;
             window.title = "Class Diagram Editor";
             UnityEngine.Object.DontDestroyOnLoad( window );
-            window.start(file_name);
+            window.sccd_script = sccd_script;
+            window.start();
         }
 
         public ClassDiagramEditorWindow()
         {
         }
 
-        public void start(string file_name)
+        public override void restart()
+        {
+            StateChartEditorWindow.clear();
+            this.start();
+        }
+
+        public void start()
         {
             this.top_level_widget = new SGUITopLevel(this);
-            this.controller = new ClassDiagramEditor.Controller(this.top_level_widget, file_name);
+            this.controller = new ClassDiagramEditor.Controller(this.top_level_widget, this.sccd_script);
             this.controller.start();
         }
 
-        /*public void load_file(string file_name)
+        public void OnDestroy()
         {
-            this.controller.addInput(
-                new sccdlib.Event("load_file", "input", new object[] {
-                file_name
-            }));
-        }*/
+            StateChartEditorWindow.clear();
+        }
     }
 }

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="NewLoad">
+    <relationships>
+        <association class="IRuntimeClass" name="parent" max="1"/>
+    </relationships>
+    
+    <!--- popup widgets -->
+    <attribute type="SGUIModalWindow" name="modal_window" />
+    <attribute type="SGUIButton" name="load_button"/>
+    <attribute type="SGUIButton" name="new_button"/>
+
+    <method access="public" type="void" name="openWindow">
+        <body>
+        <![CDATA[
+            this.modal_window = new SGUIModalWindow("NewLoad", 300);
+            this.modal_window.addChild(new SGUILabel("test"));
+
+            //Buttons
+            SGUIHorizontalGroup buttons_widget = new SGUIHorizontalGroup();
+            this.modal_window.addChild(buttons_widget);
+            
+            buttons_widget.addChild(new SGUISpace());
+            
+            this.load_button = new SGUIButton("Load");
+            buttons_widget.addChild(this.load_button);
+            
+            this.new_button = new SGUIButton("Add New");
+            buttons_widget.addChild(this.new_button);
+        ]]>
+        </body>
+    </method>
+    <scxml initial="listening">
+
+        <state id="listening">
+                 
+            <!-- Button pressed to close window -->
+        
+            <transition event="button_pressed" port="input" cond='tag == this.load_button.tag' target="/closed">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.closeWindow();
+                </script>
+                <raise event="action_closed" target='"parent"'/>
+            </transition>
+            
+            <!-- Add raise button pressed -->
+            
+            <transition port="input" event="button_pressed" cond='tag == this.add_raise_button.tag' target="../../default_activation">
+                <parameter name="tag" type="int"/>
+                <script>
+                    XElement raise_xml = new XElement("raise");
+                    this.action_xml.Add(raise_xml);
+                </script>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"children"' />
+                    <parameter expr='"Raise"'/>
+                    <parameter expr='raise_xml' />
+                    <parameter expr='this.action_group_widget' />
+                </raise>
+            </transition>
+            
+            <!-- Add script button pressed -->
+            
+            <transition port="input" event="button_pressed" cond='tag == this.add_script_button.tag' target="../../default_activation">
+                <parameter name="tag" type="int"/>
+                <script>
+                    XElement script_xml = new XElement("script");
+                    this.action_xml.Add(script_xml);
+                </script>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"children"' />
+                    <parameter expr='"Script"'/>
+                    <parameter expr='script_xml' />
+                    <parameter expr='this.action_group_widget' />
+                </raise>
+            </transition>
+        </state>
+        
+        <state id="closed"/>
+    </scxml>
+</class>

@@ -18,6 +18,14 @@ namespace SCCDEditor{
             return window;
         }
 
+        public static void clear()
+        {
+            foreach (KeyValuePair<XElement, StateChartEditorWindow> pair in StateChartEditorWindow.windows)
+            {
+                pair.Value.Close();
+            }
+        }
+
         public static StateChartEditorWindow createOrFocus(XElement statechart_xml)
         {
             StateChartEditorWindow window = StateChartEditorWindow.getWindow(statechart_xml);

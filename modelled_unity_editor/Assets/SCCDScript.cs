@@ -4,13 +4,13 @@ using System;
 
 public class SCCDScript : MonoBehaviour {
 
-    public string sccdcontroller_namespace;
+    public string sccd_namespace;
     private sccdlib.GameLoopControllerBase controller;
 
     public string xml_file = "";
 
     void Awake () {
-        this.controller = (sccdlib.GameLoopControllerBase) Activator.CreateInstance(Type.GetType(/*sccdcontroller_namespace +*/ "PlayerTank.Controller"), new object[]{this.gameObject});
+        this.controller = (sccdlib.GameLoopControllerBase) Activator.CreateInstance(Type.GetType(string.Format("{0}.Controller", this.sccd_namespace), this.gameObject));
     }
 
 	void Start () {

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEditor;
 
 namespace SCCDEditor
 {
@@ -9,6 +10,9 @@ namespace SCCDEditor
         public SGUIEditorWindow window { get; private set; }
 
         public static SGUITopLevel current { get; private set; }
+
+        private bool open_save_dialog = false;
+        private bool do_restart = false;
         
         public SGUITopLevel(SGUIEditorWindow window)
         {
@@ -20,8 +24,19 @@ namespace SCCDEditor
             this.modal_window = modal_window;
         }
 
+        public void openSaveDialog()
+        {
+            this.open_save_dialog = true;
+        }
+
+        public void restart()
+        {
+            this.do_restart = true;
+        }
+
         protected override void OnGUI()
         {
+            
             SGUITopLevel.current = this;
 
             if (Event.current.type != EventType.Layout)
@@ -51,6 +66,22 @@ namespace SCCDEditor
             }
 
             SGUITopLevel.current = null;
+
+            if (this.do_restart)
+            {
+                this.window.restart();
+            }
+        }
+
+        public void Update()
+        {
+            
+            if (this.open_save_dialog)
+            {
+                this.open_save_dialog = false;
+                string save_path = EditorUtility.SaveFilePanelInProject("Save Model", "mycoolmodel", "xml", "Save model");
+                this.window.generateEvent("save_dialog_closed", "input", save_path);
+            }
         }
     }
 }

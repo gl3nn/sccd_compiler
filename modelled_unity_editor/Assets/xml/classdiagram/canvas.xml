@@ -3,35 +3,55 @@
     <relationships>
         <association class="Window" name="window" max="1"/>
         <association class="Class" name="classes"/>
-        <association class="Edge" name="edges"/>
+        <association class="Relation" name="relations"/>
     </relationships>
     <attribute type="SGUICanvas" name="canvas_widget"/>
     <attribute type="XElement" name="xml_diagram"/>
     
     <attribute type="List&lt;XElement&gt;" name="classes_to_load"/>
+    <attribute type="List&lt;XElement&gt;" name="relations_to_load"/>
                 
     <attribute type="Dictionary&lt;int, int&gt;" name="classes_map"/>
-    <attribute type="Dictionary&lt;int, int&gt;" name="edges_map"/>
+    <attribute type="Dictionary&lt;int, int&gt;" name="relations_map"/>
     <attribute type="SGUICanvasElement" name="current_class"/>
-    <attribute type="SGUICanvasEdge" name="current_edge"/>
-    <attribute type="string" name="creation_type" init-value='""'/>
+    <attribute type="SGUICanvasEdge" name="current_relation"/>
 
     <constructor>
-        <parameter type="SGUIVerticalGroup" name="canvas_container"/>
+        <parameter type="SGUIGroupWidget" name="canvas_container"/>
         <parameter type="XElement" name="xml_diagram"/>
         <body>
             <![CDATA[
             this.canvas_widget = new SGUICanvas();
             canvas_container.addChild(this.canvas_widget);
             this.classes_map = new Dictionary<int,int>();
-            this.edges_map = new Dictionary<int,int>();
+            this.relations_map = new Dictionary<int,int>();
             this.xml_diagram = xml_diagram;
             
             //load classes from xml
             this.classes_to_load = this.xml_diagram.Elements("class").ToList();
+            this.relations_to_load = new List<XElement>();
+            foreach (XElement class_xml in this.classes_to_load)
+            {
+                XElement relationships = class_xml.Element("relationships");
+                if(relationships != null)
+                    this.relations_to_load.AddRange(relationships.Elements("association"));
+            }
             ]]>
         </body>
     </constructor>
+    <method type="SGUICanvasElement" name="findClassWithName">
+        <parameter type="string" name="class_name"/>
+        <body>
+            <![CDATA[
+            foreach (SGUICanvasElement class_widget in this.canvas_widget.elements)
+            {
+                if (class_widget.label == class_name)
+                    return class_widget;
+            }
+            return null;
+            ]]>
+        </body>
+    </method>
     <scxml initial="main">
         <parallel id="main">
         
@@ -39,15 +59,6 @@
         	
             <state id="state_independent_actions" initial="listening">
                 <state id="listening">
-                
-                    <!-- Set edge creation type (toolbar event) -->
-
-                    <transition event="edge_type_toolbar_changed" target=".">
-                        <parameter name="edge_type" type="string"/>
-                        <script>
-                            this.creation_type = edge_type;
-                        </script>
-                    </transition>
                     
                     <!-- Unselect -->
                     
@@ -56,45 +67,123 @@
                         <raise event="unselect" target='"./classes"'>
                             <parameter expr='except_tag'/>
                         </raise>
+                        <raise event="unselect" target='"./relations"'>
+                            <parameter expr='except_tag'/>
+                        </raise>
+                    </transition>
+                                            
+                    <!-- Remove class from canvas -->
+                    
+                    <transition event="remove_class" target=".">
+                        <parameter name="remove_class" type="SGUICanvasElement"/>
+                        <raise scope="cd" event="delete_instance">
+                            <parameter expr='String.Format("classes[{0}]", this.classes_map[remove_class.tag])' />                          
+                        </raise>
+                        <script>
+                            this.classes_map.Remove(remove_class.tag);
+                            this.canvas_widget.removeElement(remove_class);
+                        </script>
                     </transition>
  
+                    <!-- Remove relation from canvas -->
+                        
+                    <transition event="remove_relation" target=".">
+                        <parameter name="edge_widget" type="SGUICanvasEdge"/>
+                        <raise scope="cd" event="delete_instance">
+                            <parameter expr='String.Format("relations[{0}]", this.relations_map[edge_widget.tag])' />                          
+                        </raise>
+                        <script>
+                            this.relations_map.Remove(edge_widget.tag);                 
+                        </script>
+                    </transition>
                 </state>
             </state>
             
             <!-- STATE DEPENDENT ACTIONS -->
             
             <state id="state_dependent_actions" initial="saving_history">
-                <state id="saving_history" initial="setup">
+                <state id="saving_history" initial="loading">
 
-                    <!-- SETUP STATE -->
+                    <!-- LOADING STATE -->
                     
-                    <state id="setup">
-                        <transition target="../../class_creation" cond="this.classes_to_load.Count &gt; 0">
-                            <script>
-                                this.current_class = new SGUICanvasElement(this.canvas_widget);
-                            </script>
-                            <raise scope="cd" event="create_instance">
-                                <parameter expr='"./classes"' />
-                                <parameter expr='"Class"'/>
-                                <parameter expr='this.current_class' />
-                                <parameter expr='this.classes_to_load[this.classes_to_load.Count - 1]' />
-                                <parameter expr='true' />
-                            </raise>
-                            <script>
-                                this.classes_to_load.RemoveAt(this.classes_to_load.Count - 1);
-                            </script>
-                        </transition>
-                        <transition target="../default" cond="this.classes_to_load.Count == 0">
-                            <script>
-                                this.classes_to_load = null;
-                            </script>
-                            <raise event="unselect" target='"./classes"'>
-                                <parameter expr='-1'/>
-                            </raise>
-                        </transition>
+                    <state id="loading" initial="states_loading">
+                    
+                        <state id="states_loading">
+                            <transition target="../../../class_association" cond="this.classes_to_load.Count &gt; 0">
+                                <script>
+                                    this.current_class = new SGUICanvasElement(this.canvas_widget);
+                                </script>
+                                <raise scope="cd" event="create_instance">
+                                    <parameter expr='"classes"' />
+                                    <parameter expr='"Class"'/>
+                                    <parameter expr='this.current_class' />
+                                    <parameter expr='this.classes_to_load[this.classes_to_load.Count - 1]' />
+                                    <parameter expr='true' />
+                                </raise>
+                                <script>
+                                    this.classes_to_load.RemoveAt(this.classes_to_load.Count - 1);
+                                </script>
+                            </transition>
+                            <transition target="../relations_loading" cond="this.classes_to_load.Count == 0">
+                                <script>
+                                    this.classes_to_load = null;
+                                </script>
+                                <raise event="unselect" target='"./classes"'>
+                                    <parameter expr='-1'/>
+                                </raise>
+                            </transition>
+                        </state>
                         
-                    </state>
-                
+                        <state id="relations_loading">
+                            <transition target="../loaded_relation_activation" cond="this.relations_to_load.Count > 0">
+                                <script>
+                                    <![CDATA[
+                                    XElement relation_xml = this.relations_to_load[this.relations_to_load.Count - 1];
+                                    this.relations_to_load.RemoveAt(this.relations_to_load.Count - 1);
+                                    SCCDUtility.assureAttribute(relation_xml, "class");
+                                        
+                                    this.current_relation = new SGUICanvasEdge(
+                                        this.findClassWithName(relation_xml.Parent.Parent.Attribute("name").Value),
+                                        int.Parse(relation_xml.Attribute("start-id").Value),
+                                        this.findClassWithName(relation_xml.Attribute("class").Value),
+                                        int.Parse(relation_xml.Attribute("end-id").Value)
+                                    );
+                                    ]]>
+                                </script>
+                                <raise scope="cd" event="create_instance">
+                                    <parameter expr='"relations"' />
+                                    <parameter expr='"Relation"'/>
+                                    <parameter expr='this.current_relation' />
+                                    <parameter expr='relation_xml' />
+                                    <parameter expr='true' />
+                                </raise>
+                            </transition>
+                            <transition target="../../default" cond="this.relations_to_load.Count == 0">
+                                <script>
+                                    this.relations_to_load = null;
+                                </script>
+                            </transition>
+                        </state>
+                        
+                        <state id="loaded_relation_activation">
+                            <transition event="instance_created" target="../relations_loading">
+                                <parameter name="id" type="int"/>
+                                <parameter name="association_name" type="String"/>
+                                <script>
+                                    String association_path = String.Format("{0}[{1}]", association_name, id);
+                                    this.relations_map[this.current_relation.tag] = id;
+                                </script>
+                                <raise scope="cd" event="associate_instance">
+                                    <parameter expr='"."'/>
+                                    <parameter expr='association_path + "/canvas"' />
+                                </raise>
+                                <raise scope="cd" event="start_instance">
+                                    <parameter expr='association_path' />
+                                </raise>
+                            </transition>
+                        </state>
+                        
+                    </state> <!-- end of loading state -->
                     <!-- DEFAULT STATE-->
                     
                     <state id="default">
@@ -103,14 +192,14 @@
 
                         <transition event="left-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
                             <parameter name="tag" type="int"/>
-                            <raise event="unselect" target='"./classes"'>
+                            <raise event="unselect">
                                 <parameter expr='tag'/>
                             </raise>
                         </transition>
 
                         <!-- Right mouse down : unselect + create state -->
 
-                        <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../class_creation">
+                        <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../class_association">
                             <parameter name="tag" type="int"/>
                             <parameter type="Vector2" name="position"/>
                             <raise event="unselect" target='"./classes"'>
@@ -132,52 +221,41 @@
 
                         <transition event="middle-mouse-down" port="input"  cond="tag == this.canvas_widget.tag" target=".">
                             <parameter name="tag" type="int"/>
-                            <raise event="unselect" target='"./classes"'>
+                            <raise event="unselect">
                                 <parameter expr='tag'/>
                             </raise>
-                        </transition>
-                        
-                        <!-- Remove class from canvas -->
-                        
-                        <transition event="remove_class" target=".">
-                            <parameter name="remove_class" type="SGUICanvasElement"/>
-                            <raise scope="cd" event="delete_instance">
-                                <parameter expr='String.Format("classes[{0}]", this.classes_map[remove_class.tag])' />                          
-                            </raise>
-                            <script>
-                                this.classes_map.Remove(remove_class.tag);
-                                this.canvas_widget.removeElement(remove_class);
-                            </script>
-                        </transition>
-                        
+                        </transition>                        
 
                         <!-- Element initiated edge creation -->
                         
-                        <transition event="create_edge" target="../edge_creation">
+                        <transition event="create_relation" target="../relation_creation">
                             <parameter type="SGUICanvasElement" name="source_class"/>
                             <parameter type="Vector2" name="position"/>
-                            <raise event="enter_edge_creation" target='"classes"'/>
+                            <parameter type="XElement" name="class_xml"/>
+                            <raise event="enter_relation_creation" target='"classes"'/>
                             <script>
-                                this.current_edge = new SGUICanvasEdge(source_class, position);
+                                this.current_relation = new SGUICanvasEdge(source_class, position);
                             </script>
                             <raise scope="cd" event="create_instance">
-                                <parameter expr='"./edges"' />
-                                <parameter expr='"Edge"'/>
-                                <parameter expr='this.current_edge' />
+                                <parameter expr='"relations"' />
+                                <parameter expr='"Relation"'/>
+                                <parameter expr='this.current_relation' />
+                                <parameter expr='class_xml' />
+                                <parameter expr='false' />
                             </raise>
                         </transition>
-                    </state>
+                    </state> <!-- end of default --> 
                     
-                    <!-- EDGE CREATION STATE -->
+                    <!-- RELATION CREATION STATE -->
                     
-                    <state id="edge_creation" initial="activation">
+                    <state id="relation_creation" initial="activation">
                         <state id="activation">
-                            <transition event="instance_created" target="../wait">
+                            <transition event="instance_created" target="../creating">
                                 <parameter name="id" type="int"/>
                                 <parameter name="association_name" type="String"/>
                                 <script>
                                     String association_path = String.Format("{0}[{1}]", association_name, id);
-                                    this.edges_map[this.current_edge.tag] = id;
+                                    this.relations_map[this.current_relation.tag] = id;
                                 </script>
                                 <raise scope="cd" event="associate_instance">
                                     <parameter expr='"."'/>
@@ -188,80 +266,65 @@
                                 </raise>
                             </transition>
                         </state>
-                        <state id="wait">
+                        <state id="creating">
+                            
+                            <!-- Mouse released on canvas, so transition gets cancelled.--> 
 
-
-
-                            <transition event="edge_cancelled" target="../../default">
+                            <transition event="relation_cancelled" target="../../default">
                                 <script>
-                                    String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
-                                    this.edges_map.Remove(this.current_edge.tag);
+                                    String association_path = String.Format("relations[{0}]", this.relations_map[this.current_relation.tag]);
+                                    this.relations_map.Remove(this.current_relation.tag);
                                 </script>
                                 <raise scope="cd" event="delete_instance">
                                     <parameter expr="association_path"/>
                                 </raise>
                                 <script>
-                                    this.current_edge = null;
+                                    this.current_relation = null;
                                 </script>
                             </transition>
 
-
-
-                            <transition event="edge_finished" target="../../default">
+                            <!-- Event received from a state, that the edge end got released over it. -->
+                            <transition event="relation_end" target="../../default">
+                                <parameter type="XElement" name="end_class_xml"/>
                                 <script>
-                                    this.current_edge = null;
+                                    String association_path = String.Format("relations[{0}]", this.relations_map[this.current_relation.tag]);
+                                    this.current_relation = null;
                                 </script>
-                            </transition>
-
-
-
-                            <transition event="edge_end" target=".">
-                                <parameter name="element" type="SGUICanvasElement"/>
-                                <parameter name="position" type="Vector2"/>
-                                <script>
-                                    String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
-                                </script>
-                                <raise event="edge_end" target="association_path">
-                                    <parameter expr="element"/>
-                                    <parameter expr="position"/>
+                                <raise event="relation_finished" target="association_path">
+                                    <parameter expr="end_class_xml"/>
                                 </raise>
                             </transition>
-
-
-
-                            <transition event="over_edge_end" target=".">
+                            
+                            <!-- Event received from a state, that the edge end is currently hoovering it. -->
+                            <transition event="relation_end_over_state" target=".">
                                 <parameter name="element" type="SGUICanvasElement"/>
                                 <parameter name="position" type="Vector2"/>
                                 <script>
-                                    String association_path = String.Format("edges[{0}]", this.edges_map[this.current_edge.tag]);
+                                    String association_path = String.Format("relations[{0}]", this.relations_map[this.current_relation.tag]);
                                 </script>
-                                <raise event="over_edge_end" target="association_path">
+                                <raise event="relation_end_over_state" target="association_path">
                                     <parameter expr="element"/>
                                     <parameter expr="position"/>
                                 </raise>
                             </transition>
                         </state>
                         <onexit>
-                            <raise event="edge_creation_stopped" target='"classes"'/>
+                            <raise event="relation_creation_stopped" target='"classes"'/>
                         </onexit>
-                    </state>
+                    </state> <!-- end of relation creation -->
                     
-                    <!-- HISTORY STATE TO RESTORE STATE AFTER STATE/EDGE ACTIVATION -->
-                    
+                    <!-- HISTORY STATE TO RESTORE STATE AFTER CLASS/RELATION ACTIVATION -->
                     <history id="history" type="deep"/>
-                    
-                    
-                </state>
+                </state> <!-- end of saving history -->
 
-                <!-- CLASS CREATION STATE -->
+                <!-- CREATED CLASS ASSOCIATION STATE -->
 
-                <state id="class_creation">
+                <state id="class_association">
                     <transition event="instance_created" target="../class_activation">
                         <parameter name="id" type="int"/>
                         <parameter name="association_name" type="String"/>
                         <script>
                             String association_path = String.Format("{0}[{1}]", association_name, id);
-                            //Debug.Log(string.Format("setting tag {0} to id {1}", this.current_element.tag, id));
                             this.classes_map[this.current_class.tag] = id;
                         </script>
                         <raise scope="cd" event="associate_instance">
@@ -281,7 +344,6 @@
                         <parameter name="id" type="int"/>
                         <parameter name="association_name" type="String"/>
                         <script>
-                            //this.classes_map[this.current_class.tag] = id;
                             this.current_class = null;
                         </script>
                     </transition>

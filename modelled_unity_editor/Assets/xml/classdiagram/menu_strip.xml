@@ -4,9 +4,10 @@
         <association class="Window" name="window" max="1"/>
     </relationships>
     <attribute type="SGUIHorizontalGroup" name="menu_strip"/>
-    
     <attribute type="SGUIButton" name="save_button"/>
+    <attribute type="SGUIButton" name="save_as_button"/>
     <attribute type="SGUIButton" name="edit_button"/>
+    <attribute type="SGUIButton" name="compile_button"/>
     <constructor>
         <parameter type="SGUITopLevel" name="window_widget"/>
         <body>
@@ -14,11 +15,15 @@
             this.menu_strip = new SGUIHorizontalGroup();
             this.menu_strip.setStyle(EditorStyles.toolbar);
             window_widget.addChild(this.menu_strip);
-            this.save_button = new SGUIButton("Save Diagram", "save_diagram", EditorStyles.toolbarButton);
+            this.save_button = new SGUIButton("Save", "", EditorStyles.toolbarButton);
             this.menu_strip.addChild(this.save_button);
-            this.edit_button = new SGUIButton("Edit Diagram", "remove_port", EditorStyles.toolbarButton);
+            this.save_as_button = new SGUIButton("Save As...", "", EditorStyles.toolbarButton);
+            this.menu_strip.addChild(this.save_as_button);
+            this.edit_button = new SGUIButton("New", "", EditorStyles.toolbarButton);
             this.menu_strip.addChild(this.edit_button);
             this.menu_strip.addChild(new SGUISpace());
+            this.compile_button = new SGUIButton("Save and Deploy", "", EditorStyles.toolbarButton);
+            this.menu_strip.addChild(this.compile_button);
             ]]>
         </body>
     </constructor>
@@ -26,7 +31,19 @@
         <state id="listening">
             <transition event="button_pressed" port="input" cond='this.save_button.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
-                <raise event="save_diagram" target='"window"'/>
+                <raise event="save" target='"window"'/>
+            </transition>
+                <transition event="button_pressed" port="input" cond='this.save_as_button.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <raise event="save_as" target='"window"'/>
+            </transition>
+            <transition event="button_pressed" port="input" cond='this.edit_button.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <raise event="new_file" target='"window"'/>
+            </transition>
+            <transition event="button_pressed" port="input" cond='this.compile_button.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <raise event="compile" target='"window"'/>
             </transition>
         </state>
     </scxml>

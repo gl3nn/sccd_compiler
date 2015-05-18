@@ -62,6 +62,11 @@
             this.state_xml.Attribute("h").Value = this.widget.position.height.ToString();
         </body>
     </method>
+    <method type="string" name="generateName">
+        <body>
+            return string.Format("State{0}", this.widget.tag);
+        </body>
+    </method>
     <method type="void" name="loadState">
         <body>
             // set position
@@ -71,13 +76,13 @@
                 float.Parse(this.state_xml.Attribute("w").Value),
                 float.Parse(this.state_xml.Attribute("h").Value)
             );
-            SCCDUtility.assureAttribute(this.state_xml, "id", string.Format("State{0}", this.widget.tag));            
+            SCCDUtility.assureAttribute(this.state_xml, "id", this.generateName());            
         </body>
     </method>
     <method type="void" name="newState">
         <body>            
             this.state_xml.Add(
-                new XAttribute("id", string.Format("State{0}", this.widget.tag)),
+                new XAttribute("id", this.generateName()),
                 new XAttribute("x", this.widget.position.x.ToString()),
                 new XAttribute("y", this.widget.position.y.ToString()),
                 new XAttribute("w", this.widget.position.width.ToString()),

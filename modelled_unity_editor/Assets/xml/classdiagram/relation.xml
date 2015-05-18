@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Transition">
+<class name="Relation">
     <relationships>
         <association class="Canvas" name="canvas" max="1"/>
     </relationships>
     <attribute type="SGUICanvasEdge" name="edge_widget"/>
-    <attribute type="XElement" name="transition_xml"/>
+    <attribute type="XElement" name="relation_xml"/>
     <attribute type="bool" name="is_loading"/>
     <constructor>
         <parameter type="SGUICanvasEdge" name="edge_widget"/>
@@ -15,31 +15,31 @@
             this.edge_widget = edge_widget;
             this.is_loading = is_loading;
             if (is_loading)
-                this.loadTransition(xml);
+                this.loadRelation(xml);
             else
-                this.newTransition(xml);            
+                this.newRelation(xml);            
             ]]>
         </body>
     </constructor>
     <destructor>
         <body>
             this.edge_widget.delete();
-            this.transition_xml.Remove();
+            this.relation_xml.Remove();
         </body>
     </destructor>
-    <method type="void" name="loadTransition">
-        <parameter type="XElement" name="transition_xml"/>
+    <method type="void" name="loadRelation">
+        <parameter type="XElement" name="relation_xml"/>
         <body>
-            this.transition_xml = transition_xml;            
-            SCCDUtility.assureAttribute(transition_xml, "x-offset", "0");
-            SCCDUtility.assureAttribute(transition_xml, "y-offset", "0");
-            SCCDUtility.assureAttribute(transition_xml, "label");
-            this.edge_widget.setLabel(transition_xml.Attribute("label").Value);
+            this.relation_xml = relation_xml;            
+            SCCDUtility.assureAttribute(relation_xml, "x-offset", "0");
+            SCCDUtility.assureAttribute(relation_xml, "y-offset", "0");
+            SCCDUtility.assureAttribute(relation_xml, "name", this.generateName());
+            this.edge_widget.setLabel(relation_xml.Attribute("name").Value);
             this.edge_widget.moveLabel(new Vector2(
-                float.Parse(transition_xml.Attribute("x-offset").Value),
-                float.Parse(transition_xml.Attribute("y-offset").Value)
+                float.Parse(relation_xml.Attribute("x-offset").Value),
+                float.Parse(relation_xml.Attribute("y-offset").Value)
             ));
-            foreach(XElement point in this.transition_xml.Elements("point"))
+            foreach(XElement point in this.relation_xml.Elements("point"))
             {
                 this.edge_widget.addControlPoint(new Vector2(
                     float.Parse(point.Attribute("x").Value),
@@ -48,38 +48,42 @@
             }
         </body>
     </method>
-    <method type="void" name="newTransition">
-        <parameter type="XElement" name="state_xml"/>
+    <method type="void" name="newRelation">
+        <parameter type="XElement" name="class_xml"/>
         <body>            
             //state_xml is parent, create XElement for state
-            this.transition_xml = new XElement("transition", 
-                new XAttribute("event", ""),
-                new XAttribute("port", ""),
-                new XAttribute("target", ""),
-                new XAttribute("after", ""),
-                new XAttribute("label", ""),
+            this.relation_xml = new XElement("association", 
+                new XAttribute("min", "0"),
+                new XAttribute("max", "N"),
+                new XAttribute("class", ""),
+                new XAttribute("name", this.generateName()),
                 new XAttribute("x-offset", 0),
                 new XAttribute("y-offset", 0),
                 new XAttribute("start-id", this.edge_widget.start.point_id.ToString()),
                 new XAttribute("end-id", 0)
             );
-            state_xml.Add(this.transition_xml);
+            class_xml.Element("relationships").Add(this.relation_xml);
         </body>
     </method>
     <method type="void" name="setControlPoints">
         <body>
-            foreach( XElement point in this.transition_xml.Elements("point"))
+            foreach( XElement point in this.relation_xml.Elements("point"))
             {
                 point.Remove();
             }
             foreach(Vector2 point in this.edge_widget.control_points)
             {
-                this.transition_xml.Add(new XElement(
+                this.relation_xml.Add(new XElement(
                     "point",
                     new XAttribute("x", point.x),
                     new XAttribute("y", point.y)
                 ));
             }
+        </body>
+    </method>
+    <method type="string" name="generateName">
+        <body>
+            return string.Format("relation{0}", this.edge_widget.tag);
         </body>
     </method>
     <scxml initial="setup">
@@ -108,20 +112,17 @@
             <!-- EDGE END IS CURRENTLY OVER A STATE -->
     
             <state id="state_drag">
-                <transition event="transition_finished" cond="this.edge_widget.end != null" target="../../active/selected">
-                    <parameter type="XElement" name="end_state_xml"/>
+                <transition event="relation_finished" target="../../active/selected">
+                    <parameter type="XElement" name="end_class_xml"/>
                     <script>
-                        this.transition_xml.Attribute("end-id").Value = this.edge_widget.end.point_id.ToString();
-                        this.transition_xml.Attribute("target").Value = SCCDUtility.createTargetString(end_state_xml);
+                        this.relation_xml.Attribute("end-id").Value = this.edge_widget.end.point_id.ToString();
+                        this.relation_xml.Attribute("class").Value = end_class_xml.Attribute("name").Value;
+                        this.edge_widget.setLabel(relation_xml.Attribute("name").Value);
                         this.setControlPoints();
                     </script>
-                </transition>
+                </transition>          
                 
-                <transition event="transition_finished" cond="this.edge_widget.end == null" target="../../destroyed">
-                    <raise event="transition_cancelled" target='"canvas"'/>
-                </transition>             
-                
-                <transition event="transition_end_over_state" cond="this.edge_widget.end != null" target=".">
+                <transition event="relation_end_over_state" cond="this.edge_widget.end != null" target=".">
                     <parameter name="element" type="SGUICanvasElement"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
@@ -145,7 +146,7 @@
             <!-- EDGE IS CURRENTLY ON CANVAS (NOT OVER STATE) -->  
             <state id="canvas_drag">
             
-                <transition event="transition_end_over_state" target="../state_drag">
+                <transition event="relation_end_over_state" target="../state_drag">
                     <parameter name="element" type="SGUICanvasElement"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
@@ -156,7 +157,7 @@
                 
                 <transition event="right-mouse-up" port="input" cond="this.edge_widget.canvas.tag == tag" target="../../destroyed">
                     <parameter name="tag" type="int"/>
-                    <raise event="transition_cancelled" target='"canvas"'/>
+                    <raise event="relation_cancelled" target='"canvas"'/>
                 </transition>
 
                 <transition event="right-mouse-drag" port="input" cond="this.edge_widget.canvas.tag == tag" target=".">
@@ -197,8 +198,8 @@
                     <script>
                         this.edge_widget.setLabelStyle("greentitle");
                     </script>
-                    <raise event="set_transition_properties" target='"canvas/window/properties_panel"'>
-                        <parameter expr='this.transition_xml' />
+                    <raise event="set_relation_properties" target='"canvas/window/properties_panel"'>
+                        <parameter expr='this.relation_xml' />
                         <parameter expr='this.edge_widget' />
                     </raise>
                 </onentry>
@@ -216,7 +217,7 @@
                     
                     <transition target="/destroyed" port="input" event="key-down" cond="key_code == KeyCode.Delete">
                         <parameter type="KeyCode" name="key_code"/>
-                        <raise event="remove_transition" target='"canvas"'>
+                        <raise event="remove_relation" target='"canvas"'>
                             <parameter expr="this.edge_widget"/>
                         </raise>
                     </transition>
@@ -227,14 +228,14 @@
                         <parameter type="Vector2" name="delta"/>
                         <script>
                             this.edge_widget.moveLabel(delta);
-                            this.transition_xml.Attribute("x-offset").Value = this.edge_widget.label_offset.x.ToString();
-                            this.transition_xml.Attribute("y-offset").Value = this.edge_widget.label_offset.y.ToString();
+                            this.relation_xml.Attribute("x-offset").Value = this.edge_widget.label_offset.x.ToString();
+                            this.relation_xml.Attribute("y-offset").Value = this.edge_widget.label_offset.y.ToString();
                         </script>
                     </transition>
                 </state>
-            </state>
+            </state> <!--- end selecte -->
             
-        </state>
+        </state> <!--- end acitve state -->
         
         <state id="destroyed"/>
 

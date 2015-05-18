@@ -23,18 +23,20 @@
                     float.Parse(this.class_xml.Attribute("w").Value),
                     float.Parse(this.class_xml.Attribute("h").Value)
                 );
-                
-                SCCDUtility.assureAttribute(this.class_xml, "name", "NoNameClass");
+                SCCDUtility.assureChild(this.class_xml, "relationships");
+                SCCDUtility.assureAttribute(this.class_xml, "name", this.generateName());
             }
             else
             {
                 //xml is parent, create XElement for class
                 this.class_xml = new XElement("class", 
-                    new XAttribute("name", "NewClass"),
+                    new XAttribute("name", this.generateName()),
                     new XAttribute("x", this.widget.position.x.ToString()),
                     new XAttribute("y", this.widget.position.y.ToString()),
                     new XAttribute("w", this.widget.position.width.ToString()),
-                    new XAttribute("h", this.widget.position.height.ToString())
+                    new XAttribute("h", this.widget.position.height.ToString()),
+                    new XAttribute("default", "false"),
+                    new XElement("relationships")
                 );
                 xml.Add(this.class_xml);
             }
@@ -53,6 +55,11 @@
         <body>
             this.class_xml.Attribute("w").Value = this.widget.position.width.ToString();
             this.class_xml.Attribute("h").Value = this.widget.position.height.ToString();
+        </body>
+    </method>
+    <method type="string" name="generateName">
+        <body>
+            return string.Format("Class{0}", this.widget.tag);
         </body>
     </method>
     <scxml initial="main">            
@@ -86,18 +93,19 @@
 
                     <!-- Signal the start of the creation of an edge -->
 
-                    <transition event="right-mouse-down" port="input" cond="tag == this.widget.tag" target="../edge_creation">
+                    <transition event="right-mouse-down" port="input" cond="tag == this.widget.tag" target="../relation_creation">
                         <parameter name="tag" type="int"/>
                         <parameter type="Vector2" name="position"/>
-                        <raise event="create_edge" target='"canvas"'>
+                        <raise event="create_relation" target='"canvas"'>
                             <parameter expr='this.widget'/>
                             <parameter expr="position"/>
+                            <parameter expr='this.class_xml'/>
                         </raise>
                     </transition>
                     
                     <!-- Some other class initiated edge creation, nonetheless enter the EDGE CREATION state -->
                     
-                    <transition event="enter_edge_creation" target="../edge_creation"/>
+                    <transition event="enter_relation_creation" target="../relation_creation"/>
                     
                     <!-- NOT SELECTED STATE -->
                     
@@ -188,18 +196,17 @@
                     </state>
                 </state>
                 
-                <!-- EDGE CREATION MODE. IS ENTERED WHENEVER AN EDGE IS BEING CREATED. -->
+                <!-- RELATION CREATION MODE. IS ENTERED WHENEVER A RELATION IS BEING CREATED. -->
                 
-                <state id="edge_creation">
+                <state id="relation_creation">
                     
-                    <!-- Signal that this is a valid end connection for the edge being created. -->
+                    <!-- Signal that this is a valid end connection for the relation being created. -->
                     
                     <transition event="right-mouse-up" port="input" cond="tag == this.widget.tag" target="../default">
                         <parameter name="tag" type="int"/>
                         <parameter name="position" type="Vector2"/>
-                        <raise event="edge_end" target='"canvas"'>
-                            <parameter expr="this.widget"/>
-                            <parameter expr="position"/>
+                        <raise event="relation_end" target='"canvas"'>
+                            <parameter expr="this.class_xml"/>
                         </raise>
                     </transition>
                     
@@ -208,7 +215,7 @@
                     <transition event="right-mouse-drag" port="input" cond="tag == this.widget.tag" target=".">
                         <parameter name="tag" type="int"/>
                         <parameter name="position" type="Vector2"/>
-                        <raise event="over_edge_end" target='"canvas"'>
+                        <raise event="relation_end_over_state" target='"canvas"'>
                             <parameter expr="this.widget"/>
                             <parameter expr="position"/>
                         </raise>
@@ -216,7 +223,7 @@
                     
                     <!-- Edge creation terminated. Return to default. -->
                     
-                    <transition event="edge_creation_stopped" target="../default"/>
+                    <transition event="relation_creation_stopped" target="../default"/>
 
                 </state>
             </state>

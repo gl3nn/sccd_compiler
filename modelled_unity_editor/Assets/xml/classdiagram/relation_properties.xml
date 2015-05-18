@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RelationProperties">
+    <relationships>
+        <association class="PropertiesPanel" name="panel" max="1"/>
+    </relationships>
+    <attribute type="SGUIVerticalGroup" name="panel_widget"/>
+    <attribute type="XElement" name='relation_xml'/>
+    <attribute type="SGUICanvasEdge" name='edge_widget'/>
+
+    <attribute type="SGUITextField" name='name_field'/> 
+    <attribute type="SGUITextField" name='min_card_field'/>
+    <attribute type="SGUITextField" name='max_card_field'/>
+
+    <constructor>
+        <parameter type="SGUIVerticalGroup" name='panel_widget'/>
+        <parameter type="XElement" name='relation_xml'/>
+        <parameter type="SGUICanvasEdge" name='edge_widget'/>
+        <body>
+            <![CDATA[
+            this.panel_widget = panel_widget;
+            this.relation_xml = relation_xml;
+            this.edge_widget = edge_widget;
+            
+            this.panel_widget.addChild(new SGUILabel("Edit relation properties."));
+            
+            //@name property setup
+            SCCDUtility.assureAttribute(this.relation_xml, "name");
+            this.name_field = new SGUITextField("Relation Name", this.relation_xml.Attribute("name").Value);
+            this.panel_widget.addChild(this.name_field);
+            
+            //@min property setup
+            SCCDUtility.assureAttribute(this.relation_xml, "min");
+            this.min_card_field = new SGUITextField("Min. Cardinality", this.relation_xml.Attribute("min").Value);
+            this.panel_widget.addChild(this.min_card_field);
+            
+            //@max property setup
+            SCCDUtility.assureAttribute(this.relation_xml, "max");
+            this.max_card_field = new SGUITextField("Max. Cardinality", this.relation_xml.Attribute("max").Value);
+            this.panel_widget.addChild(this.max_card_field);
+            
+            ]]>
+        </body>
+    </constructor>
+    <destructor>
+        <body>
+            this.panel_widget.clearChildren();
+        </body>
+    </destructor>
+    <scxml initial="listening">
+        <state id="listening">
+                
+            <!-- Name field changed, edit @name -->
+            <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.relation_xml.Attribute("name").Value = this.name_field.text;
+                    this.edge_widget.setLabel(this.name_field.text);
+                </script>
+            </transition>
+            
+            <!-- Min. Cardinality field changed, edit @min -->
+            <transition event="changed" port="input" cond='this.min_card_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.relation_xml.Attribute("min").Value = this.min_card_field.text;
+                </script>
+            </transition>
+            
+            <!--  Max. Cardinality field changed, edit @max -->
+            <transition event="changed" port="input" cond='this.max_card_field.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <script>
+                    this.relation_xml.Attribute("max").Value = this.max_card_field.text;
+                </script>
+            </transition>
+        </state>
+    </scxml>
+</class>

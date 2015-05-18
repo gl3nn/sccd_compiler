@@ -15,7 +15,7 @@ namespace SCCDEditor{
             StringWriter consoleOut = new StringWriter();
             System.Console.SetOut(consoleOut);
             try {
-                Compiler.generate(Path.Combine(Application.dataPath, "classdiagram_editor.xml"), Path.Combine(Application.dataPath, "Editor/classdiagram_editor.cs"), CodeGenerator.Platform.GAMELOOP);
+                Compiler.generate(Path.Combine(Application.dataPath, "xml/classdiagram/editor.xml"), Path.Combine(Application.dataPath, "Editor/classdiagram_editor.cs"), CodeGenerator.Platform.GAMELOOP);
                 Compiler.generate(Path.Combine(Application.dataPath, "xml/statechart/editor.xml"), Path.Combine(Application.dataPath, "Editor/statechart_editor.cs"), CodeGenerator.Platform.GAMELOOP);
             } catch (Exception e) {
                 Debug.Log(e);

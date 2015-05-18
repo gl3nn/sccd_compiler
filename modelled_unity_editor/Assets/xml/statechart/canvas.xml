@@ -384,7 +384,7 @@
                             </transition>
 
 
-                            <!-- Event received from a state, that the edge end is currently hoover it. -->
+                            <!-- Event received from a state, that the edge end is currently hoovering it. -->
                             <transition event="transition_end_over_state" target=".">
                                 <parameter name="element" type="SGUICanvasElement"/>
                                 <parameter name="position" type="Vector2"/>

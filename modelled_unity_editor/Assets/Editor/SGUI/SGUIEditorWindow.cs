@@ -144,6 +144,11 @@ namespace SCCDEditor{
         public void Update()
         {
             this.update_time += Time.deltaTime;
+            this.top_level_widget.Update();
+        }
+
+        public virtual void restart()
+        {
         }
     }
 }

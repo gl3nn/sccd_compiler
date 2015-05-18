@@ -2,30 +2,28 @@
 <class name="ClassDiagramWindow">
     <relationships>
         <association class="MenuStrip" name="menu_strip" max="1"/>
-        <association class="Toolbar" name="toolbar" max="1"/>
         <association class="Canvas" name="canvas" max="1"/>
         <association class="PropertiesPanel" name="properties_panel" max="1"/>
     </relationships>
     <attribute type="SGUITopLevel" name="window_widget"/>
     <attribute type="SGUIHorizontalGroup" name="horizontal_container"/>
-    <attribute type="SGUIVerticalGroup" name="canvas_container"/>
     <attribute type="XDocument" name="xml_document"/>
-    <attribute type="string" name="file_path"/>
+    <attribute type="SCCDScript" name="sccd_script"/>
+    <attribute type="string" name="file_path" init-value=""/>
     <constructor>
         <parameter type="SGUITopLevel" name="window_widget"/>
-        <parameter type="string" name="file_name"/>
+        <parameter type="SCCDScript" name="sccd_script"/>
         <body>
             <![CDATA[
             this.window_widget = window_widget;
-            this.file_path = System.IO.Path.GetFullPath(file_name);
-            if (System.IO.File.Exists(this.file_path))
-            {
-                Debug.Log("File exists! loading..");
+            this.sccd_script = sccd_script;
+            if (System.IO.File.Exists(sccd_script.xml_file)){
+                this.file_path = sccd_script.xml_file;
+                Debug.Log("File exists. loading..");
                 this.loadXMLFile();
-            }
-            else
+            } else
             {
-                Debug.Log("File doesn't exist! creating");
+                this.file_path = "";
                 this.newXMLFile();
             }
             ]]>
@@ -34,9 +32,9 @@
     <method type="void" name="newXMLFile">
         <body>
             XElement xml_diagram = new XElement("diagram",
-                new XAttribute("name", "name"),
+                new XAttribute("name", "SCCDNameSpace"),
                 new XElement("description", "description"),
-                new XElement("top", "using UnityEngine;")
+                new XElement("top", "using UnityEngine; using Event = sccdlib.Event;")
             );
             this.xml_document = new XDocument(
                 new XDeclaration("1.0", "utf-8", "yes"),
@@ -51,12 +49,39 @@
             if (xml_diagram == null)
             {
                 xml_diagram = new XElement("diagram",
-                    new XAttribute("name", ""),
+                    new XAttribute("name", "SCCDNameSpace"),
                     new XAttribute("author", ""),
                     new XElement("description", "description"),
                     new XElement("top", "using UnityEngine;")
                 );
                 this.xml_document.Add(xml_diagram);
+            }
+        </body>
+    </method>
+    <method type="void" name="compileFile">
+        <body>
+            if (this.file_path != "" &amp;&amp; System.IO.File.Exists(sccd_script.xml_file))
+            {
+                this.xml_document.Save(this.file_path);
+                Logger.verbose = 2;
+                var stdOut = System.Console.Out;
+                System.IO.StringWriter consoleOut = new System.IO.StringWriter();
+                System.Console.SetOut(consoleOut);
+                try {
+                    Compiler.generate(this.sccd_script.xml_file, System.IO.Path.ChangeExtension(this.sccd_script.xml_file, "cs"), CodeGenerator.Platform.GAMELOOP);
+                } catch (Exception e) {
+                    Debug.LogError(e);
+                    return;
+                }
+                Debug.Log( consoleOut.ToString());
+                System.Console.SetOut(stdOut);
+                this.window_widget.window.Close(); //WE SHOULD BE ABLE TO REMOVE THIS
+                this.sccd_script.sccd_namespace = this.xml_document.Element("diagram").Attribute("name").Value;
+                AssetDatabase.Refresh();
+            }
+            else
+            {
+                Debug.LogError("Invalid file.");
             }
         </body>
     </method>
@@ -75,7 +100,7 @@
                         <parameter expr='this.window_widget' />
                     </raise>
                 </onentry>
-                <transition event="instance_created" target="../toolbar_creation">
+                <transition event="instance_created" target="../canvas_creation">
                     <raise scope="cd" event="associate_instance">
                         <parameter expr='"."' />
                         <parameter expr='"menu_strip/window"'/>
@@ -85,36 +110,16 @@
                     </raise>
                 </transition>
             </state>
-            <state id="toolbar_creation">
+            <state id="canvas_creation">
                 <onentry>
                     <script>
                         this.horizontal_container = new SGUIHorizontalGroup();
                         this.window_widget.addChild(this.horizontal_container);
-                        this.canvas_container = new SGUIVerticalGroup();
-                        this.horizontal_container.addChild(this.canvas_container);
                     </script>
-                    <raise scope="cd" event="create_instance">
-                        <parameter expr='"toolbar"' />
-                        <parameter expr='"Toolbar"'/>
-                        <parameter expr='this.canvas_container' />
-                    </raise>
-                </onentry>
-                <transition event="instance_created" target="../canvas_creation">
-                    <raise scope="cd" event="associate_instance">
-                        <parameter expr='"."' />
-                        <parameter expr='"toolbar/window"'/>
-                    </raise>
-                    <raise scope="cd" event="start_instance">
-                        <parameter expr='"toolbar"' />
-                    </raise>
-                </transition>
-            </state>
-            <state id="canvas_creation">
-                <onentry>
                     <raise scope="cd" event="create_instance">
                         <parameter expr='"canvas"' />
                         <parameter expr='"Canvas"'/>
-                        <parameter expr='this.canvas_container' />
+                        <parameter expr='this.horizontal_container' />
                         <parameter expr='this.fetchXMLDiagram()' />
                     </raise>
                 </onentry>
@@ -122,10 +127,6 @@
                     <raise scope="cd" event="associate_instance">
                         <parameter expr='"."' />
                         <parameter expr='"canvas/window"'/>
-                    </raise>
-                    <raise scope="cd" event="associate_instance">
-                        <parameter expr='"canvas"' />
-                        <parameter expr='"toolbar/canvas"'/>
                     </raise>
                     <raise scope="cd" event="start_instance">
                         <parameter expr='"canvas"' />
@@ -153,12 +154,58 @@
             </state>
         </state>
         <state id="listening">
-            <transition event="save_diagram" target=".">
+            <!-- ordinary save -->
+            <transition event="save" cond='this.file_path != ""' target="../saving"/>
+            
+            <!-- ordinary save, but since no file -> save as -->
+            <transition event="save" cond='this.file_path == ""' target="../saving_as"/>
+
+            <!-- save_as -->
+            <transition event="save_as" target="../saving_as"/>
+            
+            <!-- new -->
+            <transition event="new_file" target=".">
                 <script>
-                    Debug.Log("saving");
+                    this.sccd_script.xml_file = "";
+                    EditorUtility.SetDirty(this.sccd_script);
+                    SGUITopLevel.current.restart();
+                </script>
+            </transition>
+            
+            <!-- compile -->
+            <transition event="compile" target=".">
+                <script>
+                    this.compileFile();
+                </script>
+            </transition>
+
+        </state>
+        <state id="saving_as">
+            <onentry>
+                <script>
+                    SGUITopLevel.current.openSaveDialog();
+                </script>
+            </onentry>
+            <transition port="input" event="save_dialog_closed" cond='save_path != ""' target="../saving">
+                <parameter type="string" name="save_path"/>
+                <script>
+                    this.file_path = save_path;
+                    this.sccd_script.xml_file = this.file_path;
+                    EditorUtility.SetDirty(this.sccd_script);
+                </script>
+            </transition>
+            <transition  port="input" event="save_dialog_closed" cond='save_path == ""' target="../listening">
+                <parameter type="string" name="save_path"/>
+            </transition>
+        </state>
+        <state id="saving">
+            <transition target="../listening">
+                <script>
                     this.xml_document.Save(this.file_path);
+                    Debug.Log("File saved.");
                 </script>
             </transition>
         </state>
+
     </scxml>
 </class>

@@ -49,6 +49,22 @@
                     <parameter expr='class_widget' />
                 </raise>
             </transition>
+            
+            <!-- Relation selected, create its panel. -->
+            <transition event="set_relation_properties" target="../panel_activation">
+                <parameter name="relation_xml" type="XElement"/>
+                <parameter name="edge_widget" type="SGUICanvasEdge"/>
+                <raise scope="cd" event="delete_instance">
+                    <parameter expr='"active_panel"' />
+                </raise>
+                <raise scope="cd" event="create_instance">
+                    <parameter expr='"active_panel"' />
+                    <parameter expr='"RelationProperties"'/>
+                    <parameter expr='this.panel_widget'/>
+                    <parameter expr='relation_xml' />
+                    <parameter expr='edge_widget' />
+                </raise>
+            </transition>
         </state>
         <state id="panel_activation">
             <transition event="instance_created" target="../wait_for_deactivations">

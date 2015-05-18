@@ -11,6 +11,7 @@
     <attribute type="List&lt;XElement&gt;" name="elements_to_load"/>
     
     <attribute type="SGUITextField" name='name_field'/>
+    <attribute type="SGUICheckBox" name='is_default_checkbox'/>
 
     <attribute type="SGUIVerticalGroup" name="attributes_group_widget"/>
     <attribute type="SGUIVerticalGroup" name="methods_group_widget"/>
@@ -33,6 +34,11 @@
             SCCDUtility.assureAttribute(this.class_xml, "name");
             this.name_field = new SGUITextField("name", this.class_xml.Attribute("name").Value);
             this.panel_widget.addChild(this.name_field);
+            
+            //Is this the default class?
+            SCCDUtility.assureAttribute(this.class_xml, "default", "false");
+            this.is_default_checkbox = new SGUICheckBox("Is Default", this.class_xml.Attribute("default").Value == "true");
+            this.panel_widget.addChild(this.is_default_checkbox);
             
             //Statechart
             this.open_statechart_button = new SGUIButton("Edit Statechart");
@@ -155,6 +161,31 @@
                     <script>
                         this.class_xml.Attribute("name").Value = this.name_field.text;
                         this.class_widget.label = this.name_field.text;
+                    </script>
+                </transition>
+                
+                <!-- is_default_checkbox changed, edit @defauly -->
+                <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        if (this.is_default_checkbox.is_checked)
+                        {
+                            foreach (XElement sibling_xml in this.class_xml.Parent.Elements("class"))
+                            {
+                                sibling_xml.Attribute("default").Value = "false";
+                            }
+                            foreach (SGUICanvasElement sibling in this.class_widget.parent.elements)
+                            {
+                                sibling.setLabelStyle("title");
+                            }
+                            this.class_xml.Attribute("default").Value = "true";
+                            this.class_widget.setLabelStyle("emphtitle");
+                        }
+                        else
+                        {
+                            this.class_xml.Attribute("default").Value = "false";
+                            this.class_widget.setLabelStyle("title");
+                        }
                     </script>
                 </transition>
 

@@ -5,16 +5,15 @@
         <association class="Canvas" name="canvas" max="1"/>
         <association class="PropertiesPanel" name="properties_panel" max="1"/>
     </relationships>
-    <attribute type="SGUITopLevel" name="window_widget"/>
-    <attribute type="SGUIHorizontalGroup" name="horizontal_container"/>
+    <attribute type="SGUIGroupWidget" name="top_level_widget"/>
     <attribute type="SGUIVerticalGroup" name="canvas_container"/>
     <attribute type="XElement" name="statechart_xml"/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIGroupWidget" name="top_level_widget"/>
         <parameter type="XElement" name="class_xml"/>
         <body>
             <![CDATA[
-            this.window_widget = window_widget;
+            this.top_level_widget = top_level_widget;
             SCCDUtility.assureChild(class_xml, "scxml");
             this.statechart_xml = class_xml.Element("scxml");
             SCCDUtility.assureAttribute(this.statechart_xml, "initial");
@@ -26,10 +25,8 @@
             <state id="toolbar_creation">
                 <onentry>
                     <script>
-                        this.horizontal_container = new SGUIHorizontalGroup();
-                        this.window_widget.addChild(this.horizontal_container);
                         this.canvas_container = new SGUIVerticalGroup();
-                        this.horizontal_container.addChild(this.canvas_container);
+                        this.top_level_widget.addChild(this.canvas_container);
                     </script>
                     <raise scope="cd" event="create_instance">
                         <parameter expr='"toolbar"' />
@@ -75,7 +72,7 @@
                     <raise scope="cd" event="create_instance">
                         <parameter expr='"properties_panel"' />
                         <parameter expr='"PropertiesPanel"'/>
-                        <parameter expr='this.horizontal_container' />
+                        <parameter expr='this.top_level_widget' />
                     </raise>
                 </onentry>
                 <transition event="instance_created" target="../../listening">

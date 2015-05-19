@@ -12,17 +12,17 @@ namespace SCCDEditor{
         private string              title;
 
         private SGUIEditorWindow    window;
-        private int                 repaints = 3;
 
         public SGUIModalWindow(string title, float min_width = 300)
         {
             this.should_close = false;
             this.title = title;
-            SGUITopLevel.current.setModalWindow(this);
-            this.window = SGUITopLevel.current.window;
+            this.window = SGUIEditorWindow.current;
+            this.window.setModalWindow(this);
             Rect position = new Rect(0, 0, min_width, 0);
             position.center = new Vector2(this.window.position.width/2, this.window.position.height/2);
             this.position = position;
+            this.window.setRepaints(3);
         }
 
         public void close() 
@@ -42,8 +42,6 @@ namespace SCCDEditor{
             next_position = GUILayout.Window(0, next_position, this.windowDrawFunction, this.title);
             GUI.FocusWindow(0);
             this.position = next_position;
-            if (this.repaints > 0)
-                this.window.Repaint();
         }
     }
 }

@@ -9,9 +9,35 @@ namespace SCCDEditor{
 		// Imported from compiled model.
         protected sccdlib.GameLoopControllerBase    controller;
 
-        private   double                            update_time = 0;
+        private double                              update_time = 0;
+        private bool                                open_save_dialog = false;
+        private bool                                should_restart = false;
+        private int                                 repaints = 0;
 
-        protected SGUITopLevel                      top_level_widget;
+        public SGUIGroupWidget                      top_level_widget { get; protected set; }
+        private SGUIModalWindow                     modal_window = null;
+        public static SGUIEditorWindow              current { get; private set; }
+
+        public void setModalWindow(SGUIModalWindow modal_window)
+        {
+            this.modal_window = modal_window;
+            this.top_level_widget.setEnabled(false);
+        }
+
+        public void openSaveDialog()
+        {
+            this.open_save_dialog = true;
+        }
+        
+        public void restart()
+        {
+            this.should_restart = true;
+        }
+
+        public void setRepaints(int repaints)
+        {
+            this.repaints = repaints;
+        }
 
         public void processEvent()
         {
@@ -138,16 +164,62 @@ namespace SCCDEditor{
         public void OnGUI()
         {
             GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
+            SGUIEditorWindow.current = this;
+            
+            if (Event.current.type != EventType.Layout)
+            {
+                this.top_level_widget.setPosition(this.position);
+                if (Event.current.type != EventType.Repaint)
+                    SGUIEvent.current = null;
+            }
+
             this.top_level_widget.doOnGUI();
+
+            if (this.modal_window == null)
+                this.processEvent();
+            else if (this.modal_window.should_close)
+            {
+                this.modal_window = null;
+                this.top_level_widget.setEnabled(true);
+            }
+            
+            if (this.modal_window != null)
+            {
+                SGUIEvent.current = null;
+                this.BeginWindows();
+                this.modal_window.doOnGUI();
+                this.EndWindows();
+                this.processEvent();
+            }
+            
+            SGUIEditorWindow.current = null;
+            
+            if (this.should_restart)
+            {
+                this.performRestart();
+                this.should_restart = false;
+                this.setRepaints(3);
+            }
+
+            if (this.repaints > 0)
+            {
+                this.Repaint();
+                this.repaints--;
+            }
         }
 
         public void Update()
         {
             this.update_time += Time.deltaTime;
-            this.top_level_widget.Update();
+            if (this.open_save_dialog)
+            {
+                this.open_save_dialog = false;
+                string save_path = EditorUtility.SaveFilePanelInProject("Save Model", "mycoolmodel", "xml", "Save model");
+                this.generateEvent("save_dialog_closed", "input", save_path);
+            }
         }
 
-        public virtual void restart()
+        public virtual void performRestart()
         {
         }
     }

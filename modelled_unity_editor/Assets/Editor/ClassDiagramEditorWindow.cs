@@ -18,11 +18,7 @@ namespace SCCDEditor{
             window.start();
         }
 
-        public ClassDiagramEditorWindow()
-        {
-        }
-
-        public override void restart()
+        public override void performRestart()
         {
             StateChartEditorWindow.clear();
             this.start();
@@ -30,8 +26,8 @@ namespace SCCDEditor{
 
         public void start()
         {
-            this.top_level_widget = new SGUITopLevel(this);
-            this.controller = new ClassDiagramEditor.Controller(this.top_level_widget, this.sccd_script);
+            this.top_level_widget = new SGUIVerticalGroup();
+            this.controller = new ClassDiagramEditor.Controller(this, this.sccd_script);
             this.controller.start();
         }
 

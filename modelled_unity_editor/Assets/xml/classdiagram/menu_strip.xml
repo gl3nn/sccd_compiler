@@ -9,7 +9,7 @@
     <attribute type="SGUIButton" name="edit_button"/>
     <attribute type="SGUIButton" name="compile_button"/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIVerticalGroup" name="window_widget"/>
         <body>
             <![CDATA[
             this.menu_strip = new SGUIHorizontalGroup();
@@ -22,7 +22,7 @@
             this.edit_button = new SGUIButton("New", "", EditorStyles.toolbarButton);
             this.menu_strip.addChild(this.edit_button);
             this.menu_strip.addChild(new SGUISpace());
-            this.compile_button = new SGUIButton("Save and Deploy", "", EditorStyles.toolbarButton);
+            this.compile_button = new SGUIButton("Compile and Deploy", "", EditorStyles.toolbarButton);
             this.menu_strip.addChild(this.compile_button);
             ]]>
         </body>

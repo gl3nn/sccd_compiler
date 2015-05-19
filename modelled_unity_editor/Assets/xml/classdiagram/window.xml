@@ -5,13 +5,13 @@
         <association class="Canvas" name="canvas" max="1"/>
         <association class="PropertiesPanel" name="properties_panel" max="1"/>
     </relationships>
-    <attribute type="SGUITopLevel" name="window_widget"/>
+    <attribute type="SGUIEditorWindow" name="window_widget"/>
     <attribute type="SGUIHorizontalGroup" name="horizontal_container"/>
     <attribute type="XDocument" name="xml_document"/>
     <attribute type="SCCDScript" name="sccd_script"/>
     <attribute type="string" name="file_path" init-value=""/>
     <constructor>
-        <parameter type="SGUITopLevel" name="window_widget"/>
+        <parameter type="SGUIEditorWindow" name="window_widget"/>
         <parameter type="SCCDScript" name="sccd_script"/>
         <body>
             <![CDATA[
@@ -75,9 +75,9 @@
                 }
                 Debug.Log( consoleOut.ToString());
                 System.Console.SetOut(stdOut);
-                this.window_widget.window.Close(); //WE SHOULD BE ABLE TO REMOVE THIS
                 this.sccd_script.sccd_namespace = this.xml_document.Element("diagram").Attribute("name").Value;
                 AssetDatabase.Refresh();
+                this.window_widget.Close(); //WE SHOULD BE ABLE TO REMOVE THIS
             }
             else
             {
@@ -97,7 +97,7 @@
                     <raise scope="cd" event="create_instance">
                         <parameter expr='"menu_strip"' />
                         <parameter expr='"MenuStrip"'/>
-                        <parameter expr='this.window_widget' />
+                        <parameter expr='this.window_widget.top_level_widget' />
                     </raise>
                 </onentry>
                 <transition event="instance_created" target="../canvas_creation">
@@ -114,7 +114,7 @@
                 <onentry>
                     <script>
                         this.horizontal_container = new SGUIHorizontalGroup();
-                        this.window_widget.addChild(this.horizontal_container);
+                        this.window_widget.top_level_widget.addChild(this.horizontal_container);
                     </script>
                     <raise scope="cd" event="create_instance">
                         <parameter expr='"canvas"' />
@@ -168,7 +168,7 @@
                 <script>
                     this.sccd_script.xml_file = "";
                     EditorUtility.SetDirty(this.sccd_script);
-                    SGUITopLevel.current.restart();
+                    this.window_widget.restart();
                 </script>
             </transition>
             
@@ -183,7 +183,7 @@
         <state id="saving_as">
             <onentry>
                 <script>
-                    SGUITopLevel.current.openSaveDialog();
+                    this.window_widget.openSaveDialog();
                 </script>
             </onentry>
             <transition port="input" event="save_dialog_closed" cond='save_path != ""' target="../saving">

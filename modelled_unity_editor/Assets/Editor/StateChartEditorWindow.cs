@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Linq;
 using System.Xml.Linq;
 using System.Collections.Generic;
 
@@ -20,9 +21,9 @@ namespace SCCDEditor{
 
         public static void clear()
         {
-            foreach (KeyValuePair<XElement, StateChartEditorWindow> pair in StateChartEditorWindow.windows)
+            foreach (XElement statechart_xml in StateChartEditorWindow.windows.Keys.ToArray())
             {
-                pair.Value.Close();
+                StateChartEditorWindow.windows[statechart_xml].Close();
             }
         }
 
@@ -37,7 +38,7 @@ namespace SCCDEditor{
                 UnityEngine.Object.DontDestroyOnLoad(window);
                 StateChartEditorWindow.windows[statechart_xml] = window;
                 window.statechart_xml = statechart_xml;
-                window.init();
+                window.start();
                 window.Show();
             } else
             {
@@ -47,9 +48,9 @@ namespace SCCDEditor{
             return window;
         }
 
-        private void init()
+        private void start()
         {
-            this.top_level_widget = new SGUITopLevel(this);
+            this.top_level_widget = new SGUIHorizontalGroup();
             this.controller = new StateChartEditor.Controller(this.top_level_widget, this.statechart_xml);
             this.controller.start();
         }

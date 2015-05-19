@@ -3,18 +3,18 @@ using UnityEditor;
 
 namespace SCCDEditor
 {
-    public class SGUITopLevel : SGUIVerticalGroup
+    public class SGUITopLevell : SGUIVerticalGroup
     {
         private SGUIModalWindow modal_window = null;
 
         public SGUIEditorWindow window { get; private set; }
 
-        public static SGUITopLevel current { get; private set; }
+        public static SGUITopLevell current { get; private set; }
 
         private bool open_save_dialog = false;
         private bool do_restart = false;
         
-        public SGUITopLevel(SGUIEditorWindow window)
+        public SGUITopLevell(SGUIEditorWindow window)
         {
             this.window = window;
         }
@@ -37,7 +37,7 @@ namespace SCCDEditor
         protected override void OnGUI()
         {
             
-            SGUITopLevel.current = this;
+            SGUITopLevell.current = this;
 
             if (Event.current.type != EventType.Layout)
             {
@@ -65,7 +65,7 @@ namespace SCCDEditor
                 this.window.processEvent();
             }
 
-            SGUITopLevel.current = null;
+            SGUITopLevell.current = null;
 
             if (this.do_restart)
             {

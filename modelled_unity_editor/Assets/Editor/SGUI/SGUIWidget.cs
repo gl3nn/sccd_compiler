@@ -52,6 +52,11 @@ namespace SCCDEditor
         {
         }
 
+        public void setPosition(Rect rect)
+        {
+            this.position = position;
+        }
+
         public void setPosition(float x, float y, float w, float h)
         {
             this.position = new Rect(x, y, w, h);
@@ -59,7 +64,7 @@ namespace SCCDEditor
 
         protected void generateEvent(string event_name, string port, params object[] parameters)
         {
-            SGUITopLevel.current.window.generateEvent(event_name, port, parameters);
+            SGUIEditorWindow.current.generateEvent(event_name, port, parameters);
         }
     }
 }

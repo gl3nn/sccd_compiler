@@ -18,13 +18,14 @@ namespace SCCDEditor{
             window.start();
         }
 
-        public override void performRestart()
+        public override void restart()
         {
             StateChartEditorWindow.clear();
             this.start();
+            this.setRepaints(3);
         }
 
-        public void start()
+        private void start()
         {
             this.top_level_widget = new SGUIVerticalGroup();
             this.controller = new ClassDiagramEditor.Controller(this, this.sccd_script);

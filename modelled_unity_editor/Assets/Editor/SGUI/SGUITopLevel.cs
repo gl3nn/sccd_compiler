@@ -1,20 +1,20 @@
-using UnityEngine;
+/*using UnityEngine;
 using UnityEditor;
 
 namespace SCCDEditor
 {
-    public class SGUITopLevell : SGUIVerticalGroup
+    public class SGUITopLevel : SGUIVerticalGroup
     {
         private SGUIModalWindow modal_window = null;
 
         public SGUIEditorWindow window { get; private set; }
 
-        public static SGUITopLevell current { get; private set; }
+        public static SGUITopLevel current { get; private set; }
 
         private bool open_save_dialog = false;
         private bool do_restart = false;
         
-        public SGUITopLevell(SGUIEditorWindow window)
+        public SGUITopLevel(SGUIEditorWindow window)
         {
             this.window = window;
         }
@@ -37,7 +37,7 @@ namespace SCCDEditor
         protected override void OnGUI()
         {
             
-            SGUITopLevell.current = this;
+            SGUITopLevel.current = this;
 
             if (Event.current.type != EventType.Layout)
             {
@@ -65,7 +65,7 @@ namespace SCCDEditor
                 this.window.processEvent();
             }
 
-            SGUITopLevell.current = null;
+            SGUITopLevel.current = null;
 
             if (this.do_restart)
             {
@@ -84,4 +84,4 @@ namespace SCCDEditor
             }
         }
     }
-}
+}*/

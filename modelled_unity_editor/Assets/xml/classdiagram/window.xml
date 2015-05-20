@@ -19,7 +19,6 @@
             this.sccd_script = sccd_script;
             if (System.IO.File.Exists(sccd_script.xml_file)){
                 this.file_path = sccd_script.xml_file;
-                Debug.Log("File exists. loading..");
                 this.loadXMLFile();
             } else
             {
@@ -62,6 +61,8 @@
         <body>
             if (this.file_path != "" &amp;&amp; System.IO.File.Exists(sccd_script.xml_file))
             {
+                Debug.Log("Compiling...");
+                //this.window_widget.top_level_widget.addChild(new SGUILabel("Compiling..."));
                 this.xml_document.Save(this.file_path);
                 Logger.verbose = 2;
                 var stdOut = System.Console.Out;
@@ -77,7 +78,7 @@
                 System.Console.SetOut(stdOut);
                 this.sccd_script.sccd_namespace = this.xml_document.Element("diagram").Attribute("name").Value;
                 AssetDatabase.Refresh();
-                this.window_widget.Close(); //WE SHOULD BE ABLE TO REMOVE THIS
+                StateChartEditorWindow.clear();
             }
             else
             {

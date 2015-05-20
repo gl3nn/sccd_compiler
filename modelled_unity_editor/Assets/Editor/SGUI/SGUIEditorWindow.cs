@@ -9,9 +9,8 @@ namespace SCCDEditor{
 		// Imported from compiled model.
         protected sccdlib.GameLoopControllerBase    controller;
 
-        private double                              update_time = 0;
+        private float                               update_time = 0;
         private bool                                open_save_dialog = false;
-        private bool                                should_restart = false;
         private int                                 repaints = 0;
 
         public SGUIGroupWidget                      top_level_widget { get; protected set; }
@@ -27,11 +26,6 @@ namespace SCCDEditor{
         public void openSaveDialog()
         {
             this.open_save_dialog = true;
-        }
-        
-        public void restart()
-        {
-            this.should_restart = true;
         }
 
         public void setRepaints(int repaints)
@@ -163,6 +157,9 @@ namespace SCCDEditor{
 
         public void OnGUI()
         {
+            if (this.top_level_widget == null)
+                this.restart();
+
             GUI.skin = (GUISkin) (Resources.LoadAssetAtPath("Assets/Editor/SCCDSkin.guiskin", typeof(GUISkin)));
             SGUIEditorWindow.current = this;
             
@@ -193,13 +190,6 @@ namespace SCCDEditor{
             }
             
             SGUIEditorWindow.current = null;
-            
-            if (this.should_restart)
-            {
-                this.performRestart();
-                this.should_restart = false;
-                this.setRepaints(3);
-            }
 
             if (this.repaints > 0)
             {
@@ -219,7 +209,7 @@ namespace SCCDEditor{
             }
         }
 
-        public virtual void performRestart()
+        public virtual void restart()
         {
         }
     }

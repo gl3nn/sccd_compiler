@@ -22,7 +22,7 @@ namespace SCCDEditor{
         public static void clear()
         {
             foreach (XElement statechart_xml in StateChartEditorWindow.windows.Keys.ToArray())
-            {
+            {   
                 StateChartEditorWindow.windows[statechart_xml].Close();
             }
         }
@@ -48,6 +48,11 @@ namespace SCCDEditor{
             return window;
         }
 
+        public override void restart()
+        {
+            this.Close();
+        }
+
         private void start()
         {
             this.top_level_widget = new SGUIHorizontalGroup();
@@ -57,7 +62,8 @@ namespace SCCDEditor{
 
         public void OnDestroy()
         {
-            StateChartEditorWindow.windows.Remove(this.statechart_xml);
+            if (this.statechart_xml != null)
+                StateChartEditorWindow.windows.Remove(this.statechart_xml);
         }
     }
 }

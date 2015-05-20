@@ -202,7 +202,7 @@
                         <transition event="right-mouse-down" port="input" cond="tag == this.canvas_widget.tag" target="../../class_association">
                             <parameter name="tag" type="int"/>
                             <parameter type="Vector2" name="position"/>
-                            <raise event="unselect" target='"./classes"'>
+                            <raise event="unselect">
                                 <parameter expr='tag'/>
                             </raise>
                             <script>

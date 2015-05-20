@@ -19,23 +19,15 @@
             ]]>
         </body>
     </constructor>
-    <scxml initial="listening">
-        <state id="listening">
-            <!-- Create default panel - diagram editor. -->
-            <transition event="reset_panel" target="../panel_activation">
-                <raise scope="cd" event="delete_instance">
-                    <parameter expr='"active_panel"' />
-                </raise>
-                <raise scope="cd" event="create_instance">
-                    <parameter expr='"active_panel"' />
-                    <parameter expr='"DiagramProperties"'/>
-                    <parameter expr='this.panel_widget'/>
-                    <parameter expr='this.diagram_xml' />
-                </raise>
-            </transition>
-            
+    <scxml initial="setup">
+        <state id="setup">
+            <transition target="../listening/deactivating"/>
+        </state>
+    
+        <state id="listening" initial="not_deactivating">
+                                   
             <!-- Class selected, create its panel. -->
-            <transition event="set_class_properties" target="../panel_activation">
+            <transition event="set_class_properties" target=".">
                 <parameter name="xml" type="XElement"/>
                 <parameter name="class_widget" type="SGUICanvasElement"/>
                 <raise scope="cd" event="delete_instance">
@@ -51,7 +43,7 @@
             </transition>
             
             <!-- Relation selected, create its panel. -->
-            <transition event="set_relation_properties" target="../panel_activation">
+            <transition event="set_relation_properties" target=".">
                 <parameter name="relation_xml" type="XElement"/>
                 <parameter name="edge_widget" type="SGUICanvasEdge"/>
                 <raise scope="cd" event="delete_instance">
@@ -65,20 +57,37 @@
                     <parameter expr='edge_widget' />
                 </raise>
             </transition>
-        </state>
-        <state id="panel_activation">
-            <transition event="instance_created" target="../wait_for_deactivations">
-                <raise scope="cd" event="associate_instance">
+        
+            <state id="not_deactivating">
+                <transition event="reset_panel" target="../deactivating"/>
+                <transition event="instance_created" target="../wait_for_deactivations">
+                    <raise scope="cd" event="associate_instance">
                     <parameter expr='"."'/>
-                    <parameter expr='"active_panel/panel"' />
-                </raise>
-                <raise scope="cd" event="start_instance">
-                    <parameter expr='"active_panel"' />
-                </raise>
-            </transition>
+                        <parameter expr='"active_panel/panel"' />
+                    </raise>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='"active_panel"' />
+                    </raise>
+                </transition>
+            </state>
+            <state id="deactivating">
+                <onentry>
+                    <raise scope="cd" event="delete_instance">
+                        <parameter expr='"active_panel"' />
+                    </raise>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"active_panel"' />
+                        <parameter expr='"DiagramProperties"'/>
+                        <parameter expr='this.panel_widget'/>
+                        <parameter expr='this.diagram_xml' />
+                    </raise>
+                </onentry>
+                <transition after="0" target="../not_deactivating"/>
+            </state>
+            <state id="wait_for_deactivations">
+                <transition after="0" target="../not_deactivating"/>
+            </state>
         </state>
-        <state id="wait_for_deactivations">
-            <transition after="0" target="../listening"/>
-        </state>
+
     </scxml>
 </class>

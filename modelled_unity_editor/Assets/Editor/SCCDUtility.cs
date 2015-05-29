@@ -6,6 +6,25 @@ using csharp_sccd_compiler;
 namespace SCCDEditor{
     public class SCCDUtility
     {
+        public static void onClassRename(XElement renamed_class, string new_name, string old_name)
+        {
+            foreach (XElement class_xml in renamed_class.Parent.Elements("class"))
+            {
+                if (class_xml == renamed_class)
+                    continue;
+                XElement relationships = class_xml.Element("relationships");
+                if (relationships == null)
+                    continue;
+                foreach (XElement association in relationships.Elements("association"))
+                {
+                    if (association.Attribute("class").Value == old_name)
+                        association.Attribute("class").Value = new_name;
+
+                }
+            }
+
+        }
+
         public static void assureAttribute(XElement element, string attribute_name, string initial_value = "")
         {
             XAttribute attribute = element.Attribute(attribute_name);

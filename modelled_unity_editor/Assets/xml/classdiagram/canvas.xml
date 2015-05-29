@@ -108,6 +108,10 @@
                     
                     <state id="loading" initial="states_loading">
                     
+                        <onexit>
+                            <raise event="reset_panel" target='"window/properties_panel"'/>
+                        </onexit>
+                    
                         <state id="states_loading">
                             <transition target="../../../class_association" cond="this.classes_to_load.Count &gt; 0">
                                 <script>

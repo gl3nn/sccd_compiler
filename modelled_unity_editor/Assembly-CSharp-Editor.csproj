@@ -80,6 +80,7 @@
      <Compile Include="Assets\Editor\test2.cs" />
      <Compile Include="Assets\Editor\test3.cs" />
      <None Include="Assets\xml\common\button.xml" />
+     <None Include="Assets\player_tank_old.xml" />
      <None Include="Assets\xml\classdiagram\toolbar.xml" />
      <None Include="Assets\xml\statechart\actual_event_parameter.xml" />
      <None Include="Assets\xml\classdiagram\class.xml" />

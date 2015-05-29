@@ -25,6 +25,8 @@
                 );
                 SCCDUtility.assureChild(this.class_xml, "relationships");
                 SCCDUtility.assureAttribute(this.class_xml, "name", this.generateName());
+                if (this.class_xml.Attribute("default").Value == "true")
+                    this.widget.setLabelStyle("emphtitle");
             }
             else
             {
@@ -152,11 +154,8 @@
                             <parameter type="int" name="except_tag"/>
                         </transition>
                         
-                        <transition target="/final" port="input" event="key-down" cond="key_code == KeyCode.Delete">
+                        <transition target="/removed" port="input" event="key-down" cond="key_code == KeyCode.Delete">
                             <parameter type="KeyCode" name="key_code"/>
-                            <raise event="remove_class" target='"canvas"'>
-                                <parameter expr="this.widget"/>
-                            </raise>
                         </transition>
                         
                         <state id="default">
@@ -229,6 +228,15 @@
             </state>
         </parallel>
         
-        <state id="final"/>
+        <state id="removed">
+            <onentry>
+                <raise event="remove_class" target='"canvas"'>
+                    <parameter expr="this.widget"/>
+                </raise>
+                <script>
+                    this.class_xml.Remove();
+                </script>
+            </onentry>
+        </state>
     </scxml>
 </class>

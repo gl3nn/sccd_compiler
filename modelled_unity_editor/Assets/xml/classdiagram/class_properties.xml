@@ -159,6 +159,7 @@
                 <transition event="changed" port="input" cond='this.name_field.tag == tag' target=".">
                     <parameter name="tag" type="int"/>
                     <script>
+                        SCCDUtility.onClassRename(this.class_xml, this.name_field.text, this.class_xml.Attribute("name").Value);
                         this.class_xml.Attribute("name").Value = this.name_field.text;
                         this.class_widget.label = this.name_field.text;
                     </script>

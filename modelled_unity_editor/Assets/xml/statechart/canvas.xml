@@ -38,6 +38,8 @@
             this.state_xml_to_widget = new Dictionary<XElement, SGUICanvasElement>();
             
             List<XElement> current_level_states = this.statechart_xml.Elements("state").ToList();
+            current_level_states.AddRange(this.statechart_xml.Elements("parallel"));
+            current_level_states.AddRange(this.statechart_xml.Elements("history"));
             while(current_level_states.Count > 0)
             {
                 List<XElement> next_level_states = new List<XElement>(){};
@@ -47,6 +49,8 @@
                     states_to_load.Add(current_element);
                     this.state_xml_to_widget[current_element] = new SGUICanvasElement();
                     next_level_states.AddRange(current_element.Elements("state"));
+                    next_level_states.AddRange(current_element.Elements("parallel"));
+                    next_level_states.AddRange(current_element.Elements("history"));
                     
                     //transitions
                     this.transitions_to_load.AddRange(current_element.Elements("transition"));

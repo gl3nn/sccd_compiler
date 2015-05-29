@@ -38,6 +38,7 @@ namespace SCCDEditor{
                 UnityEngine.Object.DontDestroyOnLoad(window);
                 StateChartEditorWindow.windows[statechart_xml] = window;
                 window.statechart_xml = statechart_xml;
+                window.title = "Statechart Editor";
                 window.start();
                 window.Show();
             } else

@@ -87,7 +87,7 @@
             </transition>
             
             <!-- is_default_checkbox changed, edit parent's @initial -->
-            <transition event="changed" port="input" cond='this.is_default_checkbox.tag == tag' target=".">
+            <transition event="changed" port="input" cond='this.is_default_checkbox != null &amp;&amp; this.is_default_checkbox.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
                     if (this.is_default_checkbox.is_checked)

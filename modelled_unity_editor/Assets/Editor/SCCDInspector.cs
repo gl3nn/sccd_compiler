@@ -9,7 +9,7 @@ public class SCCDInspector : Editor
         SCCDScript target_script = (SCCDScript)this.target;
         EditorGUILayout.LabelField("Model File:");
         EditorGUILayout.SelectableLabel(target_script.xml_file);
-        if (GUILayout.Button("Open SCCD editor"))
+        if (GUILayout.Button("Open SCCD Editor"))
             SCCDEditor.ClassDiagramEditorWindow.open(target_script);
         /*if (GUILayout.Button("compile"))
         {

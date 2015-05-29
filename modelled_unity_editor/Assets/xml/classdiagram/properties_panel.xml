@@ -60,7 +60,7 @@
         
             <state id="not_deactivating">
                 <transition event="reset_panel" target="../deactivating"/>
-                <transition event="instance_created" target="../wait_for_deactivations">
+                <transition event="instance_created" target="../wait">
                     <raise scope="cd" event="associate_instance">
                     <parameter expr='"."'/>
                         <parameter expr='"active_panel/panel"' />
@@ -82,9 +82,18 @@
                         <parameter expr='this.diagram_xml' />
                     </raise>
                 </onentry>
-                <transition after="0" target="../not_deactivating"/>
+                <transition event="instance_created" target="../wait">
+                    <raise scope="cd" event="associate_instance">
+                    <parameter expr='"."'/>
+                        <parameter expr='"active_panel/panel"' />
+                    </raise>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='"active_panel"' />
+                    </raise>
+                </transition>
+                
             </state>
-            <state id="wait_for_deactivations">
+            <state id="wait">
                 <transition after="0" target="../not_deactivating"/>
             </state>
         </state>

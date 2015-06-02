@@ -43,6 +43,18 @@ namespace SCCDEditor{
             GUI.FocusWindow(0);
             this.position = next_position;
         }
+
+        /*public override void addChild(SGUIWidget child_widget)
+        {
+            base.addChild(child_widget);
+            this.window.setRepaints(3);
+        }
+
+        public override void removeChild(SGUIWidget child_widget)
+        {
+            base.removeChild(child_widget);
+            this.window.setRepaints(3);
+        }*/
     }
 }
 

@@ -61,7 +61,7 @@ namespace SCCDEditor
             }
         }
 
-        public void addChild(SGUIWidget child_widget)
+        public virtual void addChild(SGUIWidget child_widget)
         {
             this.children.Add(child_widget);
             child_widget.parent = this;
@@ -72,7 +72,7 @@ namespace SCCDEditor
             return this.children[index];
         }
 
-        public void removeChild(SGUIWidget child_widget)
+        public virtual void removeChild(SGUIWidget child_widget)
         {
             this.children.Remove(child_widget);
             child_widget.parent = null;

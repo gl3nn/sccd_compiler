@@ -43,8 +43,9 @@
             }
             else
                 this.widget.setStyle("basicstate");
-                
-            if (this.state_xml.Parent.Attribute("initial").Value == this.state_xml.Attribute("id").Value)
+            
+            XAttribute parent_init = this.state_xml.Parent.Attribute("initial");
+            if (parent_init != null &amp;&amp; parent_init.Value == this.state_xml.Attribute("id").Value)
             {
                 this.widget.setLabelStyle("emphtitle");
             }
@@ -156,6 +157,9 @@
                     <transition event="right-mouse-down" port="input" cond="tag == this.widget.tag" target="../edge_creation">
                         <parameter name="tag" type="int"/>
                         <parameter type="Vector2" name="position"/>
+                        <raise event="unselect" target='"canvas"'>
+                            <parameter expr='this.widget.tag'/>
+                        </raise>
                         <raise event="create_transition" target='"canvas"'>
                             <parameter expr='this.widget'/>
                             <parameter expr="position"/>

@@ -19,6 +19,8 @@
     <attribute type="SGUIButton" name="open_statechart_button"/>
     <attribute type="SGUIButton" name="add_attribute_button"/>
     <attribute type="SGUIButton" name="add_method_button"/>
+    <attribute type="SGUIButton" name="edit_constructor_button"/>
+    <attribute type="SGUIButton" name="edit_destructor_button"/>
     
     <constructor>
         <parameter type="SGUIVerticalGroup" name='panel_widget'/>
@@ -43,6 +45,20 @@
             //Statechart
             this.open_statechart_button = new SGUIButton("Edit Statechart");
             this.panel_widget.addChild(this.open_statechart_button);
+            
+            //Constructor setup
+            SGUIHorizontalGroup constructor_group = new SGUIHorizontalGroup();
+            constructor_group.addChild(new SGUILabel("Constructor:"));
+            this.edit_constructor_button = new SGUIButton("Edit");
+            constructor_group.addChild(this.edit_constructor_button);
+            this.panel_widget.addChild(constructor_group);
+            
+            //Destructor setup
+            SGUIHorizontalGroup destructor_group = new SGUIHorizontalGroup();
+            destructor_group.addChild(new SGUILabel("Destructor:"));
+            this.edit_destructor_button = new SGUIButton("Edit");
+            destructor_group.addChild(this.edit_destructor_button);
+            this.panel_widget.addChild(destructor_group);
             
             //Attributes setup
             SGUIHorizontalGroup attributes_heading = new SGUIHorizontalGroup();
@@ -78,7 +94,56 @@
         </body>
     </destructor>
     <scxml initial="saving_history">
-        <state id="saving_history" initial="loading">
+        <state id="saving_history" initial="constructor_setup">
+        
+            <state id="constructor_setup">
+                <onentry>
+                    <script>
+                        SCCDUtility.assureChild(this.class_xml, "constructor");
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"Method"'/>
+                        <parameter expr='this.class_xml.Element("constructor")' />
+                        <parameter expr='this.edit_constructor_button' />
+                    </raise>
+                </onentry>
+                <transition event="instance_created" target="../destructor_setup">
+                    <parameter name="id" type="int"/>
+                    <parameter name="association_name" type="String"/>
+                    <script>
+                        String association_path = String.Format("{0}[{1}]", association_name, id);
+                    </script>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='association_path' />
+                    </raise>
+                </transition>
+            </state>
+            
+            <state id="destructor_setup">
+                <onentry>
+                    <script>
+                        SCCDUtility.assureChild(this.class_xml, "destructor");
+                    </script>
+                    <raise scope="cd" event="create_instance">
+                        <parameter expr='"children"' />
+                        <parameter expr='"Method"'/>
+                        <parameter expr='this.class_xml.Element("destructor")' />
+                        <parameter expr='this.edit_destructor_button' />
+                    </raise>
+                </onentry>
+                <transition event="instance_created" target="../loading">
+                    <parameter name="id" type="int"/>
+                    <parameter name="association_name" type="String"/>
+                    <script>
+                        String association_path = String.Format("{0}[{1}]", association_name, id);
+                    </script>
+                    <raise scope="cd" event="start_instance">
+                        <parameter expr='association_path' />
+                    </raise>
+                </transition>
+            </state>
+            
             <state id="loading">
                 <transition target="/default_activation" cond="this.elements_to_load.Count &gt; 0">
                     <script>

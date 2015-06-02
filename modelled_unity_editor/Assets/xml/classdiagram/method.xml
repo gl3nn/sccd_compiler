@@ -26,26 +26,33 @@
     
     <constructor>
         <parameter type="XElement" name="method_xml"/>
-        <parameter type="SGUIGroupWidget" name="container_widget"/>
+        <parameter type="SGUIWidget" name="widget"/>
         <body>
             <![CDATA[
             this.method_xml = method_xml;
-            SCCDUtility.assureAttribute(this.method_xml, "type");
-            SCCDUtility.assureAttribute(this.method_xml, "name");
             SCCDUtility.assureChild(this.method_xml, "body");
-            
-            this.panel_horizontal_widget = new SGUIHorizontalGroup();
-            container_widget.addChild(this.panel_horizontal_widget);
-            
-            this.name_panel_widget = new SGUILabel(this.method_xml.Attribute("name").Value);
-            this.panel_horizontal_widget.addChild(this.name_panel_widget);
-            this.panel_horizontal_widget.addChild(new SGUISpace());
-            
-            this.edit_button_widget = new SGUIButton("Edit");
-            this.panel_horizontal_widget.addChild(this.edit_button_widget);
-            this.delete_button_widget = new SGUIButton("Delete");
-            this.panel_horizontal_widget.addChild(this.delete_button_widget);
-            
+            if (SCCDUtility.hasName(this.method_xml, "method"))
+            {
+                SCCDUtility.assureAttribute(this.method_xml, "type");
+                SCCDUtility.assureAttribute(this.method_xml, "name");
+                
+                this.panel_horizontal_widget = new SGUIHorizontalGroup();
+                ((SGUIGroupWidget)widget).addChild(this.panel_horizontal_widget);
+                
+                this.name_panel_widget = new SGUILabel(this.method_xml.Attribute("name").Value);
+                this.panel_horizontal_widget.addChild(this.name_panel_widget);
+                this.panel_horizontal_widget.addChild(new SGUISpace());
+                
+                this.edit_button_widget = new SGUIButton("Edit");
+                this.panel_horizontal_widget.addChild(this.edit_button_widget);
+                this.delete_button_widget = new SGUIButton("Delete");
+                this.panel_horizontal_widget.addChild(this.delete_button_widget);
+            }
+            else
+            {
+                this.edit_button_widget = (SGUIButton) widget;
+            }
+
             ]]>
         </body>
     </constructor>
@@ -54,11 +61,12 @@
         <![CDATA[
             this.modal_window = new SGUIModalWindow("Edit Method", 500);
             
-            this.name_text_widget = new SGUITextField("Method name:", this.method_xml.Attribute("name").Value);
-            this.modal_window.addChild(this.name_text_widget);
-            this.type_text_widget = new SGUITextField("Return type:", this.method_xml.Attribute("type").Value);
-            this.modal_window.addChild(this.type_text_widget);
-            
+            if (SCCDUtility.hasName(this.method_xml, "method")) {
+                this.name_text_widget = new SGUITextField("Method name:", this.method_xml.Attribute("name").Value);
+                this.modal_window.addChild(this.name_text_widget);
+                this.type_text_widget = new SGUITextField("Return type:", this.method_xml.Attribute("type").Value);
+                this.modal_window.addChild(this.type_text_widget);
+            }
             
             //Parameters
             SGUIHorizontalGroup parameters_heading = new SGUIHorizontalGroup();
@@ -105,7 +113,11 @@
     </method>
     <scxml initial="setup">
       
-        <state id="setup" initial="wait_for_child_id">
+        <state id="setup" initial="check_if_method">
+            <state id="check_if_method">
+                <transition cond='SCCDUtility.hasName(this.method_xml, "method")' target="../wait_for_child_id"/>
+                <transition cond='!SCCDUtility.hasName(this.method_xml, "method")' target="/popup_not_showing"/>
+            </state>
             <state id="wait_for_child_id">
                 <transition event="set_child_id" target="../../popup_not_showing">
                     <parameter name="child_id" type="int"/>
@@ -176,14 +188,15 @@
                     <transition event="button_pressed" port="input" cond='tag == this.close_edit_window_button.tag' target="/popup_not_showing">
                         <parameter name="tag" type="int"/>
                         <script>
-                            this.name_panel_widget.setLabel(this.method_xml.Attribute("name").Value);
+                            if (this.name_panel_widget != null)
+                                this.name_panel_widget.setLabel(this.method_xml.Attribute("name").Value);
                         </script>
                     </transition>
                     
                     
                     <!-- Type field changed, edit @type -->
                 
-                    <transition event="changed" port="input" cond='this.type_text_widget.tag == tag' target=".">
+                    <transition event="changed" port="input" cond='this.type_text_widget != null &amp;&amp;  this.type_text_widget.tag == tag' target=".">
                         <parameter name="tag" type="int"/>
                         <script>
                             this.method_xml.Attribute("type").Value = this.type_text_widget.text;
@@ -192,7 +205,7 @@
                     
                     <!-- Name field changed, edit @name -->
                     
-                    <transition event="changed" port="input" cond='this.name_text_widget.tag == tag' target=".">
+                    <transition event="changed" port="input" cond='this.name_text_widget != null &amp;&amp;  this.name_text_widget.tag == tag' target=".">
                         <parameter name="tag" type="int"/>
                         <script>
                             this.method_xml.Attribute("name").Value = this.name_text_widget.text;
@@ -235,7 +248,13 @@
         <!-- POPUP WINDOW NOT VISIBLE YET -->
 
         <state id="popup_not_showing">
-            <transition event="button_pressed" port="input" cond='tag == this.delete_button_widget.tag' target=".">
+            <!-- Edit button pressed, open editing window. -->
+            
+            <transition port="input" event="button_pressed" cond='tag == this.edit_button_widget.tag' target="../popup_showing">
+                <parameter name="tag" type="int"/>
+            </transition>
+        
+            <transition event="button_pressed" port="input" cond='this.delete_button_widget != null &amp;&amp; tag == this.delete_button_widget.tag' target=".">
                 <parameter name="tag" type="int"/>
                 <script>
                     this.panel_horizontal_widget.removeFromParent();
@@ -248,12 +267,6 @@
                 <raise scope="cd" event="delete_instance">
                     <parameter expr='target_path'/>
                 </raise>
-            </transition>
-            
-            <!-- Edit button pressed, open editing window. -->
-            
-            <transition port="input" event="button_pressed" cond='tag == this.edit_button_widget.tag' target="../popup_showing">
-                <parameter name="tag" type="int"/>
             </transition>
         </state>
     </scxml>

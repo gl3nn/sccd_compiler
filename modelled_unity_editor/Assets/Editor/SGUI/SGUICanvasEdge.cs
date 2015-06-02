@@ -147,9 +147,9 @@ namespace SCCDEditor{
             this.control_points.Add(position);
         }
 
-        public bool hasControlPoints()
+        public int getPointCount()
         {
-            return this.control_points.Count > 1;
+            return this.control_points.Count;
         }
 
         private void calculatePosition()

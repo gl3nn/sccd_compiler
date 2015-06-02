@@ -100,7 +100,7 @@
                 <parameter name="tag" type="int"/>
                 <parameter name="position" type="Vector2"/>
                 <script>
-                    if (this.edge_widget.hasControlPoints())
+                    if (this.edge_widget.getPointCount() > 1)
                     {
                         this.edge_widget.popControlPoint();
                         this.edge_widget.popControlPoint();

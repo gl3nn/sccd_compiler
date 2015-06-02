@@ -90,20 +90,6 @@
         </state>
 
         <state id="creation" initial="state_drag">
-            <history type="deep" id="history"/>
-            
-            <transition event="middle-mouse-down" port="input" target="history">
-                <parameter name="tag" type="int"/>
-                <parameter name="position" type="Vector2"/>
-                <script>
-                    if (this.edge_widget.hasControlPoints())
-                    {
-                        this.edge_widget.popControlPoint();
-                        this.edge_widget.popControlPoint();
-                        this.edge_widget.addControlPoint(position);
-                    }
-                </script>
-            </transition>
 
             <!-- EDGE END IS CURRENTLY OVER A STATE -->
     
@@ -140,6 +126,21 @@
                         this.edge_widget.removeEndPoint();
                     </script>
                 </transition>
+                
+                <transition event="left-mouse-down" port="input" target=".">
+                    <parameter name="tag" type="int"/>
+                    <parameter name="position" type="Vector2"/>
+                    <script>
+                        this.edge_widget.addControlPoint(position);
+                    </script>
+                </transition>
+                
+                 <transition event="middle-mouse-down" port="input" target=".">
+                    <script>
+                        if (this.edge_widget.getPointCount() > 0)
+                            this.edge_widget.popControlPoint();
+                    </script>
+                </transition>
             </state>
             
             <!-- EDGE IS CURRENTLY ON CANVAS (NOT OVER STATE) -->  
@@ -167,13 +168,26 @@
                         this.edge_widget.addControlPoint(position); // Current mouse position as temporary control point
                     </script>
                 </transition>
-                <transition event="left-mouse-down" port="input" cond="this.edge_widget.canvas.tag == tag" target=".">
+                <transition event="left-mouse-down" port="input" target=".">
                     <parameter name="tag" type="int"/>
                     <parameter name="position" type="Vector2"/>
                     <script>
                         this.edge_widget.popControlPoint();
                         this.edge_widget.addControlPoint(position); // New control point
                         this.edge_widget.addControlPoint(position); // Current mouse position as temporary control point
+                    </script>
+                </transition>
+                
+                 <transition event="middle-mouse-down" port="input" target=".">
+                    <parameter name="tag" type="int"/>
+                    <parameter name="position" type="Vector2"/>
+                    <script>
+                        if (this.edge_widget.getPointCount() > 1)
+                        {
+                            this.edge_widget.popControlPoint();
+                            this.edge_widget.popControlPoint();
+                            this.edge_widget.addControlPoint(position);
+                        }
                     </script>
                 </transition>
             </state>

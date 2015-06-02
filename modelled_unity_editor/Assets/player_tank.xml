@@ -1,19 +1,254 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<diagram name="TestDiagram" author="">
-  <description>description</description>
-  <top>using UnityEngine; using Event = sccdlib.Event;</top>
-  <class name="ClassA" x="193" y="155" w="92" h="22" default="true">
+<diagram name="PlayerTank" author="Glenn De Jonghe">
+  <description>The model that handles the user input 
+to control the player tank</description>
+  <top>using UnityEngine;
+using Event = sccdlib.Event;
+#pragma warning disable 0219
+#pragma warning disable 0414</top>
+  <class name="Tank" x="344" y="157" w="92" h="22" default="true">
     <relationships>
-      <association min="0" max="1" class="ClassB" name="assocation-name" x-offset="1" y-offset="-9" start-id="1" end-id="3" />
+      <association min="1" max="1" class="Cannon" name="cannon" x-offset="1" y-offset="-9" start-id="1" end-id="3" />
+      <association min="1" max="1" class="Body" name="body" x-offset="12" y-offset="-12" start-id="3" end-id="1" />
     </relationships>
+    <constructor>
+      <body>this.tank = tank;</body>
+      <parameter type="GameObject" name="tank" default="" />
+    </constructor>
+    <destructor>
+      <body />
+    </destructor>
+    <scxml initial="cannon_creation">
+      <state id="cannon_creation" x="24" y="99" w="127" h="52">
+        <transition event="instance_created" port="" target="/body_creation" after="" label="/create cannon" x-offset="3" y-offset="-16" start-id="1" end-id="3" />
+        <onentry>
+          <raise event="create_instance" scope="cd" target="">
+            <parameter expr="&quot;cannon&quot;" />
+            <parameter expr="&quot;Cannon&quot;" />
+            <parameter expr="this.tank" />
+          </raise>
+        </onentry>
+      </state>
+      <state id="body_creation" x="262" y="98" w="123" h="54">
+        <transition event="instance_created" port="" target="/final" after="" label="/create body and&#xA;activate both" x-offset="4" y-offset="-22" start-id="1" end-id="3">
+          <raise event="start_instance" scope="cd" target="">
+            <parameter expr="&quot;body&quot;" />
+          </raise>
+          <raise event="start_instance" scope="cd" target="">
+            <parameter expr="&quot;cannon&quot;" />
+          </raise>
+        </transition>
+        <onentry>
+          <raise event="create_instance" scope="cd" target="">
+            <parameter expr="&quot;body&quot;" />
+            <parameter expr="&quot;Body&quot;" />
+            <parameter expr="this.tank" />
+          </raise>
+        </onentry>
+      </state>
+      <state id="final" x="494" y="101" w="121" h="49" />
+    </scxml>
+    <attribute type="GameObject" name="tank" init-value="" />
   </class>
-  <class name="ClassB" x="446" y="155" w="87" h="23" default="false">
+  <class name="Cannon" x="618" y="157" w="87" h="23" default="false">
     <relationships />
-    <scxml initial="">
-      <state id="basic-state" x="17" y="45" w="100" h="100" />
-      <parallel id="parallel-state" x="147" y="45" w="100" h="100" />
-      <history id="shallow-history" x="271" y="45" w="100" h="100" type="shallow" />
-      <history id="deep-history" x="392" y="44" w="100" h="100" type="deep" />
+    <scxml initial="basic_state">
+      <parallel id="parallel_container" x="37" y="35" w="747" h="585">
+        <state id="rotating" x="63" y="64" w="699" h="274" initial="none">
+          <state id="none" x="366" y="120" w="97" h="32">
+            <transition event="left-arrow-pressed" port="input" target="/parallel_container/rotating/left" after="" label="left-arrow-pressed" x-offset="-1" y-offset="33" start-id="3" end-id="1">
+              <point x="279" y="158" />
+            </transition>
+            <transition event="right-arrow-pressed" port="input" target="/parallel_container/rotating/right" after="" label="right-arrow-pressed" x-offset="-2" y-offset="32" start-id="1" end-id="3">
+              <point x="538" y="156" />
+            </transition>
+          </state>
+          <state id="both" x="363" y="262" w="101" h="35">
+            <transition event="right-arrow-released" port="input" target="/parallel_container/rotating/left" after="" label="right-arrow-released" x-offset="-14" y-offset="15" start-id="0" end-id="2">
+              <point x="183" y="224" />
+            </transition>
+            <transition event="left-arrow-released" port="input" target="/parallel_container/rotating/right" after="" label="left-arrow-released" x-offset="-9" y-offset="15" start-id="0" end-id="2">
+              <point x="636" y="220" />
+            </transition>
+          </state>
+          <state id="right" x="611" y="118" w="91" h="29">
+            <transition event="left-arrow-pressed" port="input" target="/parallel_container/rotating/both" after="" label="left-arrow-pressed" x-offset="-27" y-offset="74" start-id="2" end-id="1">
+              <point x="635" y="264" />
+            </transition>
+            <transition event="fixed-update" port="engine" target="/parallel_container/rotating/right" after="" label="update/rotateRight" x-offset="0" y-offset="-42" start-id="1" end-id="0">
+              <point x="729" y="100" />
+              <point x="638" y="98" />
+              <script>this.turret.transform.RotateAround(this.tank.transform.position, Vector3.up, this.turret_rotation_speed);</script>
+            </transition>
+            <transition event="right-arrow-released" port="input" target="/parallel_container/rotating/none" after="" label="right-arrow-released" x-offset="-6" y-offset="-29" start-id="3" end-id="1">
+              <point x="536" y="119" />
+            </transition>
+          </state>
+          <state id="left" x="112" y="118" w="92" h="34">
+            <transition event="fixed-update" port="engine" target="/parallel_container/rotating/left" after="" label="update/rotateLeft" x-offset="-6" y-offset="-45" start-id="3" end-id="0">
+              <point x="80" y="99" />
+              <point x="176" y="94" />
+              <script>this.turret.RotateAround(this.tank.transform.position, Vector3.up, -this.turret_rotation_speed);</script>
+            </transition>
+            <transition event="right-arrow-pressed" port="input" target="/parallel_container/rotating/both" after="" label="right-arrow-pressed" x-offset="-36" y-offset="64" start-id="2" end-id="3">
+              <point x="169" y="250" />
+            </transition>
+            <transition event="left-arrow-released" port="input" target="/parallel_container/rotating/none" after="" label="left-arrow-released" x-offset="-5" y-offset="-42" start-id="1" end-id="3">
+              <point x="279" y="112" />
+            </transition>
+          </state>
+        </state>
+        <state id="shooting" x="63" y="354" w="342" h="248" initial="hold">
+          <state id="hold" x="85" y="428" w="85" h="31">
+            <transition event="" port="" target="/parallel_container/shooting/shoot" after="" label="" x-offset="-1" y-offset="-36" start-id="1" end-id="3">
+              <point x="227" y="420" />
+            </transition>
+          </state>
+          <state id="shoot" x="283" y="428" w="88" h="31">
+            <transition event="" port="" target="/parallel_container/shooting/hold" after="" label="" x-offset="-1" y-offset="30" start-id="3" end-id="1">
+              <point x="224" y="460" />
+            </transition>
+            <transition event="" port="" target="/parallel_container/shooting/shoot" after="" label="" x-offset="-13" y-offset="44" start-id="1" end-id="2">
+              <point x="381" y="480" />
+              <point x="304" y="480" />
+            </transition>
+          </state>
+        </state>
+        <state id="ammo" x="420" y="354" w="341" h="248" initial="loaded">
+          <state id="loaded" x="447" y="425" w="96" h="36">
+            <transition event="" port="" target="/parallel_container/ammo/unloaded" after="" label="" x-offset="-3" y-offset="-31" start-id="1" end-id="3">
+              <point x="591" y="424" />
+            </transition>
+          </state>
+          <state id="unloaded" x="639" y="423" w="97" h="36">
+            <transition event="" port="" target="/parallel_container/ammo/loaded" after="" label="" x-offset="-3" y-offset="32" start-id="3" end-id="1">
+              <point x="591" y="459" />
+            </transition>
+          </state>
+        </state>
+      </parallel>
+    </scxml>
+    <constructor>
+      <body>this.tank = tank;
+this.turret = tank.transform.FindChild("turret");
+this.bullet_spawn = this.turret.FindChild("bullet_spawn");
+this.bullet_prefab = Resources.Load("bullet_prefab") as GameObject;</body>
+      <parameter type="GameObject" name="tank" default="" />
+    </constructor>
+    <destructor>
+      <body />
+    </destructor>
+    <attribute type="GameObject" name="tank" init-value="" />
+    <attribute type="Transform" name="turret" init-value="" />
+    <attribute type="Transform" name="bullet_spawn" init-value="" />
+    <attribute type="GameObject" name="bullet_prefab" init-value="" />
+    <attribute type="float" name="reload_time" init-value="1.0f" />
+    <attribute type="float" name="turret_rotation_speed" init-value="3.0f" />
+  </class>
+  <class name="Body" x="76" y="157" w="102" h="23" default="false">
+    <relationships />
+    <constructor>
+      <body>this.tank = tank;</body>
+      <parameter type="GameObject" name="tank" default="" />
+    </constructor>
+    <destructor>
+      <body />
+    </destructor>
+    <attribute type="GameObject" name="tank" init-value="" />
+    <attribute type="float" name="body_rotation_speed" init-value="3.0f" />
+    <attribute type="float" name="body_speed" init-value="0.05f" />
+    <scxml initial="parallel_container">
+      <parallel id="parallel_container" x="43" y="40" w="722" h="577">
+        <state id="horizontal" x="56" y="61" w="696" h="221" initial="none">
+          <state id="left" x="94" y="106" w="75" h="32">
+            <transition event="left-released" port="input" target="/parallel_container/horizontal/none" after="" label="left-released" x-offset="-1" y-offset="29" start-id="1" end-id="3">
+              <point x="265" y="140" />
+            </transition>
+            <transition event="right-pressed" port="input" target="/parallel_container/horizontal/both" after="" label="right-pressed" x-offset="-13" y-offset="52" start-id="2" end-id="3">
+              <point x="151" y="223" />
+            </transition>
+            <transition event="fixed-update" port="engine" target="/parallel_container/horizontal/left" after="" label="update/rotateLeft" x-offset="6" y-offset="-39" start-id="3" end-id="0">
+              <point x="67" y="93" />
+              <point x="151" y="88" />
+              <script>this.tank.transform.Rotate(0, -this.body_rotation_speed, 0);</script>
+            </transition>
+          </state>
+          <state id="right" x="626" y="106" w="90" h="33">
+            <transition event="right-released" port="input" target="/parallel_container/horizontal/none" after="" label="right-released" x-offset="-5" y-offset="24" start-id="3" end-id="1">
+              <point x="537" y="138" />
+            </transition>
+            <transition event="left-pressed" port="input" target="/parallel_container/horizontal/both" after="" label="left-pressed" x-offset="-9" y-offset="58" start-id="2" end-id="1">
+              <point x="666" y="226" />
+            </transition>
+            <transition event="fixed-update" port="engine" target="/parallel_container/horizontal/right" after="" label="update/rotateRight" x-offset="-3" y-offset="-38" start-id="1" end-id="0">
+              <point x="732" y="91" />
+              <point x="640" y="91" />
+              <script>this.tank.transform.Rotate(0, this.body_rotation_speed, 0);</script>
+            </transition>
+          </state>
+          <state id="none" x="363" y="106" w="96" h="32">
+            <transition event="left-pressed" port="input" target="/parallel_container/horizontal/left" after="" label="left-pressed" x-offset="1" y-offset="-31" start-id="3" end-id="1">
+              <point x="267" y="102" />
+            </transition>
+            <transition event="" port="" target="/parallel_container/horizontal/right" after="" label="right-pressed" x-offset="-1" y-offset="-31" start-id="1" end-id="3">
+              <point x="539" y="102" />
+            </transition>
+          </state>
+          <state id="both" x="361" y="215" w="101" h="38">
+            <transition event="right-released" port="input" target="/parallel_container/horizontal/left" after="" label="right-released" x-offset="-15" y-offset="14" start-id="0" end-id="2">
+              <point x="174" y="197" />
+            </transition>
+            <transition event="left-released" port="input" target="/parallel_container/horizontal/right" after="" label="left-released" x-offset="2" y-offset="14" start-id="0" end-id="2">
+              <point x="659" y="196" />
+            </transition>
+          </state>
+        </state>
+        <state id="vertical" x="54" y="301" w="696" h="289" initial="none">
+          <state id="none" x="348" y="358" w="104" h="36">
+            <transition event="down-pressed" port="input" target="/parallel_container/vertical/backward" after="" label="down-pressed" x-offset="-8" y-offset="-33" start-id="3" end-id="1">
+              <point x="266" y="356" />
+            </transition>
+            <transition event="up-pressed" port="input" target="/parallel_container/vertical/forward" after="" label="up-pressed" x-offset="0" y-offset="-33" start-id="1" end-id="3">
+              <point x="527" y="351" />
+            </transition>
+          </state>
+          <state id="both" x="348" y="506" w="108" h="35">
+            <transition event="down-released" port="input" target="/parallel_container/vertical/forward" after="" label="down-released" x-offset="0" y-offset="21" start-id="0" end-id="2">
+              <point x="614" y="475" />
+            </transition>
+            <transition event="up-released" port="input" target="/parallel_container/vertical/backward" after="" label="up-released" x-offset="-12" y-offset="24" start-id="0" end-id="2">
+              <point x="160" y="476" />
+            </transition>
+          </state>
+          <state id="forward" x="603" y="352" w="93" h="39">
+            <transition event="up-released" port="input" target="/parallel_container/vertical/none" after="" label="up-released" x-offset="-1" y-offset="29" start-id="3" end-id="1">
+              <point x="527" y="392" />
+            </transition>
+            <transition event="up-released" port="input" target="/parallel_container/vertical/both" after="" label="up-released" x-offset="-28" y-offset="72" start-id="2" end-id="1">
+              <point x="635" y="511" />
+            </transition>
+            <transition event="fixed-update" port="engine" target="/parallel_container/vertical/forward" after="" label="update/moveForward" x-offset="-8" y-offset="-39" start-id="1" end-id="0">
+              <point x="718" y="341" />
+              <point x="634" y="332" />
+              <script>this.tank.transform.Translate(Vector3.forward * this.body_speed);</script>
+            </transition>
+          </state>
+          <state id="backward" x="94" y="358" w="98" h="39">
+            <transition event="down-released" port="input" target="/parallel_container/vertical/none" after="" label="down-released" x-offset="-6" y-offset="27" start-id="1" end-id="3">
+              <point x="265" y="395" />
+            </transition>
+            <transition event="up-pressed" port="input" target="/parallel_container/vertical/both" after="" label="up-pressed" x-offset="9" y-offset="72" start-id="2" end-id="3">
+              <point x="151" y="508" />
+            </transition>
+            <transition event="fixed-update" port="engine" target="/parallel_container/vertical/backward" after="" label="update/moveBackward" x-offset="12" y-offset="-47" start-id="3" end-id="0">
+              <point x="70" y="340" />
+              <point x="156" y="332" />
+            </transition>
+          </state>
+        </state>
+      </parallel>
     </scxml>
   </class>
+  <inport name="input" />
+  <inport name="engine" />
 </diagram>

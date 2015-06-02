@@ -52,27 +52,27 @@ using Event = sccdlib.Event;
   </class>
   <class name="Cannon" x="618" y="157" w="87" h="23" default="false">
     <relationships />
-    <scxml initial="basic_state">
-      <parallel id="parallel_container" x="37" y="35" w="747" h="585">
+    <scxml initial="parallel_container">
+      <parallel id="parallel_container" x="37" y="35" w="746" h="533">
         <state id="rotating" x="63" y="64" w="699" h="274" initial="none">
           <state id="none" x="366" y="120" w="97" h="32">
-            <transition event="left-arrow-pressed" port="input" target="/parallel_container/rotating/left" after="" label="left-arrow-pressed" x-offset="-1" y-offset="33" start-id="3" end-id="1">
+            <transition event="arrow-left-pressed" port="input" target="/parallel_container/rotating/left" after="" label="arrow-left-pressed" x-offset="-1" y-offset="33" start-id="3" end-id="1">
               <point x="279" y="158" />
             </transition>
-            <transition event="right-arrow-pressed" port="input" target="/parallel_container/rotating/right" after="" label="right-arrow-pressed" x-offset="-2" y-offset="32" start-id="1" end-id="3">
+            <transition event="arrow-right-pressed" port="input" target="/parallel_container/rotating/right" after="" label="arrow-right-pressed" x-offset="-2" y-offset="32" start-id="1" end-id="3">
               <point x="538" y="156" />
             </transition>
           </state>
           <state id="both" x="363" y="262" w="101" h="35">
-            <transition event="right-arrow-released" port="input" target="/parallel_container/rotating/left" after="" label="right-arrow-released" x-offset="-14" y-offset="15" start-id="0" end-id="2">
+            <transition event="arrow-right-released" port="input" target="/parallel_container/rotating/left" after="" label="arrow-right-released" x-offset="-14" y-offset="15" start-id="0" end-id="2">
               <point x="183" y="224" />
             </transition>
-            <transition event="left-arrow-released" port="input" target="/parallel_container/rotating/right" after="" label="left-arrow-released" x-offset="-9" y-offset="15" start-id="0" end-id="2">
+            <transition event="arrow-left-released" port="input" target="/parallel_container/rotating/right" after="" label="arrow-left-released" x-offset="-10" y-offset="15" start-id="0" end-id="2">
               <point x="636" y="220" />
             </transition>
           </state>
           <state id="right" x="611" y="118" w="91" h="29">
-            <transition event="left-arrow-pressed" port="input" target="/parallel_container/rotating/both" after="" label="left-arrow-pressed" x-offset="-27" y-offset="74" start-id="2" end-id="1">
+            <transition event="arrow-left-pressed" port="input" target="/parallel_container/rotating/both" after="" label="arrow-left-pressed" x-offset="-27" y-offset="74" start-id="2" end-id="1">
               <point x="635" y="264" />
             </transition>
             <transition event="fixed-update" port="engine" target="/parallel_container/rotating/right" after="" label="update/rotateRight" x-offset="0" y-offset="-42" start-id="1" end-id="0">
@@ -80,7 +80,7 @@ using Event = sccdlib.Event;
               <point x="638" y="98" />
               <script>this.turret.transform.RotateAround(this.tank.transform.position, Vector3.up, this.turret_rotation_speed);</script>
             </transition>
-            <transition event="right-arrow-released" port="input" target="/parallel_container/rotating/none" after="" label="right-arrow-released" x-offset="-6" y-offset="-29" start-id="3" end-id="1">
+            <transition event="arrow-right-released" port="input" target="/parallel_container/rotating/none" after="" label="arrow-right-released" x-offset="-6" y-offset="-29" start-id="3" end-id="1">
               <point x="536" y="119" />
             </transition>
           </state>
@@ -90,39 +90,43 @@ using Event = sccdlib.Event;
               <point x="176" y="94" />
               <script>this.turret.RotateAround(this.tank.transform.position, Vector3.up, -this.turret_rotation_speed);</script>
             </transition>
-            <transition event="right-arrow-pressed" port="input" target="/parallel_container/rotating/both" after="" label="right-arrow-pressed" x-offset="-36" y-offset="64" start-id="2" end-id="3">
+            <transition event="arrow-right-pressed" port="input" target="/parallel_container/rotating/both" after="" label="arrow-right-pressed" x-offset="-36" y-offset="64" start-id="2" end-id="3">
               <point x="169" y="250" />
             </transition>
-            <transition event="left-arrow-released" port="input" target="/parallel_container/rotating/none" after="" label="left-arrow-released" x-offset="-5" y-offset="-42" start-id="1" end-id="3">
+            <transition event="arrow-left-released" port="input" target="/parallel_container/rotating/none" after="" label="arrow-left-released" x-offset="-5" y-offset="-42" start-id="1" end-id="3">
               <point x="279" y="112" />
             </transition>
           </state>
         </state>
-        <state id="shooting" x="63" y="354" w="342" h="248" initial="hold">
+        <state id="shooting" x="63" y="354" w="340" h="184" initial="hold">
           <state id="hold" x="85" y="428" w="85" h="31">
-            <transition event="" port="" target="/parallel_container/shooting/shoot" after="" label="" x-offset="-1" y-offset="-36" start-id="1" end-id="3">
+            <transition event="arrow-up-pressed" port="input" target="/parallel_container/shooting/shoot" after="" label="arrow-up-pressed/shoot" x-offset="-1" y-offset="-36" start-id="1" end-id="3">
               <point x="227" y="420" />
+              <raise event="shoot" scope="" target="" />
             </transition>
           </state>
           <state id="shoot" x="283" y="428" w="88" h="31">
-            <transition event="" port="" target="/parallel_container/shooting/hold" after="" label="" x-offset="-1" y-offset="30" start-id="3" end-id="1">
+            <transition event="arrow-up-released" port="input" target="/parallel_container/shooting/hold" after="" label="arrow-up-released" x-offset="-1" y-offset="30" start-id="3" end-id="1">
               <point x="224" y="460" />
             </transition>
-            <transition event="" port="" target="/parallel_container/shooting/shoot" after="" label="" x-offset="-13" y-offset="44" start-id="1" end-id="2">
+            <transition event="loaded" port="" target="/parallel_container/shooting/shoot" after="" label="loaded/shoot" x-offset="-13" y-offset="44" start-id="1" end-id="2">
               <point x="381" y="480" />
               <point x="304" y="480" />
+              <raise event="shoot" scope="" target="" />
             </transition>
           </state>
         </state>
-        <state id="ammo" x="420" y="354" w="341" h="248" initial="loaded">
+        <state id="ammo" x="420" y="354" w="341" h="184" initial="loaded">
           <state id="loaded" x="447" y="425" w="96" h="36">
-            <transition event="" port="" target="/parallel_container/ammo/unloaded" after="" label="" x-offset="-3" y-offset="-31" start-id="1" end-id="3">
+            <transition event="shoot" port="" target="/parallel_container/ammo/unloaded" after="" label="shoot/launchBullet" x-offset="-3" y-offset="-31" start-id="1" end-id="3">
               <point x="591" y="424" />
+              <script>GameObject.Instantiate(this.bullet_prefab, this.bullet_spawn.position, this.turret.rotation);</script>
             </transition>
           </state>
           <state id="unloaded" x="639" y="423" w="97" h="36">
-            <transition event="" port="" target="/parallel_container/ammo/loaded" after="" label="" x-offset="-3" y-offset="32" start-id="3" end-id="1">
+            <transition event="" port="" target="/parallel_container/ammo/loaded" after="this.reload_time" label="AFTER(this.reload_time)/loaded" x-offset="-3" y-offset="32" start-id="3" end-id="1">
               <point x="591" y="459" />
+              <raise event="loaded" scope="" target="" />
             </transition>
           </state>
         </state>
@@ -190,7 +194,7 @@ this.bullet_prefab = Resources.Load("bullet_prefab") as GameObject;</body>
             <transition event="left-pressed" port="input" target="/parallel_container/horizontal/left" after="" label="left-pressed" x-offset="1" y-offset="-31" start-id="3" end-id="1">
               <point x="267" y="102" />
             </transition>
-            <transition event="" port="" target="/parallel_container/horizontal/right" after="" label="right-pressed" x-offset="-1" y-offset="-31" start-id="1" end-id="3">
+            <transition event="right-pressed" port="input" target="/parallel_container/horizontal/right" after="" label="right-pressed" x-offset="-1" y-offset="-31" start-id="1" end-id="3">
               <point x="539" y="102" />
             </transition>
           </state>
@@ -243,6 +247,7 @@ this.bullet_prefab = Resources.Load("bullet_prefab") as GameObject;</body>
             <transition event="fixed-update" port="engine" target="/parallel_container/vertical/backward" after="" label="update/moveBackward" x-offset="12" y-offset="-47" start-id="3" end-id="0">
               <point x="70" y="340" />
               <point x="156" y="332" />
+              <script>this.tank.transform.Translate(Vector3.back * this.body_speed);</script>
             </transition>
           </state>
         </state>

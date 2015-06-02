@@ -10,7 +10,7 @@ public class SCCDScript : MonoBehaviour {
     public string xml_file = "";
 
     void Awake () {
-        this.controller = (sccdlib.GameLoopControllerBase) Activator.CreateInstance(Type.GetType(string.Format("{0}.Controller", this.sccd_namespace), this.gameObject));
+        this.controller = (sccdlib.GameLoopControllerBase) Activator.CreateInstance(Type.GetType(string.Format("{0}.Controller", this.sccd_namespace)), new object[]{this.gameObject});
     }
 
 	void Start () {

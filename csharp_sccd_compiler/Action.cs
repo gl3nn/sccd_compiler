@@ -23,8 +23,8 @@ namespace csharp_sccd_compiler
                     sub_action = new Log(sub_action_xml);
                 else if (sub_action_xml.Name == "assign")
                     sub_action = new Assign(sub_action_xml);
-                else if (sub_action_xml.Name != "parameter")      
-                    throw new CompilerException(string.Format("Invalid subaction <{0}>.", sub_action_xml.Name));
+                /*else if (sub_action_xml.Name != "parameter")      
+                    throw new CompilerException(string.Format("Invalid subaction <{0}>.", sub_action_xml.Name));*/
 
                 if (sub_action != null)
                     this.sub_actions.Add(sub_action);

@@ -22,7 +22,7 @@ namespace SCCDEditor{
             Rect position = new Rect(0, 0, min_width, 0);
             position.center = new Vector2(this.window.position.width/2, this.window.position.height/2);
             this.position = position;
-            this.window.setRepaints(3);
+            this.window.setRepaints(5);
         }
 
         public void close() 

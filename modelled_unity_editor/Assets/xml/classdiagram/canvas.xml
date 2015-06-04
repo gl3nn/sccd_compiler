@@ -82,6 +82,18 @@
                         <script>
                             this.classes_map.Remove(remove_class.tag);
                             this.canvas_widget.removeElement(remove_class);
+                            foreach (SGUICanvasEdge edge in this.canvas_widget.edges)
+                            {
+                                if (edge.start.canvas_element == remove_class || edge.end.canvas_element == remove_class)
+                                {
+                                    //remove edge by sending remove_transition event to canvas                    
+                        </script>
+                                    <raise scope="local" event="remove_relation">
+                                        <parameter expr='edge' />                          
+                                    </raise>
+                        <script>
+                                }
+                            }
                         </script>
                     </transition>
  

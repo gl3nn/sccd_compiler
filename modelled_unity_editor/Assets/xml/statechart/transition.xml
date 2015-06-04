@@ -57,6 +57,7 @@
                 new XAttribute("port", ""),
                 new XAttribute("target", ""),
                 new XAttribute("after", ""),
+                new XAttribute("cond", ""),
                 new XAttribute("label", ""),
                 new XAttribute("x-offset", 0),
                 new XAttribute("y-offset", 0),

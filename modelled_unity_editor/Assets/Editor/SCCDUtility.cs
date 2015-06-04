@@ -121,7 +121,7 @@ namespace SCCDEditor{
                         }
                     }
                     if (!found)
-                        throw new StateReferenceException(string.Format("Refering to non exiting node at posisition {0} in state reference.", token.pos));
+                        throw new StateReferenceException(string.Format("Refering to non exiting node at position {0} in state reference.", token.pos));
                 }
                 else if (token.type == Token.Type.LBRACKET)
                     split_stack.Push(current_node);

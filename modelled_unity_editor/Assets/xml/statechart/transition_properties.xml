@@ -15,7 +15,7 @@
     <attribute type="SGUITextField" name='event_field'/>
     <attribute type="SGUITextField" name='port_field'/>
     <attribute type="SGUITextField" name='after_field'/>
-    
+    <attribute type="SGUITextArea" name='cond_field'/>
     <attribute type="SGUIButton" name='action_button'/>
     
     <attribute type="SGUIVerticalGroup" name="parameters_group_widget"/>
@@ -52,6 +52,11 @@
             SCCDUtility.assureAttribute(this.transition_xml, "after");
             this.after_field = new SGUITextField("After Time", this.transition_xml.Attribute("after").Value);
             this.panel_widget.addChild(this.after_field);
+            
+            //@cond property setup
+            SCCDUtility.assureAttribute(this.transition_xml, "cond");
+            this.cond_field = new SGUITextArea("Condition", this.transition_xml.Attribute("cond").Value);
+            this.panel_widget.addChild(this.cond_field);
             
             //action setup
             this.action_button = new SGUIButton("Edit Action");
@@ -130,6 +135,14 @@
                     <parameter name="tag" type="int"/>
                     <script>
                         this.transition_xml.Attribute("after").Value = this.after_field.text;
+                    </script>
+                </transition>
+                
+                <!-- Condition field changed, edit @cond -->
+                <transition event="changed" port="input" cond='this.cond_field.tag == tag' target=".">
+                    <parameter name="tag" type="int"/>
+                    <script>
+                        this.transition_xml.Attribute("cond").Value = this.cond_field.text;
                     </script>
                 </transition>
                             

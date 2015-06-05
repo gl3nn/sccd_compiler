@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class LevelScript : MonoBehaviour {
+public class Level : MonoBehaviour {
     public Transform wall_prefab;
 
     private int[,] map = new int[12, 20]{
@@ -116,7 +116,7 @@ public class LevelScript : MonoBehaviour {
         return this.calculateCoords(good_cells[Random.Range( 0, good_cells.Count)]);
     }
 
-    public float getAngleToDest(Cell cell_start, Cell cell_end)
+    public static float getAngleToDest(Cell cell_start, Cell cell_end)
     {
         float angle = Mathf.Atan2(cell_end.x-cell_start.x, cell_end.y-cell_start.y)*180 / Mathf.PI;
         if (angle < 0)
@@ -124,7 +124,7 @@ public class LevelScript : MonoBehaviour {
         return angle;
     }
 
-    public float getAngleToDest(Vector3 start, Vector3 end)
+    public static float getAngleToDest(Vector3 start, Vector3 end)
     {
         float angle = Mathf.Atan2(end.x-start.x, end.z-start.z)*180 / Mathf.PI;
         if (angle < 0)
@@ -271,11 +271,11 @@ public class LevelScript : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        Debug.Log(this.getAngleToDest(new Cell(1,1), new Cell(0,0)));
+        /*Debug.Log(this.getAngleToDest(new Cell(1,1), new Cell(0,0)));
         Debug.Log(this.getAngleToDest(new Cell(0,0), new Cell(1,1)));
         Debug.Log(this.getAngleToDest(new Cell(0,0), new Cell(0,1)));
         Debug.Log(this.getAngleToDest(new Cell(0,1), new Cell(0,0)));
-        Debug.Log(this.getAngleToDest(new Cell(1,0), new Cell(0,0)));
+        Debug.Log(this.getAngleToDest(new Cell(1,0), new Cell(0,0)));*/
 	}
 	
 	// Update is called once per frame

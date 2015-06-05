@@ -6,18 +6,18 @@ to control the player tank</description>
 using Event = sccdlib.Event;
 #pragma warning disable 0219
 #pragma warning disable 0414</top>
-  <class name="Tank" x="316" y="48" w="92" h="22" default="true">
+  <class name="Tank" x="596" y="230" w="92" h="22" default="true">
     <relationships>
       <association min="1" max="1" class="Radar" name="radar" x-offset="-1" y-offset="-12" start-id="3" end-id="1" />
-      <association min="1" max="1" class="EnemyTracker" name="enemy_tracker" x-offset="-6" y-offset="-15" start-id="2" end-id="1" />
-      <association min="1" max="1" class="PilotStrategy" name="pilot_strategy" x-offset="54" y-offset="10" start-id="2" end-id="0" />
-      <association min="1" max="1" class="ExplorePlanner" name="explore_planner" x-offset="84" y-offset="5" start-id="1" end-id="0" />
-      <association min="1" max="1" class="AttackPlanner" name="attack_planner" x-offset="-115" y-offset="26" start-id="2" end-id="1" />
-      <association min="1" max="1" class="PathFinder" name="path_finder" x-offset="74" y-offset="56" start-id="1" end-id="3" />
-      <association min="1" max="1" class="Steering" name="steering" x-offset="9" y-offset="67" start-id="2" end-id="2" />
-      <association min="1" max="1" class="TurretSteering" name="turret_steering" x-offset="-73" y-offset="31" start-id="2" end-id="1" />
-      <association min="1" max="1" class="TurretControl" name="turret_control" x-offset="2" y-offset="77" start-id="2" end-id="1" />
-      <association min="1" max="1" class="MotorControl" name="motor_control" x-offset="19" y-offset="112" start-id="1" end-id="0" />
+      <association min="1" max="1" class="EnemyTracker" name="enemy_tracker" x-offset="-6" y-offset="-15" start-id="3" end-id="1" />
+      <association min="1" max="1" class="PilotStrategy" name="pilot_strategy" x-offset="54" y-offset="10" start-id="3" end-id="1" />
+      <association min="1" max="1" class="ExplorePlanner" name="explore_planner" x-offset="85" y-offset="-41" start-id="3" end-id="1" />
+      <association min="1" max="1" class="AttackPlanner" name="attack_planner" x-offset="-115" y-offset="26" start-id="3" end-id="1" />
+      <association min="1" max="1" class="PathFinder" name="path_finder" x-offset="74" y-offset="56" start-id="3" end-id="1" />
+      <association min="1" max="1" class="Steering" name="steering" x-offset="9" y-offset="67" start-id="3" end-id="1" />
+      <association min="1" max="1" class="TurretSteering" name="turret_steering" x-offset="-100" y-offset="33" start-id="3" end-id="1" />
+      <association min="1" max="1" class="TurretControl" name="turret_control" x-offset="-31" y-offset="36" start-id="3" end-id="1" />
+      <association min="1" max="1" class="MotorControl" name="motor_control" x-offset="-45" y-offset="60" start-id="3" end-id="1" />
     </relationships>
     <constructor>
       <body>this.tank = tank;</body>
@@ -180,7 +180,7 @@ using Event = sccdlib.Event;
         </onentry>
       </state>
       <state id="enemy_tracker_creation" x="590" y="315" w="165" h="29">
-        <transition event="instance_created" port="" target="/radar_creation" after="" label="instance_created/&#xA;associate pilot_strategy&#xA;associate attack_planner&#xA;start enemy_tracler" x-offset="-77" y-offset="-8" start-id="2" end-id="0">
+        <transition event="instance_created" port="" target="/radar_creation" after="" label="instance_created/&#xA;associate pilot_strategy&#xA;associate attack_planner&#xA;start enemy_tracler" x-offset="-77" y-offset="-8" start-id="2" end-id="0" cond="">
           <raise event="associate_instance" scope="cd" target="">
             <parameter expr="&quot;pilot_strategy&quot;" />
             <parameter expr="&quot;enemy_tracker/pilot_strategy&quot;" />
@@ -207,7 +207,7 @@ using Event = sccdlib.Event;
             <parameter expr="this.tank" />
           </raise>
         </onentry>
-        <transition event="instance_created" port="" target="/finished_creation" after="" label="instance_created/&#xA;associate pilot_strategy&#xA;associate enemy_tracker&#xA;start radar" x-offset="-3" y-offset="-38" start-id="3" end-id="1">
+        <transition event="instance_created" port="" target="/finished_creation" after="" label="instance_created/&#xA;associate pilot_strategy&#xA;associate enemy_tracker&#xA;start radar" x-offset="-3" y-offset="-38" start-id="3" end-id="1" cond="">
           <raise event="associate_instance" scope="cd" target="">
             <parameter expr="&quot;pilot_strategy&quot;" />
             <parameter expr="&quot;radar/pilot_strategy&quot;" />
@@ -216,9 +216,10 @@ using Event = sccdlib.Event;
             <parameter expr="&quot;enemy_tracker&quot;" />
             <parameter expr="&quot;radar/enemy_tracker&quot;" />
           </raise>
-          <raise event="start_instance" scope="" target="">
+          <raise event="start_instance" scope="cd" target="">
             <parameter expr="&quot;radar&quot;" />
           </raise>
+          <script>Debug.Log("finished creation");</script>
         </transition>
       </state>
       <state id="finished_creation" x="19" y="446" w="162" h="28" />
@@ -227,7 +228,7 @@ using Event = sccdlib.Event;
   </class>
   <inport name="input" />
   <inport name="engine" />
-  <class name="PilotStrategy" x="310" y="182" w="97" h="25" default="false">
+  <class name="PilotStrategy" x="180" y="173" w="97" h="25" default="false">
     <relationships>
       <association min="1" max="1" class="ExplorePlanner" name="explore_planner" x-offset="-3" y-offset="-12" start-id="1" end-id="3" />
       <association min="1" max="1" class="AttackPlanner" name="attack_planner" x-offset="156" y-offset="18" start-id="2" end-id="1" />
@@ -241,7 +242,7 @@ using Event = sccdlib.Event;
     <scxml initial="Exploring">
       <state id="Exploring" x="113" y="211" w="108" h="29">
         <transition event="enemy_sighted" port="" target="/Attacking" after="" label="enemy_sighted(position)/&#xA;attack_planner.attack(position)" x-offset="-3" y-offset="-36" start-id="1" end-id="3" cond="">
-          <parameter type="Vector2" name="position" />
+          <parameter type="Vector3" name="position" />
           <raise event="attack" scope="" target="&quot;attack_planner&quot;">
             <parameter expr="position" />
           </raise>
@@ -266,13 +267,13 @@ using Event = sccdlib.Event;
       </state>
     </scxml>
   </class>
-  <class name="ExplorePlanner" x="537" y="181" w="114" h="27" default="false">
+  <class name="ExplorePlanner" x="338" y="227" w="114" h="27" default="false">
     <relationships>
       <association min="1" max="1" class="PathFinder" name="path_finder" x-offset="39" y-offset="1" start-id="2" end-id="0" />
     </relationships>
     <constructor>
       <body>this.tank = tank;
-this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
+this.level = GameObject.Find("Level").GetComponent&lt;Level&gt;();</body>
       <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
@@ -285,8 +286,9 @@ this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
         </transition>
       </state>
       <state id="exploring" x="359" y="92" w="447" h="237" initial="no_destination">
-        <transition event="stop_exploring" port="" target="/idle" after="" label="stop_exploring" x-offset="-8" y-offset="47" start-id="3" end-id="1">
+        <transition event="stop_exploring" port="" target="/idle" after="" label="stop_exploring" x-offset="-8" y-offset="47" start-id="3" end-id="1" cond="">
           <point x="260" y="245" />
+          <script>Debug.Log("stop exploring");</script>
         </transition>
         <state id="no_destination" x="380" y="185" w="109" h="30">
           <transition event="" port="" target="/exploring/destination_set" after="" label="/new explore target" x-offset="-1" y-offset="-41" start-id="1" end-id="3" cond="">
@@ -304,15 +306,15 @@ this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
       </state>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
-    <attribute type="LevelScript" name="level" init-value="" />
+    <attribute type="Level" name="level" init-value="" />
   </class>
-  <class name="PathFinder" x="543" y="272" w="102" h="25" default="false">
+  <class name="PathFinder" x="188" y="231" w="102" h="25" default="false">
     <relationships>
       <association min="1" max="1" class="Steering" name="steering" x-offset="-1" y-offset="-2" start-id="2" end-id="0" />
     </relationships>
     <constructor>
       <body>this.tank = tank;
-this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
+this.level = GameObject.Find("Level").GetComponent&lt;Level&gt;();</body>
       <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
@@ -325,7 +327,6 @@ this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
           <point x="514" y="77" />
           <parameter type="Vector3" name="destination" />
           <script>this.destination = destination;
-Debug.Log(destination);
 this.waypoints = this.level.calculatePath(this.tank.transform.position, this.destination);
 </script>
         </transition>
@@ -337,6 +338,7 @@ this.waypoints = this.level.calculatePath(this.tank.transform.position, this.des
         <transition event="" port="" target="/idle" after="" label="[no more points]/&#xA;destination_reached" x-offset="-35" y-offset="46" start-id="3" end-id="1" cond="this.waypoints.Count == 0">
           <point x="397" y="183" />
           <raise event="destination_reached" scope="broad" target="" />
+          <script>Debug.Log("destination reached!");</script>
         </transition>
         <transition event="" port="" target="/idle" after="" label="[more points]/&#xA;steering.new_waypoint" x-offset="-31" y-offset="102" start-id="3" end-id="1" cond="this.waypoints.Count &gt; 0">
           <point x="521" y="240" />
@@ -350,44 +352,42 @@ this.waypoints.RemoveAt(0);</script>
       </state>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
-    <attribute type="LevelScript" name="level" init-value="" />
+    <attribute type="Level" name="level" init-value="" />
     <attribute type="List&lt;Vector3&gt;" name="waypoints" init-value="" />
     <attribute type="Vector3" name="destination" init-value="" />
   </class>
-  <class name="Steering" x="544" y="358" w="95" h="26" default="false">
+  <class name="Steering" x="190" y="339" w="95" h="26" default="false">
     <relationships>
       <association min="1" max="1" class="MotorControl" name="motor_control" x-offset="2" y-offset="-17" start-id="3" end-id="1" />
       <association min="1" max="1" class="PathFinder" name="path_finder" x-offset="56" y-offset="-33" start-id="1" end-id="1" />
     </relationships>
     <constructor>
       <body>this.tank = tank;
-this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
+this.level = GameObject.Find("Level").GetComponent&lt;Level&gt;();</body>
       <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
     </destructor>
     <attribute type="GameObject" name="tank" init-value="" />
-    <attribute type="LevelScript" name="level" init-value="" />
+    <attribute type="Level" name="level" init-value="" />
     <attribute type="double" name="reaction_time" init-value="0.05" />
     <attribute type="float" name="margin" init-value="11.5f" />
     <attribute type="Vector3" name="dest_waypoint" init-value="" />
-    <attribute type="LevelScript.Cell" name="dest_cell" init-value="" />
+    <attribute type="Level.Cell" name="dest_cell" init-value="" />
     <scxml initial="idle">
       <state id="idle" x="344" y="50" w="102" h="34">
         <transition event="new_waypoint" port="" target="/steering" after="" cond="" label="new_waypoint" x-offset="89" y-offset="-2" start-id="2" end-id="0">
           <point x="438" y="129" />
           <parameter type="Vector3" name="dest_waypoint" />
           <script>this.dest_waypoint = dest_waypoint;
-this.dest_cell = this.level.calculateCell(dest_waypoint);
-Debug.Log("new waypoint!");</script>
+this.dest_cell = this.level.calculateCell(dest_waypoint);</script>
         </transition>
       </state>
       <state id="steering" x="84" y="179" w="622" h="233" initial="forward_backward">
         <transition event="" port="" target="/idle" after="" cond="this.dest_cell == this.level.calculateCell(this.tank.transform.position)" label="[point reached]/&#xA;path_finder.waypoint_reached" x-offset="-138" y-offset="1" start-id="0" end-id="2">
           <point x="355" y="131" />
           <raise event="waypoint_reached" scope="" target="&quot;path_finder&quot;" />
-          <script>Debug.Log("raise waypoint_reached");</script>
         </transition>
         <state id="forward_backward" x="128" y="244" w="125" h="31">
           <transition event="" port="" target="/steering/left_right" after="" cond="this.pointAhead()" label="[point ahead]/&#xA;motor_control.forward" x-offset="-6" y-offset="-43" start-id="1" end-id="3">
@@ -399,7 +399,6 @@ Debug.Log("new waypoint!");</script>
           <transition event="" port="" target="/steering/left_right" after="" cond="this.pointBehind()" label="[point behind]/&#xA;motor_control.stop" x-offset="-7" y-offset="35" start-id="1" end-id="3">
             <point x="300" y="286" />
             <raise event="stop" scope="" target="&quot;motor_control&quot;" />
-            <script>Debug.Log("stop");</script>
           </transition>
         </state>
         <state id="left_right" x="355" y="246" w="86" h="30">
@@ -430,41 +429,41 @@ Debug.Log("new waypoint!");</script>
       </state>
     </scxml>
     <method name="pointAhead" type="bool">
-      <body>var goal_angle = this.level.getAngleToDest(
+      <body>var goal_angle = Level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
 var diff = goal_angle - this.tank.transform.eulerAngles.y;
 if (diff &lt; 0) diff += 360;
 return (diff &lt;= 45.0f) || (diff &gt;= (315.0f));</body>
     </method>
     <method name="pointBehind" type="bool">
-      <body>var goal_angle = this.level.getAngleToDest(
+      <body>var goal_angle = Level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
 var diff = goal_angle - this.tank.transform.eulerAngles.y;
 if (diff &lt; 0) diff += 360;
 return (diff &gt; 45.0f) &amp;&amp; (diff &lt; (315.0f));</body>
     </method>
     <method name="pointRight" type="bool">
-      <body>var goal_angle = this.level.getAngleToDest(
+      <body>var goal_angle = Level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
 var diff = goal_angle-this.tank.transform.eulerAngles.y;
 if (diff &lt; 0) diff += 360;
 return (diff &lt;= 180.0f) &amp;&amp; (diff &gt;= this.margin);</body>
     </method>
     <method name="pointLeft" type="bool">
-      <body>var goal_angle = this.level.getAngleToDest(
+      <body>var goal_angle = Level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
 var diff = this.tank.transform.eulerAngles.y-goal_angle;
 if (diff &lt; 0) diff += 360;
 return (diff &lt;= 180.0f) &amp;&amp; (diff &gt;= this.margin);</body>
     </method>
     <method name="pointStraight" type="bool">
-      <body>var goal_angle = this.level.getAngleToDest(
+      <body>var goal_angle = Level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
 var diff = Mathf.Abs(goal_angle-this.tank.transform.eulerAngles.y);
 return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     </method>
   </class>
-  <class name="MotorControl" x="301" y="357" w="104" h="28" default="false">
+  <class name="MotorControl" x="190" y="439" w="104" h="28" default="false">
     <relationships />
     <constructor>
       <body>this.tank = tank;</body>
@@ -553,10 +552,10 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     <attribute type="float" name="body_speed" init-value="0.05f" />
     <attribute type="float" name="body_rotation_speed" init-value="2.0f" />
   </class>
-  <class name="Radar" x="45" y="50" w="104" h="27" default="false">
+  <class name="Radar" x="174" y="36" w="104" h="27" default="false">
     <relationships>
       <association min="1" max="1" class="EnemyTracker" name="enemy_tracker" x-offset="-8" y-offset="-5" start-id="2" end-id="0" />
-      <association min="1" max="1" class="PilotStrategy" name="pilot_strategy" x-offset="8" y-offset="-9" start-id="1" end-id="3" />
+      <association min="1" max="1" class="PilotStrategy" name="pilot_strategy" x-offset="96" y-offset="49" start-id="2" end-id="0" />
     </relationships>
     <constructor>
       <body>this.tank = tank;</body>
@@ -565,12 +564,62 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     <destructor>
       <body />
     </destructor>
-    <scxml initial="State697">
-      <state id="State697" x="237" y="184" w="100" h="100" />
+    <scxml initial="no_enemy">
+      <state id="no_enemy" x="107" y="181" w="98" h="31">
+        <transition event="fixed-update" port="engine" target="/enemy_in_sight" after="" cond="this.isEnemyVisible()" label="[is enemy visible]/&#xA;enemy_tracker.enemy_sighted&#xA;pilot_strategy.enemy_sighted" x-offset="-5" y-offset="-62" start-id="1" end-id="3">
+          <point x="318" y="160" />
+          <raise event="enemy_sighted" scope="" target="&quot;enemy_tracker&quot;">
+            <parameter expr="this.target" />
+          </raise>
+          <raise event="enemy_sighted" scope="" target="&quot;pilot_strategy&quot;">
+            <parameter expr="this.target" />
+          </raise>
+          <script>Debug.Log("Enemy sighted!");</script>
+        </transition>
+        <onentry>
+          <script></script>
+        </onentry>
+      </state>
+      <state id="enemy_in_sight" x="445" y="178" w="127" h="30">
+        <transition event="fixed-update" port="engine" target="/no_enemy" after="" cond="!this.isEnemyVisible()" label="[not enemy visible]/&#xA;enemy_tracker.enemy_out_of_sight" x-offset="-12" y-offset="49" start-id="3" end-id="1">
+          <point x="314" y="225" />
+          <raise event="enemy_out_of_sight" scope="" target="&quot;enemy_tracker&quot;" />
+        </transition>
+        <transition event="fixed-update" port="engine" target="/enemy_in_sight" after="" cond="this.isEnemyVisible()" label="[is enemy visible]/&#xA;enemy_tracker.enemy_pos" x-offset="9" y-offset="-55" start-id="1" end-id="0">
+          <point x="606" y="149" />
+          <point x="482" y="147" />
+          <raise event="enemy_pos" scope="" target="&quot;enemy_tracker&quot;">
+            <parameter expr="this.target" />
+          </raise>
+        </transition>
+      </state>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
+    <method name="isEnemyVisible" type="bool">
+      <body>GameObject[] enemy_team = GameObject.FindGameObjectsWithTag("team1");
+RaycastHit hit_info;
+float closest_distance = this.range + 1.0f;
+this.target = new Vector3();
+foreach (GameObject enemy in enemy_team)
+{
+    if(Physics.Raycast(this.tank.transform.position,
+        enemy.transform.position - this.tank.transform.position,
+        out hit_info, this.range, Physics.DefaultRaycastLayers))
+    {
+        if (hit_info.transform.gameObject == enemy){
+            if (hit_info.distance &lt; closest_distance) {
+                closest_distance = hit_info.distance;
+                this.target = enemy.transform.position;
+            }
+        }
+    }
+}
+return this.target != new Vector3();</body>
+    </method>
+    <attribute type="float" name="range" init-value="2000" />
+    <attribute type="Vector3" name="target" init-value="" />
   </class>
-  <class name="EnemyTracker" x="34" y="114" w="103" h="28" default="false">
+  <class name="EnemyTracker" x="179" y="105" w="103" h="28" default="false">
     <relationships>
       <association min="1" max="1" class="PilotStrategy" name="pilot_strategy" x-offset="6" y-offset="4" start-id="1" end-id="3" />
       <association min="1" max="1" class="AttackPlanner" name="attack_planner" x-offset="-41" y-offset="-4" start-id="2" end-id="0" />
@@ -581,11 +630,42 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     <destructor>
       <body />
     </destructor>
-    <scxml initial="State664">
-      <state id="State664" x="323" y="140" w="100" h="100" />
+    <scxml initial="no_enemy">
+      <state id="no_enemy" x="81" y="86" w="126" h="35">
+        <transition event="enemy_sighted" port="" target="/enemy_pos_known" after="" cond="" label="enemy_sighted(pos)/&#xA;this.enemy_pos = pos" x-offset="-7" y-offset="-20" start-id="1" end-id="3">
+          <script>this.enemy_pos = enemy_pos;</script>
+          <parameter type="Vector3" name="enemy_pos" />
+        </transition>
+        <onentry />
+      </state>
+      <state id="enemy_pos_known" x="437" y="86" w="156" h="32">
+        <transition event="enemy_pos" port="" target="/enemy_pos_known" after="" cond="new_position != this.enemy_pos" label="enemy_pos(pos)&#xA;[pos != this.enemy_pos]/&#xA;this.enemy_pos = pos&#xA;attack_planner.enemy_pos_changed&#xA;(this.enemy_pos)" x-offset="-17" y-offset="93" start-id="1" end-id="2">
+          <point x="593" y="170" />
+          <point x="542" y="169" />
+          <parameter type="Vector3" name="new_position" />
+          <script>this.enemy_pos = new_position;</script>
+          <raise event="enemy_pos_changed" scope="" target="&quot;attack_planner&quot;">
+            <parameter expr="this.enemy_pos" />
+          </raise>
+        </transition>
+        <transition event="enemy_out_of_sight" port="" target="/enemy_pos_unsure" after="" cond="" label="enemy_out_of_sight/&#xA;attack_planner.enemy_out_of_sight" x-offset="-78" y-offset="39" start-id="2" end-id="1">
+          <point x="378" y="264" />
+          <raise event="enemy_out_of_sight" scope="" target="&quot;attack_planner&quot;" />
+        </transition>
+      </state>
+      <state id="enemy_pos_unsure" x="74" y="250" w="139" h="31">
+        <transition event="enemy_sighted" port="" target="/enemy_pos_known" after="" cond="" label="enemy_sighted(pos)/&#xA;this.enemy_pos = pos" x-offset="8" y-offset="-51" start-id="0" end-id="3">
+          <script>this.enemy_pos = enemy_pos;</script>
+          <parameter type="Vector3" name="enemy_pos" />
+        </transition>
+        <transition event="destination_reached" port="" target="/no_enemy" after="" cond="" label="destination_reached/&#xA;pilot_strategy.enemy_lost" x-offset="-6" y-offset="-18" start-id="0" end-id="2">
+          <raise event="enemy_lost" scope="" target="&quot;pilot_strategy&quot;" />
+        </transition>
+      </state>
     </scxml>
+    <attribute type="Vector3" name="enemy_pos" init-value="" />
   </class>
-  <class name="AttackPlanner" x="32" y="178" w="101" h="29" default="false">
+  <class name="AttackPlanner" x="32" y="235" w="101" h="29" default="false">
     <relationships>
       <association min="1" max="1" class="TurretSteering" name="turret_steering" x-offset="-45" y-offset="0" start-id="2" end-id="0" />
       <association min="1" max="1" class="TurretControl" name="turret_control" x-offset="-9" y-offset="25" start-id="2" end-id="3" />
@@ -597,39 +677,198 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     <destructor>
       <body />
     </destructor>
-    <scxml initial="State631">
-      <state id="State631" x="305" y="124" w="100" h="100" />
+    <scxml initial="idle">
+      <state id="idle" x="340" y="50" w="86" h="26">
+        <transition event="attack" port="" target="/parallel" after="" cond="" label="attack(enemy_pos)/&#xA;path_finder.new_destination(enemy_pos)&#xA;turret_steering.aim_at(enemy_pos)" x-offset="161" y-offset="-5" start-id="2" end-id="0">
+          <point x="415" y="112" />
+          <parameter type="Vector3" name="enemy_pos" />
+          <raise event="new_destination" scope="" target="&quot;path_finder&quot;">
+            <parameter expr="enemy_pos" />
+          </raise>
+          <raise event="aim_at" scope="" target="&quot;turret_steering&quot;">
+            <parameter expr="enemy_pos" />
+          </raise>
+        </transition>
+      </state>
+      <parallel id="parallel" x="45" y="148" w="673" h="243">
+        <transition event="stop_attack" port="" target="/idle" after="" cond="" label="stop_attack/&#xA;turret_steering.stop_aiming" x-offset="-129" y-offset="-4" start-id="0" end-id="2">
+          <point x="356" y="108" />
+          <raise event="stop_aiming" scope="" target="&quot;turret_steering&quot;" />
+        </transition>
+        <state id="movement" x="66" y="177" w="291" h="176" initial="following">
+          <state id="following" x="83" y="244" w="112" h="35">
+            <transition event="enemy_out_of_sight" port="" target="/parallel/movement/following" after="" cond="" label="enemy_out_of_sight/&#xA;turret_steering.stop_aiming" x-offset="42" y-offset="-42" start-id="1" end-id="0">
+              <point x="224" y="229" />
+              <point x="118" y="227" />
+              <raise event="stop_aiming" scope="" target="&quot;turret_steering&quot;" />
+            </transition>
+            <transition event="enemy_pos_changed" port="" target="/parallel/movement/following" after="" cond="" label="enemy_pos_changed(pos)/&#xA;path_finder.new_destination(pos)&#xA;turret_steering.aim_at(pos)" x-offset="36" y-offset="50" start-id="1" end-id="2">
+              <point x="221" y="295" />
+              <point x="120" y="296" />
+              <parameter type="Vector3" name="enemy_pos" />
+              <raise event="new_destination" scope="" target="&quot;path_finder&quot;">
+                <parameter expr="enemy_pos" />
+              </raise>
+              <raise event="aim_at" scope="" target="&quot;turret_steering&quot;">
+                <parameter expr="enemy_pos" />
+              </raise>
+            </transition>
+          </state>
+        </state>
+        <state id="shooting" x="366" y="177" w="332" h="176" initial="loaded">
+          <state id="loaded" x="375" y="245" w="99" h="31">
+            <transition event="ready_to_shoot" port="" target="/parallel/shooting/reloading" after="" cond="" label="ready_to_shoot/&#xA;turret_control.shoot" x-offset="-4" y-offset="-29" start-id="1" end-id="3">
+              <point x="529" y="243" />
+              <raise event="shoot" scope="" target="&quot;turret_control&quot;" />
+            </transition>
+          </state>
+          <state id="reloading" x="593" y="242" w="96" h="33">
+            <transition event="" port="" target="/parallel/shooting/loaded" after="0.5" cond="" label="AFTER(0.5)" x-offset="-2" y-offset="33" start-id="3" end-id="1">
+              <point x="529" y="283" />
+            </transition>
+          </state>
+        </state>
+      </parallel>
     </scxml>
   </class>
-  <class name="TurretSteering" x="31" y="261" w="116" h="33" default="false">
+  <class name="TurretSteering" x="32" y="334" w="116" h="33" default="false">
     <relationships>
       <association min="1" max="1" class="TurretControl" name="turret_control" x-offset="23" y-offset="-29" start-id="2" end-id="1" />
       <association min="1" max="1" class="AttackPlanner" name="attack_planner" x-offset="29" y-offset="19" start-id="0" end-id="1" />
     </relationships>
     <constructor>
-      <body>this.tank = tank;</body>
+      <body>this.tank = tank;
+this.turret = tank.transform.FindChild("turret");</body>
       <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
     </destructor>
-    <scxml initial="State445">
-      <state id="State445" x="241" y="140" w="100" h="100" />
+    <scxml initial="idle">
+      <state id="idle" x="302" y="48" w="91" h="30">
+        <transition event="aim_at" port="" target="/steering" after="" cond="" label="aim_at(target)/&#xA;this.target = target" x-offset="88" y-offset="-2" start-id="2" end-id="0">
+          <point x="370" y="111" />
+          <parameter type="Vector3" name="target" />
+          <script>this.target = target;</script>
+        </transition>
+      </state>
+      <state id="steering" x="102" y="144" w="491" h="233" initial="adjust">
+        <transition event="stop_aiming" port="" target="/idle" after="" cond="" label="stop_aiming/&#xA;turret_control.stop_turning" x-offset="-110" y-offset="-1" start-id="0" end-id="2">
+          <point x="324" y="110" />
+          <raise event="stop_turning" scope="" target="&quot;turret_control&quot;" />
+        </transition>
+        <state id="adjust" x="132" y="237" w="100" h="29">
+          <transition event="" port="" target="/steering/wait" after="" cond="this.pointCorrect()" label="[this.pointCorrect()]/turret_control.stop_turning&#xA;attack_planner.ready_to_shoot" x-offset="-13" y-offset="-71" start-id="1" end-id="3">
+            <point x="341" y="237" />
+            <raise event="stop_turning" scope="" target="&quot;turret_control&quot;" />
+            <raise event="ready_to_shoot" scope="" target="&quot;attack_planner&quot;" />
+          </transition>
+          <transition event="" port="" target="/steering/wait" after="" cond="this.pointRight()" label="[this.pointRight()]/&#xA;turret_control.turn_right" x-offset="-5" y-offset="28" start-id="1" end-id="3">
+            <point x="341" y="264" />
+            <raise event="turn_right" scope="" target="&quot;turret_control&quot;" />
+          </transition>
+          <transition event="" port="" target="/steering/wait" after="" cond="this.pointLeft()" label="[this.pointLeft()]/&#xA;turret_control.turn_left" x-offset="-3" y-offset="-14" start-id="0" end-id="0">
+            <point x="337" y="194" />
+            <raise event="turn_left" scope="" target="&quot;turret_control&quot;" />
+          </transition>
+        </state>
+        <state id="wait" x="457" y="233" w="105" h="30">
+          <transition event="fixed-update" port="engine" target="/steering/adjust" after="" cond="" label="fixed-update" x-offset="-4" y-offset="68" start-id="2" end-id="2">
+            <point x="342" y="318" />
+          </transition>
+        </state>
+      </state>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
+    <attribute type="Vector3" name="target" init-value="" />
+    <method name="pointRight" type="bool">
+      <body>var goal_angle = Level.getAngleToDest(
+this.tank.transform.position, this.target);
+var diff = goal_angle-this.turret.transform.eulerAngles.y;
+if (diff &lt; 0) diff += 360;
+return (diff &lt;= 180.0f) &amp;&amp; (diff &gt;= this.margin);</body>
+    </method>
+    <method name="pointLeft" type="bool">
+      <body>var goal_angle = Level.getAngleToDest(
+this.tank.transform.position, this.target);
+var diff = this.turret.transform.eulerAngles.y-goal_angle;
+if (diff &lt; 0) diff += 360;
+return (diff &lt;= 180.0f) &amp;&amp; (diff &gt;= this.margin);</body>
+    </method>
+    <method name="pointCorrect" type="bool">
+      <body>var goal_angle = Level.getAngleToDest(
+this.tank.transform.position, this.target);
+var diff = Mathf.Abs(goal_angle-this.turret.transform.eulerAngles.y);
+return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
+    </method>
+    <attribute type="float" name="margin" init-value="2.0f" />
+    <attribute type="Transform" name="turret" init-value="" />
   </class>
-  <class name="TurretControl" x="33" y="360" w="99" h="31" default="false">
+  <class name="TurretControl" x="43" y="436" w="99" h="31" default="false">
     <relationships />
     <constructor>
-      <body>this.tank = tank;</body>
+      <body>this.tank = tank;
+this.turret = tank.transform.FindChild("turret");
+this.bullet_spawn = this.turret.FindChild("bullet_spawn");
+this.bullet_prefab = Resources.Load("bullet_prefab") as GameObject;</body>
       <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
     </destructor>
     <attribute type="GameObject" name="tank" init-value="" />
-    <scxml initial="State706">
-      <state id="State706" x="268" y="141" w="100" h="100" />
+    <scxml initial="turret_control">
+      <parallel id="turret_control" x="65" y="45" w="639" h="312">
+        <state id="rotating" x="85" y="72" w="403" h="266" initial="not_rotating">
+          <state id="turning_left" x="122" y="137" w="99" h="30">
+            <transition event="fixed-update" port="engine" target="/turret_control/rotating/turning_left" after="" cond="" label="update/&#xA;turn turret left" x-offset="0" y-offset="-50" start-id="3" end-id="0">
+              <point x="102" y="119" />
+              <point x="193" y="115" />
+              <script>this.turret.RotateAround(this.tank.transform.position, Vector3.up, -this.turret_rotation_speed);</script>
+            </transition>
+            <transition event="turn_right" port="" target="/turret_control/rotating/turning_right" after="" cond="" label="turn_right" x-offset="2" y-offset="-33" start-id="1" end-id="3">
+              <point x="289" y="135" />
+            </transition>
+            <transition event="stop_turning" port="" target="/turret_control/rotating/not_rotating" after="" cond="" label="stop_turning" x-offset="-34" y-offset="62" start-id="2" end-id="3">
+              <point x="187" y="265" />
+            </transition>
+          </state>
+          <state id="turning_right" x="356" y="137" w="103" h="29">
+            <transition event="fixed-update" port="engine" target="/turret_control/rotating/turning_right" after="" cond="" label="update/&#xA;turn turret right" x-offset="-13" y-offset="-49" start-id="1" end-id="0">
+              <point x="470" y="130" />
+              <point x="382" y="124" />
+              <script>this.turret.RotateAround(this.tank.transform.position, Vector3.up, this.turret_rotation_speed);</script>
+            </transition>
+            <transition event="turn_left" port="" target="/turret_control/rotating/turning_left" after="" cond="" label="turn_left" x-offset="0" y-offset="32" start-id="3" end-id="1">
+              <point x="288" y="172" />
+            </transition>
+            <transition event="stop_turning" port="" target="/turret_control/rotating/not_rotating" after="" cond="" label="stop_turning" x-offset="10" y-offset="65" start-id="2" end-id="1">
+              <point x="406" y="264" />
+            </transition>
+          </state>
+          <state id="not_rotating" x="236" y="254" w="101" h="29">
+            <transition event="turn_left" port="" target="/turret_control/rotating/turning_left" after="" cond="" label="turn_left" x-offset="4" y-offset="15" start-id="0" end-id="2">
+              <point x="206" y="237" />
+            </transition>
+            <transition event="turn_right" port="" target="/turret_control/rotating/turning_right" after="" cond="" label="turn_right" x-offset="-6" y-offset="17" start-id="0" end-id="2">
+              <point x="377" y="240" />
+            </transition>
+          </state>
+        </state>
+        <state id="shooting" x="503" y="71" w="189" h="267" initial="polling">
+          <state id="polling" x="545" y="187" w="101" h="30">
+            <transition event="shoot" port="" target="/turret_control/shooting/polling" after="" cond="" label="shoot/&#xA;fire bullet" x-offset="-23" y-offset="-45" start-id="1" end-id="0">
+              <point x="665" y="171" />
+              <point x="552" y="167" />
+              <script>GameObject.Instantiate(this.bullet_prefab, this.bullet_spawn.position, this.turret.rotation);</script>
+            </transition>
+          </state>
+        </state>
+      </parallel>
     </scxml>
+    <attribute type="Transform" name="turret" init-value="" />
+    <attribute type="Transform" name="bullet_spawn" init-value="" />
+    <attribute type="GameObject" name="bullet_prefab" init-value="" />
+    <attribute type="float" name="turret_rotation_speed" init-value="2.0f" />
   </class>
 </diagram>

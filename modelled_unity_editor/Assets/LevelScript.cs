@@ -56,6 +56,11 @@ public class LevelScript : MonoBehaviour {
             hash = (hash * 7) + this.y.GetHashCode();
             return hash;
         }
+
+        public override string ToString()
+        {
+            return string.Format("Cell({0},{1})", this.x, this.y);
+        }
     }
 
     void Awake () {
@@ -73,7 +78,7 @@ public class LevelScript : MonoBehaviour {
     }
 
     public Cell calculateCell(Vector3 pos){
-        return new Cell(Mathf.RoundToInt(pos.x/this.cell_size), Mathf.RoundToInt(pos.z/this.cell_size));
+        return new Cell(Mathf.FloorToInt(pos.x/this.cell_size), Mathf.FloorToInt(pos.z/this.cell_size));
     }
 
     public Vector3 calculateCoords(Cell cell)
@@ -113,16 +118,23 @@ public class LevelScript : MonoBehaviour {
 
     public float getAngleToDest(Cell cell_start, Cell cell_end)
     {
-        return Mathf.Atan2(cell_end.y-cell_start.y, cell_end.x-cell_start.x)*180 / Mathf.PI;
+        float angle = Mathf.Atan2(cell_end.x-cell_start.x, cell_end.y-cell_start.y)*180 / Mathf.PI;
+        if (angle < 0)
+            angle += 360.0f;
+        return angle;
     }
 
     public float getAngleToDest(Vector3 start, Vector3 end)
     {
-        return Mathf.Atan2(start.z-end.z, start.x-end.x)*180 / Mathf.PI;
+        float angle = Mathf.Atan2(end.x-start.x, end.z-start.z)*180 / Mathf.PI;
+        if (angle < 0)
+            angle += 360.0f;
+        return angle;
     }
 
     List<KeyValuePair<Cell, float>> getSuccessors(Cell cell)
     {
+
         int i = 0;
         List<KeyValuePair<Cell, float>> successors = new List<KeyValuePair<Cell, float>>();
         for (int y = cell.y - 1; y <= cell.y+1; y++)
@@ -130,25 +142,30 @@ public class LevelScript : MonoBehaviour {
             for (int x = cell.x - 1; x <= cell.x+1; x++)
             {
                 i++;
+
+                if (x < 0 || x >= this.map.GetLength(0) || y < 0 || y >= this.map.GetLength(1))
+                    continue;
                 if (i == 5)
                     continue;
                 if (this.map[x,y] == 1)
                     continue;
-                if(i == 1)
+
+
+                if(i == 1){
                     if (this.map[x+1,y] == 0 && this.map[x,y+1] == 0)
                         successors.Add(new KeyValuePair<Cell, float>(new Cell(x,y), 1.4f));
-                else if(i == 3)
+                }else if(i == 3){
                     if (this.map[x-1,y] == 0 && this.map[x,y+1] == 0)
                         successors.Add(new KeyValuePair<Cell, float>(new Cell(x,y), 1.4f));
-                else if(i == 7)
+                }else if(i == 7){
                     if (this.map[x+1,y] == 0 && this.map[x,y-1] == 0)
                         successors.Add(new KeyValuePair<Cell, float>(new Cell(x,y), 1.4f));
-                else if(i == 1)
+                }else if(i == 9){
                     if (this.map[x-1,y] == 0 && this.map[x,y-1] == 0)
                         successors.Add(new KeyValuePair<Cell, float>(new Cell(x,y), 1.4f));
+                }
                 else
                     successors.Add(new KeyValuePair<Cell, float>(new Cell(x,y), 1.0f));
-
             }
         }
         return successors;
@@ -166,6 +183,7 @@ public class LevelScript : MonoBehaviour {
             {
                 value_list = new LinkedList<Value>();
                 structure.Add(priority, value_list);
+                //Debug.Log(string.Format("added key {0} with value {1}", priority, value));
             }
             value_list.AddLast(value);
         }
@@ -205,8 +223,10 @@ public class LevelScript : MonoBehaviour {
 
     public List<Vector3> calculatePath(Vector3 start, Vector3 destination)
     {
+        Debug.Log(string.Format("calculating path from {0} ti {1}", start, destination));
         Cell start_cell = this.calculateCell(start);
         Cell destination_cell = this.calculateCell(destination);
+        Debug.Log(string.Format("calculating path from {0} to {1}", start_cell, destination_cell));
         HashSet<Cell> explored = new HashSet<Cell>();
         PriorityQueue<float, Node> fringe = new PriorityQueue<float, Node>();
         Node start_node = new Node(start_cell, null, 0.0f);
@@ -221,6 +241,7 @@ public class LevelScript : MonoBehaviour {
                     break;
             }
             explored.Add(current_node.cell);
+            //Debug.Log(current_node.cell);
             if (current_node.cell == destination_cell)
                 break;
             List<KeyValuePair<Cell, float>> successors = this.getSuccessors(current_node.cell);
@@ -250,9 +271,11 @@ public class LevelScript : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-
-        Debug.Log(new Cell(0, 0) == new Cell(1, 1));
-        Debug.Log(new Cell(1, 1) == new Cell(1, 1));
+        Debug.Log(this.getAngleToDest(new Cell(1,1), new Cell(0,0)));
+        Debug.Log(this.getAngleToDest(new Cell(0,0), new Cell(1,1)));
+        Debug.Log(this.getAngleToDest(new Cell(0,0), new Cell(0,1)));
+        Debug.Log(this.getAngleToDest(new Cell(0,1), new Cell(0,0)));
+        Debug.Log(this.getAngleToDest(new Cell(1,0), new Cell(0,0)));
 	}
 	
 	// Update is called once per frame

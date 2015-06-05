@@ -17,6 +17,7 @@ using Event = sccdlib.Event;
       <association min="1" max="1" class="Steering" name="steering" x-offset="9" y-offset="67" start-id="2" end-id="2" />
       <association min="1" max="1" class="TurretSteering" name="turret_steering" x-offset="-73" y-offset="31" start-id="2" end-id="1" />
       <association min="1" max="1" class="TurretControl" name="turret_control" x-offset="2" y-offset="77" start-id="2" end-id="1" />
+      <association min="1" max="1" class="MotorControl" name="motor_control" x-offset="19" y-offset="112" start-id="1" end-id="0" />
     </relationships>
     <constructor>
       <body>this.tank = tank;</body>
@@ -48,8 +49,8 @@ using Event = sccdlib.Event;
         </transition>
         <onentry>
           <raise event="create_instance" scope="cd" target="">
-            <parameter expr="&quot;body&quot;" />
-            <parameter expr="&quot;Body&quot;" />
+            <parameter expr="&quot;motor_control&quot;" />
+            <parameter expr="&quot;MotorControl&quot;" />
             <parameter expr="this.tank" />
           </raise>
         </onentry>
@@ -324,9 +325,11 @@ this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
           <point x="514" y="77" />
           <parameter type="Vector3" name="destination" />
           <script>this.destination = destination;
-this.waypoints = this.level.calculatePath(this.tank.transform.position, this.destination)</script>
+Debug.Log(destination);
+this.waypoints = this.level.calculatePath(this.tank.transform.position, this.destination);
+</script>
         </transition>
-        <transition event="" port="" target="/check_points" after="" label="waypoint_reached" x-offset="-24" y-offset="-46" start-id="1" end-id="3" cond="">
+        <transition event="waypoint_reached" port="" target="/check_points" after="" label="waypoint_reached" x-offset="-24" y-offset="-46" start-id="1" end-id="3" cond="">
           <point x="402" y="123" />
         </transition>
       </state>
@@ -351,7 +354,7 @@ this.waypoints.RemoveAt(0);</script>
     <attribute type="List&lt;Vector3&gt;" name="waypoints" init-value="" />
     <attribute type="Vector3" name="destination" init-value="" />
   </class>
-  <class name="Steering" x="544" y="359" w="95" h="26" default="false">
+  <class name="Steering" x="544" y="358" w="95" h="26" default="false">
     <relationships>
       <association min="1" max="1" class="MotorControl" name="motor_control" x-offset="2" y-offset="-17" start-id="3" end-id="1" />
       <association min="1" max="1" class="PathFinder" name="path_finder" x-offset="56" y-offset="-33" start-id="1" end-id="1" />
@@ -376,38 +379,50 @@ this.level = GameObject.Find("Level").GetComponent&lt;LevelScript&gt;();</body>
           <point x="438" y="129" />
           <parameter type="Vector3" name="dest_waypoint" />
           <script>this.dest_waypoint = dest_waypoint;
-this.dest_cell = this.level.calculateCell(dest_waypoint);</script>
+this.dest_cell = this.level.calculateCell(dest_waypoint);
+Debug.Log("new waypoint!");</script>
         </transition>
       </state>
       <state id="steering" x="84" y="179" w="622" h="233" initial="forward_backward">
         <transition event="" port="" target="/idle" after="" cond="this.dest_cell == this.level.calculateCell(this.tank.transform.position)" label="[point reached]/&#xA;path_finder.waypoint_reached" x-offset="-138" y-offset="1" start-id="0" end-id="2">
           <point x="355" y="131" />
+          <raise event="waypoint_reached" scope="" target="&quot;path_finder&quot;" />
+          <script>Debug.Log("raise waypoint_reached");</script>
         </transition>
         <state id="forward_backward" x="128" y="244" w="125" h="31">
           <transition event="" port="" target="/steering/left_right" after="" cond="this.pointAhead()" label="[point ahead]/&#xA;motor_control.forward" x-offset="-6" y-offset="-43" start-id="1" end-id="3">
             <point x="300" y="235" />
             <raise event="forward" scope="" target="&quot;motor_control&quot;" />
+            <script>
+            </script>
           </transition>
           <transition event="" port="" target="/steering/left_right" after="" cond="this.pointBehind()" label="[point behind]/&#xA;motor_control.stop" x-offset="-7" y-offset="35" start-id="1" end-id="3">
             <point x="300" y="286" />
             <raise event="stop" scope="" target="&quot;motor_control&quot;" />
+            <script>Debug.Log("stop");</script>
           </transition>
         </state>
         <state id="left_right" x="355" y="246" w="86" h="30">
           <transition event="" port="" target="/steering/wait" after="" cond="this.pointStraight()" label="[point straight ahead]/&#xA;motor_control.stop_turning" x-offset="-3" y-offset="-62" start-id="1" end-id="3">
             <point x="525" y="218" />
             <raise event="stop_turning" scope="" target="&quot;motor_control&quot;" />
+            <script>
+            </script>
           </transition>
           <transition event="" port="" target="/steering/wait" after="" cond="this.pointLeft()" label="[point left]/&#xA;motor_control.turn_left" x-offset="-1" y-offset="-2" start-id="1" end-id="3">
             <raise event="turn_left" scope="" target="&quot;motor_control&quot;" />
+            <script>
+            </script>
           </transition>
           <transition event="" port="" target="/steering/wait" after="" cond="this.pointRight()" label="[point right]/&#xA;motor_control.turn_right" x-offset="-8" y-offset="62" start-id="1" end-id="3">
             <point x="520" y="313" />
             <raise event="turn_right" scope="" target="&quot;motor_control&quot;" />
+            <script>
+            </script>
           </transition>
         </state>
         <state id="wait" x="614" y="247" w="74" h="32">
-          <transition event="" port="" target="/steering/forward_backward" after="this.reaction_time" cond="" label="AFTER[this.reaction_tme)" x-offset="-21" y-offset="85" start-id="2" end-id="2">
+          <transition event="fixed-update" port="engine" target="/steering/forward_backward" after="" cond="" label="AFTER[this.reaction_tme)" x-offset="-21" y-offset="85" start-id="2" end-id="2">
             <point x="592" y="352" />
             <point x="240" y="346" />
           </transition>
@@ -417,38 +432,43 @@ this.dest_cell = this.level.calculateCell(dest_waypoint);</script>
     <method name="pointAhead" type="bool">
       <body>var goal_angle = this.level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
-var diff = Mathf.Abs(this.tank.transform.eulerAngles.y-goal_angle);
+var diff = goal_angle - this.tank.transform.eulerAngles.y;
+if (diff &lt; 0) diff += 360;
 return (diff &lt;= 45.0f) || (diff &gt;= (315.0f));</body>
     </method>
     <method name="pointBehind" type="bool">
       <body>var goal_angle = this.level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
-var diff = Mathf.Abs(this.tank.transform.eulerAngles.y-goal_angle);
+var diff = goal_angle - this.tank.transform.eulerAngles.y;
+if (diff &lt; 0) diff += 360;
 return (diff &gt; 45.0f) &amp;&amp; (diff &lt; (315.0f));</body>
     </method>
     <method name="pointRight" type="bool">
       <body>var goal_angle = this.level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
-var diff = Mathf.Abs(this.tank.transform.eulerAngles.y-goal_angle);
+var diff = goal_angle-this.tank.transform.eulerAngles.y;
+if (diff &lt; 0) diff += 360;
 return (diff &lt;= 180.0f) &amp;&amp; (diff &gt;= this.margin);</body>
     </method>
     <method name="pointLeft" type="bool">
       <body>var goal_angle = this.level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
-var diff = Mathf.Abs(goal_angle-this.tank.transform.eulerAngles.y);
+var diff = this.tank.transform.eulerAngles.y-goal_angle;
+if (diff &lt; 0) diff += 360;
 return (diff &lt;= 180.0f) &amp;&amp; (diff &gt;= this.margin);</body>
     </method>
     <method name="pointStraight" type="bool">
       <body>var goal_angle = this.level.getAngleToDest(
 this.tank.transform.position, this.dest_waypoint);
-var diff = Mathf.Abs(this.tank.transform.eulerAngles.y - goal_angle);
+var diff = Mathf.Abs(goal_angle-this.tank.transform.eulerAngles.y);
 return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     </method>
   </class>
   <class name="MotorControl" x="301" y="357" w="104" h="28" default="false">
     <relationships />
     <constructor>
-      <body />
+      <body>this.tank = tank;</body>
+      <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
@@ -517,7 +537,7 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
             <transition event="stop" port="" target="/parallel_container/forward_backward/stationary" after="" label="stop" x-offset="-28" y-offset="72" start-id="2" end-id="1" cond="">
               <point x="635" y="511" />
             </transition>
-            <transition event="fixed-update" port="engine" target="/parallel_container/forward_backward/moving_forward" after="" label="update/moveForward" x-offset="-8" y-offset="-39" start-id="1" end-id="0">
+            <transition event="fixed-update" port="engine" target="/parallel_container/forward_backward/moving_forward" after="" label="update/moveForward" x-offset="-8" y-offset="-39" start-id="1" end-id="0" cond="">
               <point x="718" y="341" />
               <point x="634" y="332" />
               <script>this.tank.transform.Translate(Vector3.forward * this.body_speed);</script>
@@ -531,7 +551,7 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
     <attribute type="float" name="body_speed" init-value="0.05f" />
-    <attribute type="float" name="body_rotation_speed" init-value="3.0f" />
+    <attribute type="float" name="body_rotation_speed" init-value="2.0f" />
   </class>
   <class name="Radar" x="45" y="50" w="104" h="27" default="false">
     <relationships>
@@ -539,11 +559,16 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
       <association min="1" max="1" class="PilotStrategy" name="pilot_strategy" x-offset="8" y-offset="-9" start-id="1" end-id="3" />
     </relationships>
     <constructor>
-      <body />
+      <body>this.tank = tank;</body>
+      <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
     </destructor>
+    <scxml initial="State697">
+      <state id="State697" x="237" y="184" w="100" h="100" />
+    </scxml>
+    <attribute type="GameObject" name="tank" init-value="" />
   </class>
   <class name="EnemyTracker" x="34" y="114" w="103" h="28" default="false">
     <relationships>
@@ -556,6 +581,9 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     <destructor>
       <body />
     </destructor>
+    <scxml initial="State664">
+      <state id="State664" x="323" y="140" w="100" h="100" />
+    </scxml>
   </class>
   <class name="AttackPlanner" x="32" y="178" w="101" h="29" default="false">
     <relationships>
@@ -569,6 +597,9 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     <destructor>
       <body />
     </destructor>
+    <scxml initial="State631">
+      <state id="State631" x="305" y="124" w="100" h="100" />
+    </scxml>
   </class>
   <class name="TurretSteering" x="31" y="261" w="116" h="33" default="false">
     <relationships>
@@ -576,19 +607,29 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
       <association min="1" max="1" class="AttackPlanner" name="attack_planner" x-offset="29" y-offset="19" start-id="0" end-id="1" />
     </relationships>
     <constructor>
-      <body />
+      <body>this.tank = tank;</body>
+      <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
     </destructor>
+    <scxml initial="State445">
+      <state id="State445" x="241" y="140" w="100" h="100" />
+    </scxml>
+    <attribute type="GameObject" name="tank" init-value="" />
   </class>
   <class name="TurretControl" x="33" y="360" w="99" h="31" default="false">
     <relationships />
     <constructor>
-      <body />
+      <body>this.tank = tank;</body>
+      <parameter type="GameObject" name="tank" default="" />
     </constructor>
     <destructor>
       <body />
     </destructor>
+    <attribute type="GameObject" name="tank" init-value="" />
+    <scxml initial="State706">
+      <state id="State706" x="268" y="141" w="100" h="100" />
+    </scxml>
   </class>
 </diagram>

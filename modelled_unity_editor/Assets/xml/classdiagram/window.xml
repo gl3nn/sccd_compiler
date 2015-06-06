@@ -156,6 +156,13 @@
             </state>
         </state>
         <state id="listening">
+            <!-- open file -->
+            <transition event="open_file" target="../loading_file">
+                <script>
+                    this.window_widget.openLoadDialog();
+                </script>
+            </transition>
+        
             <!-- ordinary save -->
             <transition event="save" cond='this.file_path != ""' target="../saving"/>
             
@@ -181,6 +188,17 @@
                 </script>
             </transition>
 
+        </state>
+        <state id="loading_file">
+            <transition port="input" event="load_dialog_closed" target="../listening">
+                <parameter type="string" name="load_path"/>
+                <script>
+                    this.file_path = load_path;
+                    this.sccd_script.xml_file = this.file_path;
+                    EditorUtility.SetDirty(this.sccd_script);
+                    this.window_widget.restart();
+                </script>
+            </transition>
         </state>
         <state id="saving_as">
             <onentry>

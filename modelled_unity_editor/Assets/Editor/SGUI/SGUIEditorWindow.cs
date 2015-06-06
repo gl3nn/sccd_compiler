@@ -11,6 +11,7 @@ namespace SCCDEditor{
 
         private float                               update_time = 0;
         private bool                                open_save_dialog = false;
+        private bool                                open_load_dialog = false;
         private int                                 repaints = 0;
 
         public SGUIGroupWidget                      top_level_widget { get; protected set; }
@@ -26,6 +27,11 @@ namespace SCCDEditor{
         public void openSaveDialog()
         {
             this.open_save_dialog = true;
+        }
+
+        public void openLoadDialog()
+        {
+            this.open_load_dialog = true;
         }
 
         public void setRepaints(int repaints)
@@ -206,6 +212,20 @@ namespace SCCDEditor{
                 this.open_save_dialog = false;
                 string save_path = EditorUtility.SaveFilePanelInProject("Save Model", "mycoolmodel", "xml", "Save model");
                 this.generateEvent("save_dialog_closed", "input", save_path);
+            }
+            else if (this.open_load_dialog)
+            {
+                this.open_load_dialog = false;
+                string path = EditorUtility.OpenFilePanel("Open Model", "Assets", "xml");
+                if (!path.Contains(Application.dataPath))
+                {
+                    Debug.LogError("The loaded file should be in the Assets folder or in one of its subfolders, else the game won't work in other installations.");
+                }
+                else
+                {
+                    path = path.Replace(Application.dataPath, "Assets");
+                    this.generateEvent("load_dialog_closed", "input", path);
+                }
             }
         }
 

@@ -84,6 +84,7 @@
      <None Include="Assets\xml\classdiagram\toolbar.xml" />
      <None Include="Assets\xml\statechart\actual_event_parameter.xml" />
      <None Include="Assets\xml\classdiagram\class.xml" />
+     <None Include="Assets\mycoolmodel2.xml" />
      <None Include="Assets\xml\classdiagram\menu_strip.xml" />
      <None Include="Assets\xml\classdiagram\properties_panel.xml" />
      <None Include="Assets\xml\classdiagram\relation_properties.xml" />

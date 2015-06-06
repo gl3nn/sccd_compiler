@@ -4,6 +4,7 @@
         <association class="Window" name="window" max="1"/>
     </relationships>
     <attribute type="SGUIHorizontalGroup" name="menu_strip"/>
+    <attribute type="SGUIButton" name="open_button"/>
     <attribute type="SGUIButton" name="save_button"/>
     <attribute type="SGUIButton" name="save_as_button"/>
     <attribute type="SGUIButton" name="edit_button"/>
@@ -15,6 +16,8 @@
             this.menu_strip = new SGUIHorizontalGroup();
             this.menu_strip.setStyle(EditorStyles.toolbar);
             window_widget.addChild(this.menu_strip);
+            this.open_button = new SGUIButton("Open", "", EditorStyles.toolbarButton);
+            this.menu_strip.addChild(this.open_button);
             this.save_button = new SGUIButton("Save", "", EditorStyles.toolbarButton);
             this.menu_strip.addChild(this.save_button);
             this.save_as_button = new SGUIButton("Save As...", "", EditorStyles.toolbarButton);
@@ -29,6 +32,10 @@
     </constructor>
     <scxml initial="listening">
         <state id="listening">
+            <transition event="button_pressed" port="input" cond='this.open_button.tag == tag' target=".">
+                <parameter name="tag" type="int"/>
+                <raise event="open_file" target='"window"'/>
+            </transition>
             <transition event="button_pressed" port="input" cond='this.save_button.tag == tag' target=".">
                 <parameter name="tag" type="int"/>
                 <raise event="save" target='"window"'/>

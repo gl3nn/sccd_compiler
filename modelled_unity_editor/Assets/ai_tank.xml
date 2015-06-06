@@ -219,7 +219,6 @@ using Event = sccdlib.Event;
           <raise event="start_instance" scope="cd" target="">
             <parameter expr="&quot;radar&quot;" />
           </raise>
-          <script>Debug.Log("finished creation");</script>
         </transition>
       </state>
       <state id="finished_creation" x="19" y="446" w="162" h="28" />
@@ -335,10 +334,9 @@ this.waypoints = this.level.calculatePath(this.tank.transform.position, this.des
         </transition>
       </state>
       <state id="check_points" x="620" y="137" w="103" h="31">
-        <transition event="" port="" target="/idle" after="" label="[no more points]/&#xA;destination_reached" x-offset="-35" y-offset="46" start-id="3" end-id="1" cond="this.waypoints.Count == 0">
+        <transition event="" port="" target="/idle" after="" label="[no more points]/&#xA;destination_reached" x-offset="-33" y-offset="46" start-id="3" end-id="1" cond="this.waypoints.Count == 0">
           <point x="397" y="183" />
           <raise event="destination_reached" scope="broad" target="" />
-          <script>Debug.Log("destination reached!");</script>
         </transition>
         <transition event="" port="" target="/idle" after="" label="[more points]/&#xA;steering.new_waypoint" x-offset="-31" y-offset="102" start-id="3" end-id="1" cond="this.waypoints.Count &gt; 0">
           <point x="521" y="240" />
@@ -577,7 +575,8 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
           <script>Debug.Log("Enemy sighted!");</script>
         </transition>
         <onentry>
-          <script></script>
+          <script>
+          </script>
         </onentry>
       </state>
       <state id="enemy_in_sight" x="445" y="178" w="127" h="30">
@@ -596,7 +595,10 @@ return (diff &lt; this.margin) || (diff &gt; 360.0f - this.margin);</body>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
     <method name="isEnemyVisible" type="bool">
-      <body>GameObject[] enemy_team = GameObject.FindGameObjectsWithTag("team1");
+      <body>string enemy_tag = "team1";
+if (this.tank.tag == "team1")
+    enemy_tag = "team2";
+GameObject[] enemy_team = GameObject.FindGameObjectsWithTag(enemy_tag);
 RaycastHit hit_info;
 float closest_distance = this.range + 1.0f;
 this.target = new Vector3();
@@ -616,7 +618,7 @@ foreach (GameObject enemy in enemy_team)
 }
 return this.target != new Vector3();</body>
     </method>
-    <attribute type="float" name="range" init-value="2000" />
+    <attribute type="float" name="range" init-value="10" />
     <attribute type="Vector3" name="target" init-value="" />
   </class>
   <class name="EnemyTracker" x="179" y="105" w="103" h="28" default="false">
@@ -777,6 +779,13 @@ this.turret = tank.transform.FindChild("turret");</body>
             <point x="342" y="318" />
           </transition>
         </state>
+        <transition event="aim_at" port="" target="/steering" after="" cond="" label="aim_at(target)/&#xA;this.target = target" x-offset="57" y-offset="-39" start-id="1" end-id="1">
+          <point x="612" y="281" />
+          <point x="624" y="259" />
+          <point x="609" y="240" />
+          <parameter type="Vector3" name="target" />
+          <script>this.target = target;</script>
+        </transition>
       </state>
     </scxml>
     <attribute type="GameObject" name="tank" init-value="" />
@@ -860,7 +869,11 @@ this.bullet_prefab = Resources.Load("bullet_prefab") as GameObject;</body>
             <transition event="shoot" port="" target="/turret_control/shooting/polling" after="" cond="" label="shoot/&#xA;fire bullet" x-offset="-23" y-offset="-45" start-id="1" end-id="0">
               <point x="665" y="171" />
               <point x="552" y="167" />
-              <script>GameObject.Instantiate(this.bullet_prefab, this.bullet_spawn.position, this.turret.rotation);</script>
+              <script>GameObject bullet = GameObject.Instantiate(
+    this.bullet_prefab,
+    this.bullet_spawn.position,
+    this.turret.rotation) as GameObject;
+bullet.tag = this.tank.tag;</script>
             </transition>
           </state>
         </state>

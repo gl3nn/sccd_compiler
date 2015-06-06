@@ -223,10 +223,8 @@ public class Level : MonoBehaviour {
 
     public List<Vector3> calculatePath(Vector3 start, Vector3 destination)
     {
-        Debug.Log(string.Format("calculating path from {0} ti {1}", start, destination));
         Cell start_cell = this.calculateCell(start);
         Cell destination_cell = this.calculateCell(destination);
-        Debug.Log(string.Format("calculating path from {0} to {1}", start_cell, destination_cell));
         HashSet<Cell> explored = new HashSet<Cell>();
         PriorityQueue<float, Node> fringe = new PriorityQueue<float, Node>();
         Node start_node = new Node(start_cell, null, 0.0f);

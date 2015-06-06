@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class bullet_script : MonoBehaviour {
+public class Bullet: MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {

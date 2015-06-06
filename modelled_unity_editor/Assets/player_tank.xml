@@ -118,9 +118,13 @@ using Event = sccdlib.Event;
         </state>
         <state id="ammo" x="420" y="354" w="341" h="184" initial="loaded">
           <state id="loaded" x="447" y="425" w="96" h="36">
-            <transition event="shoot" port="" target="/parallel_container/ammo/unloaded" after="" label="shoot/launchBullet" x-offset="-3" y-offset="-31" start-id="1" end-id="3">
+            <transition event="shoot" port="" target="/parallel_container/ammo/unloaded" after="" label="shoot/launchBullet" x-offset="-3" y-offset="-31" start-id="1" end-id="3" cond="">
               <point x="591" y="424" />
-              <script>GameObject.Instantiate(this.bullet_prefab, this.bullet_spawn.position, this.turret.rotation);</script>
+              <script>GameObject bullet = GameObject.Instantiate(
+    this.bullet_prefab,
+    this.bullet_spawn.position,
+    this.turret.rotation) as GameObject;
+bullet.tag = this.tank.tag;</script>
             </transition>
           </state>
           <state id="unloaded" x="639" y="423" w="97" h="36">
